@@ -2,8 +2,8 @@
 *nuPGCM*
 *.key
 *.msh
-Development/nuPGCM
-Development/nuPGCM_development
-Development/*
-Development
+Analytical Model/nuPGCM
+Analytical Model/nuPGCM_development
+Analytical Model/*
+Analytical Model
 !.gitignore
