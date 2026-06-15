@@ -1,9 +1,9 @@
-PlanetaryGeostrophyModel
+PlanetaryGeostrophyAnalyticalModel
 
 * LaTeX notes on planetary geostrophy with analytic solutions for certain cases.
-* Julia code to support the theory derivation using `SymPy.jl` and `Symbolics.jl`
+* Julia code to support the theory derivation using `Symbolics.jl`
 * Julia code to compute solutions using analytic results and `Gridap.jl` solutions of the surface pressure and depth-integrated streamfunction PDEs
 
-  Used for presentation at the 2025 Arctic Ocean Dynamics Workshop (`v0.1.0-alpha`) then developed further. A paper is in preparation in 2026.
+See also: [this archived repo](https://github.com/ThomasHaine/ArcticOceanDynamicsWorkshop25), on which this one is based.
 
   Questions/comments welcome.
