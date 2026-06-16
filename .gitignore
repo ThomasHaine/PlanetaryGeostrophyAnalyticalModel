@@ -1,9 +1,4 @@
 *.vt?
-*nuPGCM*
 *.key
 *.msh
-Analytical Model/nuPGCM
-Analytical Model/nuPGCM_development
-Analytical Model/*
-Analytical Model
 !.gitignore
