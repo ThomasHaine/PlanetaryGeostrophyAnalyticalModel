@@ -66,8 +66,8 @@ function build_geometry_and_mesh(H, res, GmshMeshFileName)
 	model.add("Reservoir")
 
 	# Parameters
-	# nx, ny = 256, 128
-	nx, ny = 32, 16
+	nx, ny = 256, 128
+	# nx, ny = 32, 16
 	
 	# Boundary points:
 	boundary_pts = compute_boundary_points(R)
