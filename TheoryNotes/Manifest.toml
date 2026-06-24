@@ -523,9 +523,9 @@ uuid = "ea8e919c-243c-51af-8825-aaa63cd721ce"
 version = "0.7.0"
 
 [[deps.SciMLPublic]]
-git-tree-sha1 = "6e8180583826020626d8933e7a862e5ee6802e4e"
+git-tree-sha1 = "912a1a941afb2a232183a485d86a437a25f88520"
 uuid = "431bcebd-1456-4ced-9d72-93c2757fff0b"
-version = "1.1.0"
+version = "1.2.0"
 
 [[deps.Serialization]]
 uuid = "9e88b42a-f829-5b0c-bbe9-9e923198166b"
@@ -650,9 +650,9 @@ version = "1.1.1"
 
 [[deps.SymbolicUtils]]
 deps = ["AbstractTrees", "ArrayInterface", "Combinatorics", "ConstructionBase", "DataStructures", "DocStringExtensions", "DynamicPolynomials", "EnumX", "ExproniconLite", "Graphs", "LinearAlgebra", "MacroTools", "Moshi", "MultivariatePolynomials", "MutableArithmetics", "NaNMath", "PrecompileTools", "ReadOnlyArrays", "Setfield", "SparseArrays", "SpecialFunctions", "StaticArraysCore", "SymbolicIndexingInterface", "TaskLocalValues", "TermInterface", "WeakCacheSets"]
-git-tree-sha1 = "7059048dc781e86e1fc92274b07f475390406612"
+git-tree-sha1 = "2d7d7ef08c1e6abf3ee2d0738af672df8d75193b"
 uuid = "d1185830-fcd6-423d-90d6-eec64667417b"
-version = "4.35.5"
+version = "4.35.7"
 
     [deps.SymbolicUtils.extensions]
     SymbolicUtilsChainRulesCoreExt = "ChainRulesCore"
