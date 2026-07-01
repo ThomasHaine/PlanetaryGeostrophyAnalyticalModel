@@ -1,0 +1,824 @@
+\documentclass[11pt]{amsart}
+\usepackage{geometry}                % See geometry.pdf to learn the layout options. There are lots.
+\geometry{letterpaper}                   % ... or a4paper or a5paper or ... 
+%\geometry{landscape}                % Activate for for rotated page geometry
+%\usepackage[parfill]{parskip}    % Activate to begin paragraphs with an empty line rather than an indent
+\usepackage{graphicx}
+\usepackage{amssymb}
+\usepackage{epstopdf}
+\DeclareGraphicsRule{.tif}{png}{.png}{`convert #1 `dirname #1`/`basename #1 .tif`.png}
+
+\title{Notes on accurate bottom BC on the buoyancy equation}
+\author{GPT 5.5 with  prompting from TWNH }
+\date{26Jun26}                                           % Activate to display a given date or no date
+
+\begin{document}
+\maketitle
+%\section{}
+%\subsection{}
+
+\section{Boundary-reduced solution using a Dirichlet-to-Neumann map}
+
+Consider the steady buoyancy problem in the domain
+\[
+\Omega=\{(x,y,z):-H(x,y)\le z\le 0\}.
+\]
+For simplicity, take the interior equation to contain only vertical diffusion,
+\[
+\varepsilon^2 \partial_z\left(\kappa \partial_z b\right)
++\gamma(B-b)=0,
+\qquad -H(x,y)<z<0,
+\]
+with inhomogeneous surface Dirichlet condition
+\[
+b(x,y,0)=b_s(x,y),
+\]
+and no-flux condition on the sloping bottom
+\[
+\left[
+b_z+\delta^2 \nabla_h b\cdot \nabla_h H
+\right]_{z=-H(x,y)}=0.
+\]
+Here
+\[
+\nabla_h=(\partial_x,\partial_y).
+\]
+
+The difficulty is that the bottom boundary condition couples neighboring water columns through the term
+\[
+\nabla_h b\cdot \nabla_h H.
+\]
+A convenient way to isolate this coupling is to reduce the problem to an equation posed only on the bottom boundary.
+
+Define the bottom trace
+\[
+\beta(x,y)=b(x,y,-H(x,y)).
+\]
+
+The horizontal gradient of the bottom trace is not the same as the horizontal gradient of \(b\) evaluated at fixed \(z\). By the chain rule,
+\[
+\nabla_h \beta
+=
+\nabla_h b|_{z=-H}
++
+b_z|_{z=-H}\nabla_h(-H).
+\]
+Since
+\[
+\nabla_h(-H)=-\nabla_h H,
+\]
+we have
+\[
+\nabla_h \beta
+=
+\nabla_h b|_{z=-H}
+-
+b_z|_{z=-H}\nabla_h H.
+\]
+Therefore,
+\[
+\nabla_h b|_{z=-H}
+=
+\nabla_h \beta
++
+b_z|_{z=-H}\nabla_h H.
+\]
+
+Substituting this into the bottom no-flux condition gives
+\[
+b_z+\delta^2
+\left(
+\nabla_h \beta
++
+b_z\nabla_h H
+\right)\cdot \nabla_h H=0.
+\]
+Therefore,
+\[
+b_z
++\delta^2 \nabla_h \beta\cdot \nabla_h H
++\delta^2 b_z |\nabla_h H|^2=0.
+\]
+Equivalently,
+\[
+\boxed{
+\left(1+\delta^2 |\nabla_h H|^2\right)b_z|_{z=-H}
++
+\delta^2 \nabla_h H\cdot \nabla_h \beta
+=0.
+}
+\]
+
+Now solve the vertical column problem at each horizontal location with prescribed surface value \(b_s(x,y)\) and prescribed bottom value \(\beta(x,y)\):
+\[
+\varepsilon^2 \partial_z\left(\kappa \partial_z b\right)
++\gamma(B-b)=0,
+\qquad -H<z<0,
+\]
+\[
+b(0)=b_s,
+\qquad
+b(-H)=\beta.
+\]
+This vertical solve defines a Dirichlet-to-Neumann map. Namely, it gives the bottom vertical derivative as
+\[
+b_z(-H)=\Lambda[\beta]+r.
+\]
+Here \(\Lambda\) is the columnwise Dirichlet-to-Neumann operator mapping the imposed bottom trace \(\beta\) to the resulting bottom normal derivative, while \(r\) is a known contribution coming from the surface value \(b_s\) and the interior forcing \(B\).
+
+Substituting
+\[
+b_z(-H)=\Lambda[\beta]+r
+\]
+into the transformed bottom condition gives the reduced horizontal equation for the unknown bottom trace:
+\[
+\boxed{
+\left(1+\delta^2 |\nabla_h H|^2\right)
+\left(\Lambda[\beta]+r\right)
++
+\delta^2 \nabla_h H\cdot \nabla_h \beta
+=0.
+}
+\]
+Once this equation has been solved for \(\beta(x,y)\), the full buoyancy field is reconstructed by solving the vertical column problem with
+\[
+b(0)=b_s(x,y),
+\qquad
+b(-H)=\beta(x,y).
+\]
+
+\subsection{Constant diffusivity example}
+
+Assume
+\[
+\kappa=\kappa_0
+\]
+and define
+\[
+\psi=\frac{1}{\varepsilon}\sqrt{\frac{\gamma}{\kappa_0}}.
+\]
+Then the vertical equation becomes
+\[
+b_{zz}-\psi^2 b=-\psi^2 B.
+\]
+
+For clarity, first consider the homogeneous case \(B=0\). Then
+\[
+b_{zz}-\psi^2 b=0,
+\]
+with
+\[
+b(0)=b_s,
+\qquad
+b(-H)=\beta.
+\]
+The solution is
+\[
+b(z)
+=
+\beta
+\frac{\sinh(-\psi z)}{\sinh(\psi H)}
++
+b_s
+\frac{\sinh(\psi(z+H))}{\sinh(\psi H)}.
+\]
+Differentiating,
+\[
+b_z(z)
+=
+-\psi\beta
+\frac{\cosh(-\psi z)}{\sinh(\psi H)}
++
+\psi b_s
+\frac{\cosh(\psi(z+H))}{\sinh(\psi H)}.
+\]
+Evaluating at the bottom \(z=-H\) gives
+\[
+b_z(-H)
+=
+-\psi \coth(\psi H)\beta
++
+\psi \operatorname{csch}(\psi H)b_s.
+\]
+Therefore, in this case,
+\[
+\Lambda[\beta]
+=
+-\psi \coth(\psi H)\beta,
+\]
+and
+\[
+r=
+\psi \operatorname{csch}(\psi H)b_s.
+\]
+
+The reduced bottom-trace equation is therefore
+\[
+\left(1+\delta^2 |\nabla_h H|^2\right)
+\left[
+-\psi \coth(\psi H)\beta
++
+\psi \operatorname{csch}(\psi H)b_s
+\right]
++
+\delta^2 \nabla_h H\cdot \nabla_h \beta
+=0.
+\]
+Equivalently,
+\[
+\boxed{
+\delta^2 \nabla_h H\cdot \nabla_h \beta
+-
+\left(1+\delta^2 |\nabla_h H|^2\right)
+\psi \coth(\psi H)\beta
+=
+-
+\left(1+\delta^2 |\nabla_h H|^2\right)
+\psi \operatorname{csch}(\psi H)b_s.
+}
+\]
+
+After solving this horizontal equation for \(\beta(x,y)\), the full solution is recovered from
+\[
+\boxed{
+b(z)
+=
+\beta
+\frac{\sinh(-\psi z)}{\sinh(\psi H)}
++
+b_s
+\frac{\sinh(\psi(z+H))}{\sinh(\psi H)}.
+}
+\]
+
+\subsection{Including an interior buoyancy profile \(B\)}
+
+When \(B\neq 0\), the vertical equation is
+\[
+b_{zz}-\psi^2 b=-\psi^2 B(z;x,y).
+\]
+The solution may be written as
+\[
+b(z)
+=
+b_{\mathrm{hom}}(z)
++
+b_{\mathrm{part}}(z),
+\]
+where
+\[
+b_{\mathrm{hom}}(z)
+=
+\beta
+\frac{\sinh(-\psi z)}{\sinh(\psi H)}
++
+b_s
+\frac{\sinh(\psi(z+H))}{\sinh(\psi H)}
+\]
+and \(b_{\mathrm{part}}\) solves
+\[
+b_{\mathrm{part},zz}-\psi^2 b_{\mathrm{part}}
+=
+-\psi^2 B,
+\]
+with homogeneous endpoint conditions
+\[
+b_{\mathrm{part}}(0)=0,
+\qquad
+b_{\mathrm{part}}(-H)=0.
+\]
+Then
+\[
+b_z(-H)
+=
+-\psi \coth(\psi H)\beta
++
+\psi \operatorname{csch}(\psi H)b_s
++
+b_{\mathrm{part},z}(-H).
+\]
+Thus,
+\[
+\Lambda[\beta]
+=
+-\psi \coth(\psi H)\beta,
+\]
+and
+\[
+r=
+\psi \operatorname{csch}(\psi H)b_s
++
+b_{\mathrm{part},z}(-H).
+\]
+
+Using the Dirichlet Green's function \(G_D(z,\xi)\) on \([-H,0]\), satisfying
+\[
+\left(\partial_z^2-\psi^2\right)G_D(z,\xi)
+=
+\delta(z-\xi),
+\]
+\[
+G_D(0,\xi)=0,
+\qquad
+G_D(-H,\xi)=0,
+\]
+we may write
+\[
+b_{\mathrm{part}}(z)
+=
+-\psi^2 \int_{-H}^{0} G_D(z,\xi)B(\xi)\,d\xi.
+\]
+Therefore,
+\[
+b_{\mathrm{part},z}(-H)
+=
+-\psi^2 \int_{-H}^{0} \partial_z G_D(-H,\xi)B(\xi)\,d\xi.
+\]
+
+For constant \(\psi\), the Dirichlet Green's function is
+\[
+G_D(z,\xi)
+=
+-\frac{1}{\psi\sinh(\psi H)}
+\begin{cases}
+\sinh\left(\psi(z+H)\right)\sinh(-\psi \xi),
+& z\le \xi,\\[4pt]
+\sinh\left(\psi(\xi+H)\right)\sinh(-\psi z),
+& z\ge \xi.
+\end{cases}
+\]
+At the bottom, \(z=-H\le \xi\), so
+\[
+\partial_z G_D(-H,\xi)
+=
+-\frac{\sinh(-\psi \xi)}{\sinh(\psi H)}.
+\]
+Hence
+\[
+b_{\mathrm{part},z}(-H)
+=
+\psi^2
+\int_{-H}^{0}
+\frac{\sinh(-\psi \xi)}{\sinh(\psi H)}
+B(\xi)\,d\xi.
+\]
+Therefore,
+\[
+\boxed{
+r
+=
+\psi \operatorname{csch}(\psi H)b_s
++
+\psi^2
+\int_{-H}^{0}
+\frac{\sinh(-\psi \xi)}{\sinh(\psi H)}
+B(\xi)\,d\xi.
+}
+\]
+
+The reduced equation with interior forcing is
+\[
+\boxed{
+\left(1+\delta^2 |\nabla_h H|^2\right)
+\left[
+-\psi \coth(\psi H)\beta
++
+r
+\right]
++
+\delta^2 \nabla_h H\cdot \nabla_h \beta
+=0.
+}
+\]
+
+Equivalently,
+\[
+\boxed{
+\delta^2 \nabla_h H\cdot \nabla_h \beta
+-
+\left(1+\delta^2 |\nabla_h H|^2\right)
+\psi \coth(\psi H)\beta
+=
+-
+\left(1+\delta^2 |\nabla_h H|^2\right)r.
+}
+\]
+
+\subsection{Interpretation}
+
+The reduction has converted the original sloping-bottom boundary-value problem into two pieces:
+
+\begin{enumerate}
+    \item A horizontal equation for the bottom trace \(\beta(x,y)\):
+    \[
+    \left(1+\delta^2 |\nabla_h H|^2\right)
+    \left(\Lambda[\beta]+r\right)
+    +
+    \delta^2 \nabla_h H\cdot \nabla_h \beta
+    =0.
+    \]
+
+    \item A vertical reconstruction problem:
+    \[
+    \varepsilon^2 \partial_z(\kappa b_z)+\gamma(B-b)=0,
+    \qquad
+    b(0)=b_s,
+    \qquad
+    b(-H)=\beta.
+    \]
+\end{enumerate}
+
+The only horizontal coupling appears in the bottom-trace equation. In the limit \(\delta\to 0\), the equation reduces to
+\[
+\Lambda[\beta]+r=0,
+\]
+which enforces
+\[
+b_z(-H)=0
+\]
+column by column.
+
+For the **Dirichlet-to-Neumann reduction / boundary trace approach**, the standard references are from elliptic PDE theory and domain-decomposition theory. The idea is usually called the **Steklov–Poincaré operator**, **Poincaré–Steklov operator**, or **Dirichlet-to-Neumann map**.
+
+\section{Solving the reduced bottom-trace equation for $\beta$}
+
+We consider a closed horizontal domain \(D\subset\mathbb{R}^2\), with no lateral
+inflow boundary prescribed for the reduced bottom-trace problem. The surface
+boundary condition at \(z=0\) specifies the buoyancy:
+\[
+b(x,y,0)=b_s(x,y).
+\]
+The bottom trace is
+\[
+\beta(x,y)=b(x,y,-H(x,y)).
+\]
+
+After applying the Dirichlet-to-Neumann reduction, the sloping-bottom no-flux
+condition gives a first-order horizontal equation for \(\beta\). In the constant
+diffusivity example this equation has the form
+\[
+\delta^2 \nabla_h H\cdot \nabla_h \beta
+-
+\left(1+\delta^2 |\nabla_h H|^2\right)
+\psi \coth(\psi H)\beta
+=
+-
+\left(1+\delta^2 |\nabla_h H|^2\right)r,
+\]
+where
+\[
+\psi=\frac{1}{\varepsilon}\sqrt{\frac{\gamma}{\kappa_0}},
+\]
+and \(r(x,y)\) is a known forcing contribution determined by the prescribed
+surface value \(b_s\) and the interior buoyancy profile \(B\).
+
+Equivalently, define
+\[
+\mathbf{a}(x,y)=-\delta^2 \nabla_h H(x,y),
+\]
+\[
+\lambda(x,y)
+=
+\left(1+\delta^2 |\nabla_h H|^2\right)\psi\coth(\psi H),
+\]
+and
+\[
+q(x,y)
+=
+\left(1+\delta^2 |\nabla_h H|^2\right)r(x,y).
+\]
+Then the reduced bottom-trace equation is
+\[
+\boxed{
+\mathbf{a}\cdot\nabla_h\beta+\lambda\beta=q.
+}
+\]
+Since
+\[
+\lambda(x,y)>0,
+\]
+this is a linear advection--reaction equation with positive reaction.
+
+\subsection{Characteristics}
+
+The characteristic curves \(\mathbf{X}(s)\) satisfy
+\[
+\frac{d\mathbf{X}}{ds}=\mathbf{a}(\mathbf{X})
+=
+-\delta^2 \nabla_h H(\mathbf{X}).
+\]
+Therefore the characteristics are downhill gradient-flow curves of the
+topography \(H\). Indeed,
+\[
+\frac{d}{ds}H(\mathbf{X}(s))
+=
+\nabla_h H\cdot \frac{d\mathbf{X}}{ds}
+=
+-\delta^2 |\nabla_h H|^2
+\le 0.
+\]
+Thus \(H\) is non-increasing along characteristics. Equality holds only at
+critical points of \(H\), where
+\[
+\nabla_h H=0.
+\]
+
+Along a characteristic,
+\[
+\frac{d}{ds}\beta(\mathbf{X}(s))
+=
+\mathbf{a}(\mathbf{X}(s))\cdot\nabla_h\beta,
+\]
+and the PDE becomes the scalar ODE
+\[
+\boxed{
+\frac{d\beta}{ds}+\lambda(\mathbf{X}(s))\beta
+=
+q(\mathbf{X}(s)).
+}
+\]
+The solution along a characteristic from \(s_0\) to \(s\) is
+\[
+\boxed{
+\beta(s)
+=
+\beta(s_0)
+\exp\left[
+-\int_{s_0}^{s}\lambda(\mathbf{X}(\tau))\,d\tau
+\right]
++
+\int_{s_0}^{s}
+\exp\left[
+-\int_{\sigma}^{s}\lambda(\mathbf{X}(\tau))\,d\tau
+\right]
+q(\mathbf{X}(\sigma))\,d\sigma.
+}
+\]
+
+\subsection{Closed domains and critical points}
+
+In a closed domain, there is no external inflow boundary for the first-order
+equation. Instead, characteristics originate from local maxima of \(H\), or from
+critical sets where
+\[
+\nabla_h H=0.
+\]
+At such points the advective term vanishes and the reduced equation becomes
+purely algebraic:
+\[
+\lambda\beta=q.
+\]
+Therefore, at a critical point,
+\[
+\boxed{
+\beta=\frac{q}{\lambda}.
+}
+\]
+For the present coefficients,
+\[
+q=
+\left(1+\delta^2|\nabla_h H|^2\right)r,
+\]
+and
+\[
+\lambda=
+\left(1+\delta^2|\nabla_h H|^2\right)\psi\coth(\psi H).
+\]
+Thus, at any critical point of \(H\), where \(|\nabla_h H|=0\),
+\[
+\boxed{
+\beta
+=
+\frac{r}{\psi\coth(\psi H)}
+=
+\frac{r}{\psi}\tanh(\psi H).
+}
+\]
+
+This value supplies the upstream value for characteristics that emanate from
+local maxima of \(H\). The value of \(\beta\) is then propagated downhill along
+the gradient-flow curves using the characteristic formula.
+
+\subsection{Topology of the characteristic field}
+
+Because the characteristic velocity is
+\[
+\mathbf{a}=-\delta^2\nabla_h H,
+\]
+the characteristic curves are gradient-flow curves. If \(H\) is smooth and
+\(\nabla_h H\) is finite, then solutions of
+\[
+\frac{d\mathbf{X}}{ds}=-\delta^2\nabla_h H
+\]
+are unique away from critical points. Therefore, two distinct characteristics
+cannot cross at a regular point.
+
+However, the characteristic topology may still be complicated:
+
+\begin{itemize}
+    \item characteristics descend from local maxima of \(H\);
+    \item they can approach saddles or local minima;
+    \item separatrices divide regions fed by different maxima;
+    \item different characteristic families may meet at critical points;
+    \item if upstream values differ across separatrices, \(\beta\) may develop
+    sharp jumps or weak discontinuities there.
+\end{itemize}
+
+The positive reaction term \(\lambda\beta\) damps sensitivity to upstream data.
+Differences in upstream values decay approximately like
+\[
+\exp\left[-\int \lambda\,ds\right]
+\]
+along characteristics. However, without horizontal diffusion, the equation does
+not smooth across characteristics or across separatrices.
+
+\subsection{Numerical solution by upwind discretization}
+
+For computation, it is often preferable to solve
+\[
+\mathbf{a}\cdot\nabla_h\beta+\lambda\beta=q
+\]
+directly using an upwind finite-difference or finite-volume method rather than
+explicitly tracing all characteristics.
+
+On a Cartesian grid, write
+\[
+\mathbf{a}=(a_x,a_y).
+\]
+Then
+\[
+a_x\partial_x\beta+a_y\partial_y\beta+\lambda\beta=q.
+\]
+Use upwind differences:
+\[
+\partial_x\beta\approx
+\begin{cases}
+\dfrac{\beta_{i,j}-\beta_{i-1,j}}{\Delta x}, & a_x>0,\\[10pt]
+\dfrac{\beta_{i+1,j}-\beta_{i,j}}{\Delta x}, & a_x<0,
+\end{cases}
+\]
+and
+\[
+\partial_y\beta\approx
+\begin{cases}
+\dfrac{\beta_{i,j}-\beta_{i,j-1}}{\Delta y}, & a_y>0,\\[10pt]
+\dfrac{\beta_{i,j+1}-\beta_{i,j}}{\Delta y}, & a_y<0.
+\end{cases}
+\]
+This produces a sparse linear system
+\[
+A\boldsymbol{\beta}=\mathbf{q}.
+\]
+The reaction coefficient \(\lambda>0\) makes the problem well-conditioned
+relative to a pure advection problem.
+
+In a closed domain, one does not impose an external inflow condition. Instead,
+the behavior near critical points of \(H\) determines the upstream values
+through the algebraic balance
+\[
+\beta=\frac{q}{\lambda}.
+\]
+A robust discretization should therefore treat cells where
+\[
+|\nabla_h H|\approx 0
+\]
+as reaction-dominated cells and set, or strongly relax toward,
+\[
+\beta\approx \frac{q}{\lambda}.
+\]
+
+\subsection{Small-$\delta$ expansion}
+
+Since the horizontal advection term is proportional to \(\delta^2\), it may be
+useful to solve the reduced equation perturbatively. The equation is
+\[
+-\delta^2\nabla_h H\cdot\nabla_h\beta+\lambda\beta=q,
+\]
+where
+\[
+\lambda=
+\left(1+\delta^2|\nabla_h H|^2\right)\psi\coth(\psi H),
+\]
+and
+\[
+q=
+\left(1+\delta^2|\nabla_h H|^2\right)r.
+\]
+
+Expand
+\[
+\beta=\beta^{(0)}+\delta^2\beta^{(1)}+\cdots,
+\]
+\[
+\lambda=\lambda_0+\delta^2\lambda_1+\cdots,
+\]
+\[
+q=q_0+\delta^2 q_1+\cdots.
+\]
+At leading order,
+\[
+\lambda_0\beta^{(0)}=q_0,
+\]
+where
+\[
+\lambda_0=\psi\coth(\psi H),
+\qquad
+q_0=r.
+\]
+Thus
+\[
+\boxed{
+\beta^{(0)}
+=
+\frac{r}{\psi\coth(\psi H)}
+=
+\frac{r}{\psi}\tanh(\psi H).
+}
+\]
+
+At order \(\delta^2\),
+\[
+-\nabla_h H\cdot\nabla_h\beta^{(0)}
++\lambda_0\beta^{(1)}
++\lambda_1\beta^{(0)}
+=
+q_1.
+\]
+Therefore,
+\[
+\boxed{
+\beta^{(1)}
+=
+\frac{
+q_1
++
+\nabla_h H\cdot\nabla_h\beta^{(0)}
+-
+\lambda_1\beta^{(0)}
+}{
+\lambda_0
+}.
+}
+\]
+This perturbative approach avoids characteristic-tracing issues and is natural
+when \(\delta^2\ll 1\).
+
+\subsection{Regularization by horizontal diffusion}
+
+The first-order equation
+\[
+\mathbf{a}\cdot\nabla_h\beta+\lambda\beta=q
+\]
+does not smooth across characteristics. If the characteristic topology contains
+saddles, separatrices, or reconnecting basins, the solution may develop sharp
+gradients or weak discontinuities.
+
+A more robust model is obtained by retaining a small horizontal diffusion term
+in the original buoyancy equation. The reduced bottom-trace equation then becomes
+an advection--diffusion--reaction problem, schematically
+\[
+-\nabla_h\cdot(D_{\mathrm{eff}}\nabla_h\beta)
++
+\mathbf{a}\cdot\nabla_h\beta
++
+\lambda\beta
+=
+q.
+\]
+This is elliptic or advection--diffusion--reaction type and no longer requires
+delicate characteristic boundary conditions. It also smooths across separatrices.
+
+\subsection{Summary}
+
+The bottom-trace equation in a closed domain is
+\[
+\boxed{
+\mathbf{a}\cdot\nabla_h\beta+\lambda\beta=q,
+\qquad
+\mathbf{a}=-\delta^2\nabla_h H,
+}
+\]
+with
+\[
+\lambda=
+\left(1+\delta^2|\nabla_h H|^2\right)\psi\coth(\psi H),
+\qquad
+q=
+\left(1+\delta^2|\nabla_h H|^2\right)r.
+\]
+It is a linear advection--reaction equation. The characteristics are downhill
+gradient-flow curves of \(H\):
+\[
+\frac{d\mathbf{X}}{ds}=-\delta^2\nabla_h H.
+\]
+At critical points of \(H\), the equation reduces to
+\[
+\beta=\frac{q}{\lambda}.
+\]
+In practice, the equation can be solved either by characteristics, by an upwind
+finite-volume/finite-difference discretization, or perturbatively in
+\(\delta^2\). If separatrices or reconnecting characteristic basins cause
+singular behavior, horizontal diffusion should be retained, yielding an
+advection--diffusion--reaction equation for \(\beta\).
+
+\end{document}  
