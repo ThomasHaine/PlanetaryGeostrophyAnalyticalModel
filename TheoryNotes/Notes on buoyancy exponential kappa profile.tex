@@ -1,0 +1,688 @@
+\documentclass[11pt]{amsart}
+\usepackage{geometry}                % See geometry.pdf to learn the layout options. There are lots.
+\geometry{letterpaper}                   % ... or a4paper or a5paper or ... 
+%\geometry{landscape}                % Activate for for rotated page geometry
+%\usepackage[parfill]{parskip}    % Activate to begin paragraphs with an empty line rather than an indent
+\usepackage{graphicx}
+\usepackage{amssymb}
+\usepackage{epstopdf}
+\DeclareGraphicsRule{.tif}{png}{.png}{`convert #1 `dirname #1`/`basename #1 .tif`.png}
+
+\title{Notes on solution to the buoyancy equation with exponential $\kappa$ profile}
+\author{GPT 5.5 with  prompting from TWNH }
+\date{6Jul26}                                           % Activate to display a given date or no date
+
+\begin{document}
+\maketitle
+
+\section{Problem}
+
+Consider the homogeneous ODE associated with the vertical Green's function problem
+\begin{equation}
+    \frac{Ek}{\Gamma}
+    \frac{d}{dz}
+    \left(
+        \kappa(z)\frac{db}{dz}
+    \right)
+    - b = 0.
+\end{equation}
+Equivalently, define
+\begin{equation}
+    \mu^2 = \frac{\Gamma}{Ek},
+\end{equation}
+so that the ODE becomes
+\begin{equation}
+    \frac{d}{dz}
+    \left(
+        \kappa(z)b_z
+    \right)
+    - \mu^2 b = 0.
+    \label{eq:homogeneous_ode}
+\end{equation}
+
+We consider the exponential diffusivity profile
+\begin{equation}
+    \kappa(z)
+    =
+    a + \exp\left[-\frac{z+H}{h}\right],
+    \label{eq:kappa_profile}
+\end{equation}
+where, in the specific example of interest,
+\begin{equation}
+    a = 10^{-2},
+    \qquad
+    h = 0.1.
+\end{equation}
+
+Thus the ODE is
+\begin{equation}
+    \frac{d}{dz}
+    \left[
+        \left(
+            a + \exp\left[-\frac{z+H}{h}\right]
+        \right)b_z
+    \right]
+    - \mu^2 b = 0.
+    \label{eq:ode_exp_kappa}
+\end{equation}
+
+\section{Change of Variables}
+
+Let
+\begin{equation}
+    s = z+H,
+\end{equation}
+so that \(s=0\) at the bottom \(z=-H\) and \(s=H\) at the surface \(z=0\). Then
+\begin{equation}
+    \kappa(s) = a + e^{-s/h}.
+\end{equation}
+
+Now define a nondimensional exponential coordinate
+\begin{equation}
+    r
+    =
+    \frac{e^{-s/h}}{a}
+    =
+    \frac{1}{a}
+    \exp\left[-\frac{z+H}{h}\right].
+    \label{eq:r_definition}
+\end{equation}
+Then
+\begin{equation}
+    e^{-s/h} = ar,
+\end{equation}
+and therefore
+\begin{equation}
+    \kappa = a(1+r).
+\end{equation}
+
+Moreover,
+\begin{equation}
+    \frac{dr}{dz}
+    =
+    -\frac{1}{h}r,
+\end{equation}
+so that
+\begin{equation}
+    \frac{d}{dz}
+    =
+    -\frac{r}{h}\frac{d}{dr}.
+    \label{eq:dz_to_dr}
+\end{equation}
+
+Let
+\begin{equation}
+    b(z)=B(r).
+\end{equation}
+Then
+\begin{equation}
+    b_z
+    =
+    \frac{dB}{dr}\frac{dr}{dz}
+    =
+    -\frac{r}{h}B_r.
+\end{equation}
+Therefore,
+\begin{equation}
+    \kappa b_z
+    =
+    a(1+r)
+    \left(
+        -\frac{r}{h}B_r
+    \right)
+    =
+    -\frac{a}{h}r(1+r)B_r.
+\end{equation}
+
+Differentiating once more,
+\begin{align}
+    \frac{d}{dz}
+    \left(
+        \kappa b_z
+    \right)
+    &=
+    -\frac{r}{h}
+    \frac{d}{dr}
+    \left[
+        -\frac{a}{h}r(1+r)B_r
+    \right] \\
+    &=
+    \frac{ar}{h^2}
+    \frac{d}{dr}
+    \left[
+        r(1+r)B_r
+    \right].
+\end{align}
+
+Since
+\begin{equation}
+    \frac{d}{dr}
+    \left[
+        r(1+r)B_r
+    \right]
+    =
+    r(1+r)B_{rr}
+    +
+    (1+2r)B_r,
+\end{equation}
+equation \eqref{eq:ode_exp_kappa} becomes
+\begin{equation}
+    \frac{ar}{h^2}
+    \left[
+        r(1+r)B_{rr}
+        +
+        (1+2r)B_r
+    \right]
+    -
+    \mu^2 B
+    =
+    0.
+\end{equation}
+
+Dividing by \(a/h^2\) gives
+\begin{equation}
+    r
+    \left[
+        r(1+r)B_{rr}
+        +
+        (1+2r)B_r
+    \right]
+    -
+    \frac{\mu^2 h^2}{a}B
+    =
+    0.
+\end{equation}
+Hence
+\begin{equation}
+    r^2(1+r)B_{rr}
+    +
+    r(1+2r)B_r
+    -
+    \beta^2 B
+    =
+    0,
+    \label{eq:B_equation}
+\end{equation}
+where
+\begin{equation}
+    \beta^2
+    =
+    \frac{\mu^2h^2}{a}
+    =
+    \frac{\Gamma h^2}{a\,Ek}.
+    \label{eq:beta_squared}
+\end{equation}
+Thus
+\begin{equation}
+    \beta
+    =
+    h\sqrt{\frac{\Gamma}{a\,Ek}}.
+    \label{eq:beta}
+\end{equation}
+
+\section{Reduction to Hypergeometric Form}
+
+Equation \eqref{eq:B_equation} has a regular singular point at \(r=0\).
+To determine the leading-order behavior, try
+\begin{equation}
+    B(r) = r^\lambda.
+\end{equation}
+Near \(r=0\), equation \eqref{eq:B_equation} reduces to
+\begin{equation}
+    r^2B_{rr} + rB_r - \beta^2B = 0.
+\end{equation}
+Substituting \(B=r^\lambda\) gives
+\begin{equation}
+    \lambda(\lambda-1)+\lambda-\beta^2=0,
+\end{equation}
+or
+\begin{equation}
+    \lambda^2-\beta^2=0.
+\end{equation}
+Therefore,
+\begin{equation}
+    \lambda=\pm\beta.
+\end{equation}
+
+Choose the positive exponent and write
+\begin{equation}
+    B(r)=r^\beta Y(r).
+    \label{eq:B_substitution}
+\end{equation}
+Then
+\begin{equation}
+    B_r
+    =
+    \beta r^{\beta-1}Y
+    +
+    r^\beta Y_r,
+\end{equation}
+and
+\begin{equation}
+    B_{rr}
+    =
+    \beta(\beta-1)r^{\beta-2}Y
+    +
+    2\beta r^{\beta-1}Y_r
+    +
+    r^\beta Y_{rr}.
+\end{equation}
+
+Substitution into equation \eqref{eq:B_equation}, followed by simplification, yields
+\begin{equation}
+    r(1+r)Y_{rr}
+    +
+    \left[
+        2\beta+1+(2\beta+2)r
+    \right]Y_r
+    +
+    \beta(\beta+1)Y
+    =
+    0.
+    \label{eq:Y_r_equation}
+\end{equation}
+
+This equation is transformed to the standard Gauss hypergeometric equation by setting
+\begin{equation}
+    x=-r.
+    \label{eq:x_definition}
+\end{equation}
+Since
+\begin{equation}
+    \frac{dY}{dr}
+    =
+    -\frac{dY}{dx},
+    \qquad
+    \frac{d^2Y}{dr^2}
+    =
+    \frac{d^2Y}{dx^2},
+\end{equation}
+equation \eqref{eq:Y_r_equation} becomes
+\begin{equation}
+    x(1-x)Y_{xx}
+    +
+    \left[
+        2\beta+1-(2\beta+2)x
+    \right]Y_x
+    -
+    \beta(\beta+1)Y
+    =
+    0.
+    \label{eq:hypergeometric_form}
+\end{equation}
+
+The standard Gauss hypergeometric equation is
+\begin{equation}
+    x(1-x)Y_{xx}
+    +
+    \left[
+        c-(A+B+1)x
+    \right]Y_x
+    -
+    ABY
+    =
+    0.
+    \label{eq:standard_hypergeometric}
+\end{equation}
+Comparison of \eqref{eq:hypergeometric_form} and
+\eqref{eq:standard_hypergeometric} gives
+\begin{equation}
+    c = 2\beta+1,
+\end{equation}
+\begin{equation}
+    A+B+1 = 2\beta+2,
+\end{equation}
+and
+\begin{equation}
+    AB = \beta(\beta+1).
+\end{equation}
+One convenient choice is
+\begin{equation}
+    A=\beta,
+    \qquad
+    B=\beta+1,
+    \qquad
+    c=2\beta+1.
+    \label{eq:hypergeometric_parameters}
+\end{equation}
+
+\section{Analytic Homogeneous Solutions}
+
+A standard solution of the Gauss hypergeometric equation is
+\begin{equation}
+    Y_1(x)
+    =
+    {}_2F_1(A,B;c;x).
+\end{equation}
+Using \eqref{eq:hypergeometric_parameters},
+\begin{equation}
+    Y_1(x)
+    =
+    {}_2F_1
+    \left(
+        \beta,\beta+1;2\beta+1;x
+    \right).
+\end{equation}
+
+Since \(x=-r\) and \(B(r)=r^\beta Y(r)\), one homogeneous solution is
+\begin{equation}
+    B_1(r)
+    =
+    r^\beta
+    {}_2F_1
+    \left(
+        \beta,\beta+1;2\beta+1;-r
+    \right).
+\end{equation}
+
+Returning to the original coordinate \(z\), with
+\begin{equation}
+    r(z)
+    =
+    \frac{1}{a}
+    \exp\left[-\frac{z+H}{h}\right],
+\end{equation}
+the first solution is
+\begin{equation}
+    b_1(z)
+    =
+    r(z)^\beta
+    {}_2F_1
+    \left(
+        \beta,\beta+1;2\beta+1;-r(z)
+    \right).
+    \label{eq:b1_solution}
+\end{equation}
+
+The second linearly independent solution corresponds to the other indicial exponent \(-\beta\). It is
+\begin{equation}
+    b_2(z)
+    =
+    r(z)^{-\beta}
+    {}_2F_1
+    \left(
+        -\beta,1-\beta;1-2\beta;-r(z)
+    \right).
+    \label{eq:b2_solution}
+\end{equation}
+
+Therefore, the general homogeneous solution is
+\begin{align}
+    b(z)
+    &=
+    C_1
+    r(z)^\beta
+    {}_2F_1
+    \left(
+        \beta,\beta+1;2\beta+1;-r(z)
+    \right)
+    \nonumber\\
+    &\quad
+    +
+    C_2
+    r(z)^{-\beta}
+    {}_2F_1
+    \left(
+        -\beta,1-\beta;1-2\beta;-r(z)
+    \right).
+    \label{eq:general_solution}
+\end{align}
+
+\section{Specialization to \(a=10^{-2}\), \(h=0.1\)}
+
+For the specific diffusivity profile
+\begin{equation}
+    \kappa(z)
+    =
+    10^{-2}
+    +
+    \exp\left[-\frac{z+H}{0.1}\right],
+\end{equation}
+we have
+\begin{equation}
+    a=10^{-2},
+    \qquad
+    h=0.1.
+\end{equation}
+Then
+\begin{equation}
+    r(z)
+    =
+    \frac{1}{10^{-2}}
+    \exp\left[-\frac{z+H}{0.1}\right]
+    =
+    100\exp[-10(z+H)].
+\end{equation}
+Furthermore,
+\begin{equation}
+    \beta
+    =
+    h\sqrt{\frac{\Gamma}{a\,Ek}}
+    =
+    0.1
+    \sqrt{
+        \frac{\Gamma}{10^{-2}Ek}
+    }
+    =
+    \sqrt{\frac{\Gamma}{Ek}}.
+\end{equation}
+Thus, for this profile,
+\begin{equation}
+    \beta=\sqrt{\frac{\Gamma}{Ek}}.
+\end{equation}
+
+The homogeneous solution becomes
+\begin{align}
+    b(z)
+    &=
+    C_1
+    r(z)^\beta
+    {}_2F_1
+    \left(
+        \beta,\beta+1;2\beta+1;-r(z)
+    \right)
+    \nonumber\\
+    &\quad
+    +
+    C_2
+    r(z)^{-\beta}
+    {}_2F_1
+    \left(
+        -\beta,1-\beta;1-2\beta;-r(z)
+    \right),
+\end{align}
+with
+\begin{equation}
+    r(z)=100\exp[-10(z+H)],
+    \qquad
+    \beta=\sqrt{\frac{\Gamma}{Ek}}.
+\end{equation}
+
+\section{Green's Function Construction}
+
+The Green's function \(G_b(z,\xi)\) satisfies
+\begin{equation}
+    \frac{Ek}{\Gamma}
+    \frac{d}{dz}
+    \left(
+        \kappa(z)\frac{\partial G_b}{\partial z}
+    \right)
+    -
+    G_b
+    =
+    -\delta(z-\xi),
+    \label{eq:green_problem}
+\end{equation}
+with boundary conditions
+\begin{equation}
+    \frac{\partial G_b}{\partial z}(-H,\xi)=0,
+    \qquad
+    G_b(0,\xi)=0.
+\end{equation}
+
+Let \(u(z)\) be the homogeneous solution satisfying the bottom Neumann condition
+\begin{equation}
+    u'(-H)=0,
+\end{equation}
+and let \(v(z)\) be the homogeneous solution satisfying the surface Dirichlet condition
+\begin{equation}
+    v(0)=0.
+\end{equation}
+
+Both \(u\) and \(v\) are linear combinations of the two basis solutions
+\eqref{eq:b1_solution} and \eqref{eq:b2_solution}. The generalized Wronskian
+\begin{equation}
+    W
+    =
+    \kappa(z)
+    \left[
+        u(z)v'(z)
+        -
+        u'(z)v(z)
+    \right]
+    \label{eq:wronskian}
+\end{equation}
+is independent of \(z\).
+
+The Green's function is then
+\begin{equation}
+    G_b(z,\xi)
+    =
+    -\frac{\Gamma}{Ek\,W}
+    \begin{cases}
+        u(z)v(\xi), & z\le \xi, \\[2mm]
+        u(\xi)v(z), & z\ge \xi.
+    \end{cases}
+    \label{eq:green_function}
+\end{equation}
+
+The jump condition follows by integrating \eqref{eq:green_problem}
+across \(z=\xi\):
+\begin{equation}
+    \frac{Ek}{\Gamma}
+    \left[
+        \kappa G_{b,z}
+    \right]_{\xi^-}^{\xi^+}
+    =
+    -1,
+\end{equation}
+or
+\begin{equation}
+    \left[
+        \kappa G_{b,z}
+    \right]_{\xi^-}^{\xi^+}
+    =
+    -\frac{\Gamma}{Ek}.
+    \label{eq:jump_condition}
+\end{equation}
+
+\section{Summary}
+
+Starting from
+\begin{equation}
+    \frac{d}{dz}
+    \left[
+        \left(
+            a+e^{-(z+H)/h}
+        \right)b_z
+    \right]
+    -
+    \frac{\Gamma}{Ek}b
+    =
+    0,
+\end{equation}
+define
+\begin{equation}
+    r
+    =
+    \frac{1}{a}e^{-(z+H)/h},
+    \qquad
+    x=-r,
+    \qquad
+    \beta
+    =
+    h\sqrt{\frac{\Gamma}{a\,Ek}}.
+\end{equation}
+Then, with
+\begin{equation}
+    b(z)=r^\beta Y(x),
+\end{equation}
+the ODE becomes the standard Gauss hypergeometric equation
+\begin{equation}
+    x(1-x)Y_{xx}
+    +
+    \left[
+        2\beta+1-(2\beta+2)x
+    \right]Y_x
+    -
+    \beta(\beta+1)Y
+    =
+    0,
+\end{equation}
+corresponding to parameters
+\begin{equation}
+    A=\beta,
+    \qquad
+    B=\beta+1,
+    \qquad
+    c=2\beta+1.
+\end{equation}
+
+Therefore the homogeneous solution is
+\begin{align}
+    b(z)
+    &=
+    C_1
+    r(z)^\beta
+    {}_2F_1
+    \left(
+        \beta,\beta+1;2\beta+1;-r(z)
+    \right)
+    \nonumber\\
+    &\quad
+    +
+    C_2
+    r(z)^{-\beta}
+    {}_2F_1
+    \left(
+        -\beta,1-\beta;1-2\beta;-r(z)
+    \right).
+\end{align}
+
+\begin{thebibliography}{9}
+
+\bibitem{abramowitz_stegun}
+M.~Abramowitz and I.~A. Stegun,
+\textit{Handbook of Mathematical Functions with Formulas, Graphs, and Mathematical Tables},
+Dover Publications, 1965.
+
+\bibitem{dlmf}
+NIST Digital Library of Mathematical Functions,
+\textit{Chapter 15: Hypergeometric Function},
+\url{https://dlmf.nist.gov/15}.
+
+\bibitem{olver}
+F.~W.~J. Olver, D.~W. Lozier, R.~F. Boisvert, and C.~W. Clark, editors,
+\textit{NIST Handbook of Mathematical Functions},
+Cambridge University Press, 2010.
+
+\bibitem{arfken}
+G.~B. Arfken, H.~J. Weber, and F.~E. Harris,
+\textit{Mathematical Methods for Physicists},
+7th ed.,
+Academic Press, 2013.
+
+\bibitem{courant_hilbert}
+R.~Courant and D.~Hilbert,
+\textit{Methods of Mathematical Physics, Volume I},
+Wiley-Interscience, 1989.
+
+\bibitem{zauderer}
+E.~Zauderer,
+\textit{Partial Differential Equations of Applied Mathematics},
+3rd ed.,
+Wiley-Interscience, 2006.
+
+\end{thebibliography}
+
+\end{document}  
