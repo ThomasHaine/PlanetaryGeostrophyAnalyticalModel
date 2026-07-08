@@ -4,5 +4,6 @@
 *.aux
 *.out
 *.bbl
+*.blg
 *.synctex*
 !.gitignore
