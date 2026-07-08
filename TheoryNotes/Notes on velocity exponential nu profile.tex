@@ -1,0 +1,1486 @@
+\documentclass[10pt]{amsart}
+\usepackage{geometry}                % See geometry.pdf to learn the layout options. There are lots.
+\geometry{letterpaper}                   % ... or a4paper or a5paper or ... 
+%\geometry{landscape}                % Activate for for rotated page geometry
+%\usepackage[parfill]{parskip}    % Activate to begin paragraphs with an empty line rather than an indent
+\usepackage{graphicx}
+\usepackage{amssymb}
+\usepackage{epstopdf}
+\usepackage{hyperref}
+\DeclareGraphicsRule{.tif}{png}{.png}{`convert #1 `dirname #1`/`basename #1 .tif`.png}
+
+\title{Notes on solution to the momentum equation with exponential $\nu$ profile}
+\author{GPT 5.5 with  prompting from TWNH }
+\date{7Jul26}                                           % Activate to display a given date or no date
+
+\begin{document}
+\maketitle
+
+\section{Problem statement I}
+
+Consider the complex horizontal velocity
+\begin{equation}
+u = u^x+i u^y,
+\end{equation}
+satisfying
+\begin{equation}
+E k\,\frac{\partial}{\partial z}
+\left(
+\nu(z)\frac{\partial u}{\partial z}
+\right)
+-
+i f u
+=
+\mathfrak f,
+\label{eq:main}
+\end{equation}
+on the vertical interval
+\[
+-H\le z\le 0.
+\]
+
+The boundary conditions are
+\begin{align}
+E k\,\nu(0)u_z(0) &= \tau^x+i\tau^y, \label{eq:surface_bc}\\
+u(-H)&=0. \label{eq:bottom_bc}
+\end{align}
+
+Here
+\begin{equation}
+\mathfrak f
+=
+p_x+i p_y
+\label{eq:pressure_gradient}
+\end{equation}
+is the complex pressure-gradient forcing and
+\begin{equation}
+\tau
+=
+\tau^x+i\tau^y
+\label{eq:complex_stress}
+\end{equation}
+is the complex surface wind stress.
+
+We assume an exponentially varying vertical viscosity
+\begin{equation}
+\nu(z)
+=
+a+\beta \exp\!\left[-\frac{z+H}{h}\right],
+\label{eq:viscosity}
+\end{equation}
+with \(a>0\), \(h>0\), and \(\nu(z)>0\) on \([-H,0]\).
+
+The horizontal coordinates \(x,y\) enter parametrically through \(\mathfrak f(x,y,z)\) and \(\tau(x,y)\). In the derivation below this dependence is suppressed.
+
+\section{Reduced form}
+
+Divide \eqref{eq:main} by \(E k\). Then
+\begin{equation}
+\frac{\partial}{\partial z}
+\left(
+\nu u_z
+\right)
+-
+\alpha u
+=
+F,
+\label{eq:reduced}
+\end{equation}
+where
+\begin{equation}
+\alpha
+=
+\frac{i f}{E k},
+\qquad
+F
+=
+\frac{\mathfrak f}{E k}.
+\label{eq:alpha_F}
+\end{equation}
+
+Define the differential operator
+\begin{equation}
+L u
+=
+\partial_z(\nu u_z)-\alpha u.
+\label{eq:operator}
+\end{equation}
+
+The problem becomes
+\begin{equation}
+L u = F,
+\label{eq:LuF}
+\end{equation}
+with boundary conditions
+\begin{align}
+\nu(0)u_z(0) &= \frac{\tau}{E k}, \label{eq:bc_surface_reduced}\\
+u(-H)&=0. \label{eq:bc_bottom_reduced}
+\end{align}
+
+\section{Homogeneous equation}
+
+The associated homogeneous problem is
+\begin{equation}
+\partial_z(\nu u_z)-\alpha u=0.
+\label{eq:hom}
+\end{equation}
+
+With
+\[
+\nu(z)=a+\beta \exp\!\left[-\frac{z+H}{h}\right],
+\]
+introduce
+\begin{equation}
+X(z)
+=
+-\frac{\beta}{a}
+\exp\!\left[-\frac{z+H}{h}\right].
+\label{eq:X_def}
+\end{equation}
+Then
+\begin{equation}
+\nu(z)=a(1-X).
+\end{equation}
+
+Also define
+\begin{equation}
+\lambda
+=
+h\sqrt{\frac{\alpha}{a}}
+=
+h\sqrt{\frac{i f}{E k\,a}}.
+\label{eq:lambda_def}
+\end{equation}
+Since \(\alpha\) is complex, \(\lambda\) is generally complex. A consistent branch of the square root should be chosen.
+
+In terms of \(X\), the homogeneous equation admits a basis
+\begin{align}
+y_+(z)
+&=
+X(z)^\lambda
+{}_2F_1
+\left(
+\lambda,\lambda+1;2\lambda+1;X(z)
+\right),
+\label{eq:yplus}
+\\[0.5em]
+y_-(z)
+&=
+X(z)^{-\lambda}
+{}_2F_1
+\left(
+-\lambda,1-\lambda;1-2\lambda;X(z)
+\right).
+\label{eq:yminus}
+\end{align}
+
+Thus the homogeneous solution is
+\begin{equation}
+u_h(z)
+=
+C_+ y_+(z)+C_- y_-(z).
+\label{eq:uh}
+\end{equation}
+
+\section{Boundary-adapted homogeneous solutions}
+
+We now construct two homogeneous solutions adapted to the boundary conditions.
+
+Let \(\phi(z)\) satisfy
+\begin{equation}
+L\phi=0,
+\qquad
+\phi(-H)=0.
+\label{eq:phi_def}
+\end{equation}
+A convenient choice is
+\begin{equation}
+\phi(z)
+=
+y_-(-H)y_+(z)-y_+(-H)y_-(z).
+\label{eq:phi}
+\end{equation}
+Indeed,
+\[
+\phi(-H)
+=
+y_-(-H)y_+(-H)-y_+(-H)y_-(-H)
+=
+0.
+\]
+
+Next, let \(\psi(z)\) satisfy
+\begin{equation}
+L\psi=0,
+\qquad
+\psi_z(0)=0.
+\label{eq:psi_def}
+\end{equation}
+Because the homogeneous surface-stress condition is
+\[
+\nu(0)\psi_z(0)=0,
+\]
+and because \(\nu(0)\ne 0\), this is equivalent to \(\psi_z(0)=0\).
+
+A convenient choice is
+\begin{equation}
+\psi(z)
+=
+y_-'(0)y_+(z)-y_+'(0)y_-(z).
+\label{eq:psi}
+\end{equation}
+Then
+\[
+\psi_z(0)
+=
+y_-'(0)y_+'(0)-y_+'(0)y_-'(0)
+=
+0.
+\]
+
+\section{Weighted Wronskian}
+
+For two homogeneous solutions \(\phi\) and \(\psi\), define the weighted Wronskian
+\begin{equation}
+W
+=
+\nu(z)
+\left[
+\phi(z)\psi_z(z)-\phi_z(z)\psi(z)
+\right].
+\label{eq:W}
+\end{equation}
+
+This quantity is independent of \(z\). Indeed,
+\begin{align}
+\frac{dW}{dz}
+&=
+\frac{d}{dz}
+\left\{
+\nu
+\left(
+\phi\psi_z-\phi_z\psi
+\right)
+\right\} \notag\\
+&=
+\phi(\nu\psi_z)_z-\psi(\nu\phi_z)_z \notag\\
+&=
+\phi(\alpha\psi)-\psi(\alpha\phi) \notag\\
+&=0.
+\end{align}
+
+\section{Green's function}
+
+Define \(G(z,\zeta)\) by
+\begin{equation}
+L_z G(z,\zeta)=\delta(z-\zeta),
+\label{eq:green_def}
+\end{equation}
+with homogeneous boundary conditions
+\begin{align}
+G(-H,\zeta)&=0, \label{eq:G_bottom}\\
+G_z(0,\zeta)&=0. \label{eq:G_surface}
+\end{align}
+
+Then the Green's function is
+\begin{equation}
+G(z,\zeta)
+=
+\begin{cases}
+\dfrac{\phi(z)\psi(\zeta)}{W},
+& z<\zeta,\\[1.2em]
+\dfrac{\phi(\zeta)\psi(z)}{W},
+& z>\zeta.
+\end{cases}
+\label{eq:green}
+\end{equation}
+
+At \(z=\zeta\), \(G\) is continuous:
+\begin{equation}
+G(\zeta^-,\zeta)=G(\zeta^+,\zeta),
+\end{equation}
+and its derivative has jump
+\begin{equation}
+\nu(\zeta)
+\left[
+G_z(\zeta^+,\zeta)-G_z(\zeta^-,\zeta)
+\right]
+=
+1.
+\label{eq:jump}
+\end{equation}
+
+\section{Treatment of the nonhomogeneous surface stress}
+
+The Green's function above satisfies homogeneous surface flux condition \(G_z(0,\zeta)=0\). Therefore the pressure-gradient forcing contributes
+\begin{equation}
+u_{\mathrm{int}}(z)
+=
+\int_{-H}^{0}
+G(z,\zeta)F(\zeta)\,d\zeta
+=
+\frac{1}{E k}
+\int_{-H}^{0}
+G(z,\zeta)\mathfrak f(\zeta)\,d\zeta.
+\label{eq:uint}
+\end{equation}
+
+The nonhomogeneous surface stress is included as a boundary forcing.
+
+Let \(q\) denote the imposed reduced surface flux:
+\begin{equation}
+q=\nu(0)u_z(0)=\frac{\tau}{E k}.
+\label{eq:q}
+\end{equation}
+
+Using Green's identity for
+\[
+L=\partial_z(\nu\partial_z)-\alpha,
+\]
+one obtains the boundary contribution
+\begin{equation}
+u_{\mathrm{surf}}(z)
+=
+- q\,G(z,0).
+\label{eq:usurf}
+\end{equation}
+
+Hence
+\begin{equation}
+u_{\mathrm{surf}}(z)
+=
+-\frac{\tau}{E k}G(z,0).
+\label{eq:usurf_tau}
+\end{equation}
+
+\section{Full solution}
+
+Combining the internal pressure forcing and the surface-stress forcing gives
+\begin{equation}
+\boxed{
+u(z)
+=
+\frac{1}{E k}
+\int_{-H}^{0}
+G(z,\zeta)\mathfrak f(\zeta)\,d\zeta
+-
+\frac{\tau}{E k}G(z,0).
+}
+\label{eq:solution_1d}
+\end{equation}
+
+Restoring the horizontal dependence,
+\begin{equation}
+\boxed{
+u(x,y,z)
+=
+\frac{1}{E k}
+\int_{-H}^{0}
+G(z,\zeta)
+\left[
+p_x(x,y,\zeta)+i p_y(x,y,\zeta)
+\right]
+\,d\zeta
+-
+\frac{\tau^x(x,y)+i\tau^y(x,y)}{E k}
+G(z,0).
+}
+\label{eq:solution_full}
+\end{equation}
+
+\section{Summary of definitions}
+
+The viscosity is
+\begin{equation}
+\nu(z)
+=
+a+\beta \exp\!\left[-\frac{z+H}{h}\right].
+\end{equation}
+
+The transformed variable is
+\begin{equation}
+X(z)
+=
+-\frac{\beta}{a}
+\exp\!\left[-\frac{z+H}{h}\right],
+\end{equation}
+so that
+\begin{equation}
+\nu(z)=a(1-X).
+\end{equation}
+
+The complex decay parameter is
+\begin{equation}
+\lambda
+=
+h\sqrt{\frac{i f}{E k\,a}}.
+\end{equation}
+
+The homogeneous basis functions are
+\begin{align}
+y_+(z)
+&=
+X(z)^\lambda
+{}_2F_1
+\left(
+\lambda,\lambda+1;2\lambda+1;X(z)
+\right),
+\\[0.5em]
+y_-(z)
+&=
+X(z)^{-\lambda}
+{}_2F_1
+\left(
+-\lambda,1-\lambda;1-2\lambda;X(z)
+\right).
+\end{align}
+
+The boundary-adapted solutions are
+\begin{align}
+\phi(z)
+&=
+y_-(-H)y_+(z)-y_+(-H)y_-(z),
+\\[0.5em]
+\psi(z)
+&=
+y_-'(0)y_+(z)-y_+'(0)y_-(z).
+\end{align}
+
+The weighted Wronskian is
+\begin{equation}
+W
+=
+\nu(z)
+\left[
+\phi(z)\psi_z(z)-\phi_z(z)\psi(z)
+\right],
+\end{equation}
+which is independent of \(z\).
+
+The Green's function is
+\begin{equation}
+G(z,\zeta)
+=
+\begin{cases}
+\dfrac{\phi(z)\psi(\zeta)}{W},
+& z<\zeta,\\[1.2em]
+\dfrac{\phi(\zeta)\psi(z)}{W},
+& z>\zeta.
+\end{cases}
+\end{equation}
+
+The final solution is
+\begin{equation}
+\boxed{
+u(x,y,z)
+=
+\frac{1}{E k}
+\int_{-H}^{0}
+G(z,\zeta)
+\left[
+p_x(x,y,\zeta)+i p_y(x,y,\zeta)
+\right]d\zeta
+-
+\frac{\tau^x(x,y)+i\tau^y(x,y)}{E k}
+G(z,0).
+}
+\end{equation}
+
+\section{Constant-viscosity limit}
+
+If \(\beta=0\), then
+\[
+\nu(z)=a,
+\]
+and the equation reduces to
+\begin{equation}
+a u_{zz}-\alpha u=F.
+\end{equation}
+
+Define
+\begin{equation}
+m=\sqrt{\frac{\alpha}{a}}
+=
+\sqrt{\frac{i f}{E k\,a}}.
+\end{equation}
+
+The homogeneous solutions are
+\begin{equation}
+u_h(z)
+=
+C_1\cosh\!\left[m(z+H)\right]
++
+C_2\sinh\!\left[m(z+H)\right].
+\end{equation}
+
+A bottom-Dirichlet solution is
+\begin{equation}
+\phi(z)
+=
+\sinh\!\left[m(z+H)\right],
+\end{equation}
+and a homogeneous surface-stress solution may be chosen as
+\begin{equation}
+\psi(z)
+=
+\cosh(mz),
+\end{equation}
+since
+\[
+\psi_z(0)=0.
+\]
+
+The weighted Wronskian becomes
+\begin{equation}
+W
+=
+a
+\left[
+\phi\psi_z-\phi_z\psi
+\right],
+\end{equation}
+which is constant.
+
+This gives the usual finite-depth Ekman-layer solution with bottom no-slip and imposed surface stress.
+
+\section{Remarks}
+
+\begin{itemize}
+    \item The operator
+    \[
+    L=\partial_z(\nu\partial_z)-\alpha
+    \]
+    is formally self-adjoint for real \(\alpha\), but here \(\alpha=i f/(E k)\) is complex. The Green's-function construction nevertheless applies for the complex-valued linear ordinary differential equation.
+
+    \item The branch of
+    \[
+    \lambda=h\sqrt{\frac{i f}{E k\,a}}
+    \]
+    should be chosen consistently. For \(f>0\), the principal square root gives
+    \[
+    \sqrt{i}=\frac{1+i}{\sqrt{2}}.
+    \]
+
+    \item The condition \(\nu(z)>0\) requires
+    \[
+    a+\beta \exp\!\left[-\frac{z+H}{h}\right]>0
+    \]
+    for all \(z\in[-H,0]\).
+
+    \item If \(\beta>0\), then \(X(z)<0\). The hypergeometric expressions should be interpreted using a consistent branch for \(X^\lambda\).
+
+    \item The horizontal coordinates enter only parametrically through the pressure-gradient forcing and the wind stress.
+\end{itemize}
+
+\begin{thebibliography}{9}
+
+\bibitem{Ekman1905}
+V. W. Ekman.
+\newblock On the influence of the Earth's rotation on ocean-currents.
+\newblock \emph{Arkiv f\"or Matematik, Astronomi och Fysik}, 2(11):1--52, 1905.
+
+\bibitem{Pedlosky1987}
+J. Pedlosky.
+\newblock \emph{Geophysical Fluid Dynamics}.
+\newblock 2nd edition, Springer, 1987.
+
+\bibitem{Vallis2017}
+G. K. Vallis.
+\newblock \emph{Atmospheric and Oceanic Fluid Dynamics}.
+\newblock 2nd edition, Cambridge University Press, 2017.
+
+\bibitem{Gill1982}
+A. E. Gill.
+\newblock \emph{Atmosphere--Ocean Dynamics}.
+\newblock Academic Press, 1982.
+
+\bibitem{DLMF}
+NIST Digital Library of Mathematical Functions.
+\newblock \emph{Gauss Hypergeometric Function}.
+\newblock Sections 15.2--15.10.
+\newblock \url{https://dlmf.nist.gov/15}
+
+\bibitem{Olver2010}
+F. W. J. Olver, D. W. Lozier, R. F. Boisvert, and C. W. Clark, editors.
+\newblock \emph{NIST Handbook of Mathematical Functions}.
+\newblock Cambridge University Press, 2010.
+
+\bibitem{AbramowitzStegun}
+M. Abramowitz and I. A. Stegun.
+\newblock \emph{Handbook of Mathematical Functions with Formulas, Graphs, and Mathematical Tables}.
+\newblock Dover Publications, 1965.
+
+\bibitem{Zettl}
+A. Zettl.
+\newblock \emph{Sturm--Liouville Theory}.
+\newblock American Mathematical Society, 2005.
+
+\bibitem{CoddingtonLevinson}
+E. A. Coddington and N. Levinson.
+\newblock \emph{Theory of Ordinary Differential Equations}.
+\newblock McGraw--Hill, 1955.
+
+\end{thebibliography}
+
+\clearpage
+
+\section{Problem statement II}
+
+We consider the complex horizontal velocity
+\begin{equation}
+u = u^x+i u^y,
+\end{equation}
+satisfying the vertical boundary-value problem
+\begin{equation}
+E k\,\frac{\partial}{\partial z}
+\left(
+\nu(z)\frac{\partial u}{\partial z}
+\right)
+-
+i f u
+=
+\mathfrak f,
+\label{eq:main}
+\end{equation}
+on
+\[
+-H\le z\le 0.
+\]
+
+The boundary conditions are
+\begin{align}
+E k\,\nu(0)u_z(0) &= \tau^x+i\tau^y, \label{eq:surface_bc}\\
+u(-H)&=0. \label{eq:bottom_bc}
+\end{align}
+
+The complex pressure-gradient forcing is
+\begin{equation}
+\mathfrak f
+=
+p_x+i p_y,
+\label{eq:pressure_gradient}
+\end{equation}
+and the complex surface stress is
+\begin{equation}
+\tau
+=
+\tau^x+i\tau^y.
+\label{eq:stress}
+\end{equation}
+
+We now take the vertical viscosity to be
+\begin{equation}
+\nu(z)
+=
+a+b\exp\!\left[-\frac{z+H}{h}\right]
++
+c\exp\!\left(\frac{z}{h}\right),
+\label{eq:viscosity_z}
+\end{equation}
+where \(a,b,c,h\) are constants with \(h>0\). We assume
+\begin{equation}
+\nu(z)>0
+\qquad
+\text{for all } z\in[-H,0].
+\end{equation}
+
+The horizontal variables \(x,y\) enter only parametrically through
+\[
+\mathfrak f(x,y,z)
+\quad\text{and}\quad
+\tau(x,y).
+\]
+
+\section{Reduced form}
+
+Divide \eqref{eq:main} by \(E k\). Define
+\begin{equation}
+\alpha
+=
+\frac{i f}{E k},
+\qquad
+F
+=
+\frac{\mathfrak f}{E k}.
+\label{eq:alpha_F}
+\end{equation}
+
+Then
+\begin{equation}
+\partial_z(\nu u_z)-\alpha u=F.
+\label{eq:reduced}
+\end{equation}
+
+Define the differential operator
+\begin{equation}
+L u
+=
+\partial_z(\nu u_z)-\alpha u.
+\label{eq:L_def}
+\end{equation}
+
+The boundary conditions become
+\begin{align}
+\nu(0)u_z(0)&=\frac{\tau}{E k}, \label{eq:reduced_surface_bc}\\
+u(-H)&=0. \label{eq:reduced_bottom_bc}
+\end{align}
+
+Thus the problem is
+\begin{equation}
+L u = F,
+\end{equation}
+with a bottom Dirichlet condition and a surface Neumann-flux condition.
+
+\section{Change of variables}
+
+Introduce
+\begin{equation}
+s=\exp\!\left(\frac{z}{h}\right).
+\label{eq:s_def}
+\end{equation}
+
+Then
+\[
+z=h\log s,
+\]
+and the interval \([-H,0]\) maps to
+\begin{equation}
+s\in[s_b,s_s],
+\qquad
+s_b=e^{-H/h},
+\qquad
+s_s=1.
+\end{equation}
+
+The derivatives transform as
+\begin{equation}
+\frac{d}{dz}
+=
+\frac{s}{h}\frac{d}{ds}.
+\end{equation}
+
+Now rewrite the viscosity. Since
+\[
+\exp\!\left[-\frac{z+H}{h}\right]
+=
+e^{-H/h}s^{-1},
+\qquad
+\exp\!\left(\frac{z}{h}\right)=s,
+\]
+we have
+\begin{equation}
+\nu(z)
+=
+a+\frac{B}{s}+c s,
+\qquad
+B:=b e^{-H/h}.
+\label{eq:nu_s}
+\end{equation}
+
+Therefore
+\begin{equation}
+s\nu(s)
+=
+c s^2+a s+B.
+\end{equation}
+
+Define the quadratic polynomial
+\begin{equation}
+P(s)
+=
+c s^2+a s+B.
+\label{eq:P_def}
+\end{equation}
+
+Then
+\begin{equation}
+\nu(s)=\frac{P(s)}{s}.
+\end{equation}
+
+The homogeneous equation
+\begin{equation}
+\partial_z(\nu u_z)-\alpha u=0
+\label{eq:hom_z}
+\end{equation}
+becomes
+\begin{equation}
+\frac{d}{ds}
+\left(
+P(s)\frac{dU}{ds}
+\right)
+-
+\frac{\rho}{s}U=0,
+\label{eq:hom_s_conservative}
+\end{equation}
+where
+\begin{equation}
+U(s)=u(z(s)),
+\qquad
+\rho=\alpha h^2
+=
+\frac{i f h^2}{E k}.
+\label{eq:rho_def}
+\end{equation}
+
+Equivalently,
+\begin{equation}
+P(s)U''(s)+P'(s)U'(s)-\frac{\rho}{s}U(s)=0.
+\label{eq:hom_s}
+\end{equation}
+
+This equation has regular singular points at
+\[
+s=0,
+\]
+and at the roots of \(P(s)\). It is a Fuchsian equation with four regular singular points, and therefore belongs to the general Heun class.
+
+\section{Reduction to the general Heun equation}
+
+Assume first that \(c\ne 0\) and that \(P(s)\) has two distinct roots \(r_1,r_2\):
+\begin{equation}
+P(s)=c(s-r_1)(s-r_2).
+\label{eq:P_roots}
+\end{equation}
+
+Explicitly,
+\begin{equation}
+r_{1,2}
+=
+\frac{-a\pm\sqrt{a^2-4cB}}{2c},
+\qquad
+B=b e^{-H/h}.
+\end{equation}
+
+Introduce the dimensionless variable
+\begin{equation}
+x=\frac{s}{r_1},
+\qquad
+A=\frac{r_2}{r_1}.
+\label{eq:x_A_def}
+\end{equation}
+
+Then the singular points are
+\[
+x=0,\qquad x=1,\qquad x=A,\qquad x=\infty.
+\]
+
+Writing
+\[
+U(s)=Y(x),
+\]
+equation \eqref{eq:hom_s} becomes
+\begin{equation}
+Y''+
+\left[
+\frac{1}{x-1}
++
+\frac{1}{x-A}
+\right]Y'
+-
+\frac{Q}{x(x-1)(x-A)}Y
+=0,
+\label{eq:heun_form}
+\end{equation}
+where
+\begin{equation}
+Q
+=
+\frac{\rho}{c r_1}
+=
+\frac{i f h^2}{E k\,c r_1}.
+\label{eq:Q_def}
+\end{equation}
+
+The standard general Heun equation is
+\begin{equation}
+Y''
++
+\left(
+\frac{\gamma}{x}
++
+\frac{\delta}{x-1}
++
+\frac{\epsilon}{x-A}
+\right)Y'
++
+\frac{\alpha_H\beta_H x-q}
+{x(x-1)(x-A)}Y
+=0,
+\label{eq:standard_heun}
+\end{equation}
+with the Fuchsian constraint
+\begin{equation}
+\alpha_H+\beta_H+1=\gamma+\delta+\epsilon.
+\end{equation}
+
+Comparing \eqref{eq:heun_form} and \eqref{eq:standard_heun}, one possible parameter choice is
+\begin{equation}
+\gamma=0,
+\qquad
+\delta=1,
+\qquad
+\epsilon=1,
+\qquad
+\alpha_H=0,
+\qquad
+\beta_H=1,
+\qquad
+q=Q.
+\label{eq:heun_parameters}
+\end{equation}
+
+Therefore the homogeneous solutions may be represented in terms of general Heun functions.
+
+A local solution about \(x=0\) may be written symbolically as
+\begin{equation}
+Y_1(x)
+=
+\operatorname{HeunG}
+\left(
+A,Q;0,1,0,1;x
+\right),
+\label{eq:heun_solution_1}
+\end{equation}
+with a second linearly independent solution obtained by the standard Frobenius construction. Because here \(\gamma=0\), the second solution may involve a logarithm. In practice it is often preferable to construct two independent Heun solutions about an ordinary point in the interval rather than about the singular point \(x=0\).
+
+For the boundary-value problem below, we only require two independent homogeneous solutions. Denote them by
+\begin{equation}
+y_1(z),
+\qquad
+y_2(z),
+\label{eq:y1_y2}
+\end{equation}
+where each is a solution of
+\begin{equation}
+L y=0.
+\end{equation}
+
+Equivalently,
+\begin{equation}
+y_j(z)
+=
+Y_j\!\left(
+\frac{e^{z/h}}{r_1}
+\right),
+\qquad
+j=1,2,
+\end{equation}
+where \(Y_j\) are independent solutions of \eqref{eq:heun_form}.
+
+\section{Boundary-adapted homogeneous solutions}
+
+Let \(\phi(z)\) be the homogeneous solution satisfying the bottom Dirichlet condition:
+\begin{equation}
+L\phi=0,
+\qquad
+\phi(-H)=0.
+\label{eq:phi_def}
+\end{equation}
+
+Given two independent homogeneous solutions \(y_1,y_2\), define
+\begin{equation}
+\phi(z)
+=
+y_2(-H)y_1(z)-y_1(-H)y_2(z).
+\label{eq:phi}
+\end{equation}
+
+Then
+\[
+\phi(-H)
+=
+y_2(-H)y_1(-H)-y_1(-H)y_2(-H)
+=
+0.
+\]
+
+Next let \(\psi(z)\) be the homogeneous solution satisfying the homogeneous surface-flux condition:
+\begin{equation}
+L\psi=0,
+\qquad
+\psi_z(0)=0.
+\label{eq:psi_def}
+\end{equation}
+
+Since \(\nu(0)\ne 0\), this is equivalent to
+\[
+\nu(0)\psi_z(0)=0.
+\]
+
+Define
+\begin{equation}
+\psi(z)
+=
+y_2'(0)y_1(z)-y_1'(0)y_2(z).
+\label{eq:psi}
+\end{equation}
+
+Then
+\[
+\psi_z(0)
+=
+y_2'(0)y_1'(0)-y_1'(0)y_2'(0)
+=
+0.
+\]
+
+Here primes denote differentiation with respect to \(z\).
+
+\section{Weighted Wronskian}
+
+For two homogeneous solutions \(\phi\) and \(\psi\), define the weighted Wronskian
+\begin{equation}
+W
+=
+\nu(z)
+\left[
+\phi(z)\psi_z(z)-\phi_z(z)\psi(z)
+\right].
+\label{eq:wronskian}
+\end{equation}
+
+This quantity is independent of \(z\). Indeed,
+\begin{align}
+\frac{dW}{dz}
+&=
+\frac{d}{dz}
+\left\{
+\nu
+\left(
+\phi\psi_z-\phi_z\psi
+\right)
+\right\} \notag\\
+&=
+\phi(\nu\psi_z)_z-\psi(\nu\phi_z)_z \notag\\
+&=
+\phi(\alpha\psi)-\psi(\alpha\phi) \notag\\
+&=0.
+\end{align}
+
+\section{Green's function}
+
+Define \(G(z,\zeta)\) by
+\begin{equation}
+L_z G(z,\zeta)=\delta(z-\zeta),
+\label{eq:green_def}
+\end{equation}
+with homogeneous boundary conditions
+\begin{align}
+G(-H,\zeta)&=0, \label{eq:G_bottom}\\
+G_z(0,\zeta)&=0. \label{eq:G_surface}
+\end{align}
+
+Then
+\begin{equation}
+G(z,\zeta)
+=
+\begin{cases}
+\dfrac{\phi(z)\psi(\zeta)}{W},
+& z<\zeta,\\[1.2em]
+\dfrac{\phi(\zeta)\psi(z)}{W},
+& z>\zeta.
+\end{cases}
+\label{eq:green}
+\end{equation}
+
+The Green's function is continuous at \(z=\zeta\):
+\begin{equation}
+G(\zeta^-,\zeta)=G(\zeta^+,\zeta),
+\end{equation}
+and its derivative has the jump
+\begin{equation}
+\nu(\zeta)
+\left[
+G_z(\zeta^+,\zeta)-G_z(\zeta^-,\zeta)
+\right]
+=
+1.
+\label{eq:jump}
+\end{equation}
+
+\section{Solution of the forced problem}
+
+The inhomogeneous problem is
+\begin{equation}
+L u=F
+=
+\frac{\mathfrak f}{E k},
+\label{eq:forced_problem}
+\end{equation}
+with
+\begin{align}
+u(-H)&=0,\\
+\nu(0)u_z(0)&=\frac{\tau}{E k}.
+\end{align}
+
+The interior pressure-gradient forcing contributes
+\begin{equation}
+u_{\mathrm{int}}(z)
+=
+\int_{-H}^{0}
+G(z,\zeta)F(\zeta)\,d\zeta
+=
+\frac{1}{E k}
+\int_{-H}^{0}
+G(z,\zeta)\mathfrak f(\zeta)\,d\zeta.
+\label{eq:interior_solution}
+\end{equation}
+
+The nonhomogeneous surface stress contributes the boundary term
+\begin{equation}
+u_{\mathrm{surf}}(z)
+=
+-\frac{\tau}{E k}G(z,0).
+\label{eq:surface_solution}
+\end{equation}
+
+Therefore the full solution is
+\begin{equation}
+\boxed{
+u(z)
+=
+\frac{1}{E k}
+\int_{-H}^{0}
+G(z,\zeta)\mathfrak f(\zeta)\,d\zeta
+-
+\frac{\tau}{E k}G(z,0).
+}
+\label{eq:solution_z}
+\end{equation}
+
+Restoring the horizontal dependence,
+\begin{equation}
+\boxed{
+u(x,y,z)
+=
+\frac{1}{E k}
+\int_{-H}^{0}
+G(z,\zeta)
+\left[
+p_x(x,y,\zeta)+i p_y(x,y,\zeta)
+\right]\,d\zeta
+-
+\frac{\tau^x(x,y)+i\tau^y(x,y)}{E k}
+G(z,0).
+}
+\label{eq:solution_full}
+\end{equation}
+
+\section{Summary}
+
+For
+\begin{equation}
+\nu(z)
+=
+a+b\exp\!\left[-\frac{z+H}{h}\right]
++
+c\exp\!\left(\frac{z}{h}\right),
+\end{equation}
+define
+\begin{equation}
+s=e^{z/h},
+\qquad
+B=b e^{-H/h},
+\end{equation}
+and
+\begin{equation}
+P(s)=c s^2+a s+B.
+\end{equation}
+
+The homogeneous equation becomes
+\begin{equation}
+\frac{d}{ds}
+\left(
+P(s)\frac{dU}{ds}
+\right)
+-
+\frac{\rho}{s}U=0,
+\qquad
+\rho=\frac{i f h^2}{E k}.
+\end{equation}
+
+If \(c\neq 0\) and \(P(s)=c(s-r_1)(s-r_2)\), define
+\begin{equation}
+x=\frac{s}{r_1},
+\qquad
+A=\frac{r_2}{r_1},
+\qquad
+Q=\frac{\rho}{c r_1}.
+\end{equation}
+
+The homogeneous equation becomes
+\begin{equation}
+Y''
++
+\left[
+\frac{1}{x-1}
++
+\frac{1}{x-A}
+\right]Y'
+-
+\frac{Q}{x(x-1)(x-A)}Y
+=0,
+\end{equation}
+which is a general Heun equation with parameters
+\begin{equation}
+\gamma=0,
+\qquad
+\delta=1,
+\qquad
+\epsilon=1,
+\qquad
+\alpha_H=0,
+\qquad
+\beta_H=1,
+\qquad
+q=Q.
+\end{equation}
+
+Let \(y_1,y_2\) be any two independent homogeneous solutions. Define
+\begin{align}
+\phi(z)
+&=
+y_2(-H)y_1(z)-y_1(-H)y_2(z),
+\\[0.5em]
+\psi(z)
+&=
+y_2'(0)y_1(z)-y_1'(0)y_2(z).
+\end{align}
+
+Then
+\begin{equation}
+W
+=
+\nu(z)
+\left[
+\phi(z)\psi_z(z)-\phi_z(z)\psi(z)
+\right]
+\end{equation}
+is constant, and
+\begin{equation}
+G(z,\zeta)
+=
+\begin{cases}
+\dfrac{\phi(z)\psi(\zeta)}{W},
+& z<\zeta,\\[1.2em]
+\dfrac{\phi(\zeta)\psi(z)}{W},
+& z>\zeta.
+\end{cases}
+\end{equation}
+
+The velocity is
+\begin{equation}
+\boxed{
+u(x,y,z)
+=
+\frac{1}{E k}
+\int_{-H}^{0}
+G(z,\zeta)
+\left[
+p_x(x,y,\zeta)+i p_y(x,y,\zeta)
+\right]\,d\zeta
+-
+\frac{\tau^x(x,y)+i\tau^y(x,y)}{E k}G(z,0).
+}
+\end{equation}
+
+\section{Special cases}
+
+\subsection{Case \(c=0\)}
+
+If \(c=0\), then
+\[
+\nu(z)=a+b\exp\!\left[-\frac{z+H}{h}\right].
+\]
+This is the single-exponential case. The homogeneous equation reduces to a Gauss hypergeometric equation. With
+\[
+X(z)
+=
+-\frac{b}{a}
+\exp\!\left[-\frac{z+H}{h}\right],
+\]
+and
+\[
+\lambda
+=
+h\sqrt{\frac{i f}{E k\,a}},
+\]
+a homogeneous basis is
+\begin{align}
+y_+(z)
+&=
+X(z)^\lambda
+{}_2F_1
+\left(
+\lambda,\lambda+1;2\lambda+1;X(z)
+\right),
+\\[0.5em]
+y_-(z)
+&=
+X(z)^{-\lambda}
+{}_2F_1
+\left(
+-\lambda,1-\lambda;1-2\lambda;X(z)
+\right).
+\end{align}
+
+\subsection{Case \(b=0\)}
+
+If \(b=0\), then
+\[
+\nu(z)=a+c\exp\!\left(\frac{z}{h}\right).
+\]
+This is also reducible to a Gauss hypergeometric equation by using
+\[
+X(z)
+=
+-\frac{c}{a}e^{z/h}.
+\]
+
+\subsection{Constant-viscosity limit}
+
+If \(b=c=0\), then
+\[
+\nu(z)=a,
+\]
+and the equation becomes
+\begin{equation}
+a u_{zz}-\alpha u=F.
+\end{equation}
+
+Define
+\begin{equation}
+m=\sqrt{\frac{\alpha}{a}}
+=
+\sqrt{\frac{i f}{E k\,a}}.
+\end{equation}
+
+The homogeneous solution is
+\begin{equation}
+u_h(z)
+=
+C_1\cosh\!\left[m(z+H)\right]
++
+C_2\sinh\!\left[m(z+H)\right].
+\end{equation}
+
+A bottom-Dirichlet solution is
+\begin{equation}
+\phi(z)=\sinh\!\left[m(z+H)\right],
+\end{equation}
+and a homogeneous surface-flux solution is
+\begin{equation}
+\psi(z)=\cosh(mz),
+\end{equation}
+since
+\[
+\psi_z(0)=0.
+\]
+
+This gives the usual finite-depth Ekman solution with bottom no-slip and imposed surface stress.
+
+\section{Remarks}
+
+\begin{itemize}
+    \item The two-exponential viscosity profile
+    \[
+    \nu(z)=a+b e^{-(z+H)/h}+c e^{z/h}
+    \]
+    leads to a general Heun equation, whereas the one-exponential profile leads to a Gauss hypergeometric equation.
+
+    \item The Green's-function representation does not depend on the particular normalization of \(y_1,y_2\). Any two independent homogeneous solutions may be used.
+
+    \item Since
+    \[
+    \alpha=\frac{i f}{E k},
+    \]
+    the homogeneous solutions are generally complex-valued.
+
+    \item The branch choices in the Heun functions must be made consistently if the singularities lie near the physical interval.
+
+    \item The physical interval in the \(s\)-variable is
+    \[
+    e^{-H/h}\le s\le 1.
+    \]
+    The solution is regular provided \(P(s)\neq 0\) on this interval, which is equivalent to \(\nu(z)>0\).
+
+    \item If a root of \(P(s)\) lies on the physical interval, then the viscosity vanishes and the boundary-value problem becomes singular.
+\end{itemize}
+
+\begin{thebibliography}{99}
+
+\bibitem{Ekman1905}
+V. W. Ekman.
+\newblock On the influence of the Earth's rotation on ocean-currents.
+\newblock \emph{Arkiv f\"or Matematik, Astronomi och Fysik}, 2(11):1--52, 1905.
+
+\bibitem{Gill1982}
+A. E. Gill.
+\newblock \emph{Atmosphere--Ocean Dynamics}.
+\newblock Academic Press, 1982.
+
+\bibitem{Pedlosky1987}
+J. Pedlosky.
+\newblock \emph{Geophysical Fluid Dynamics}.
+\newblock 2nd edition, Springer, 1987.
+
+\bibitem{Vallis2017}
+G. K. Vallis.
+\newblock \emph{Atmospheric and Oceanic Fluid Dynamics}.
+\newblock 2nd edition, Cambridge University Press, 2017.
+
+\bibitem{Heun1889}
+K. Heun.
+\newblock Zur Theorie der Riemann'schen Functionen zweiter Ordnung mit vier Verzweigungspunkten.
+\newblock \emph{Mathematische Annalen}, 33:161--179, 1889.
+
+\bibitem{Ronveaux1995}
+A. Ronveaux, editor.
+\newblock \emph{Heun's Differential Equations}.
+\newblock Oxford University Press, 1995.
+
+\bibitem{SlavyanovLay1999}
+S. Yu. Slavyanov and W. Lay.
+\newblock \emph{Special Functions: A Unified Theory Based on Singularities}.
+\newblock Oxford University Press, 1999.
+
+\bibitem{Maier2007}
+R. S. Maier.
+\newblock The 192 solutions of the Heun equation.
+\newblock \emph{Mathematics of Computation}, 76(258):811--843, 2007.
+
+\bibitem{DLMFHeun}
+NIST Digital Library of Mathematical Functions.
+\newblock \emph{Heun Functions}.
+\newblock Chapter 31.
+\newblock \url{https://dlmf.nist.gov/31}
+
+\bibitem{DLMFHyper}
+NIST Digital Library of Mathematical Functions.
+\newblock \emph{Gauss Hypergeometric Function}.
+\newblock Chapter 15.
+\newblock \url{https://dlmf.nist.gov/15}
+
+\bibitem{Olver2010}
+F. W. J. Olver, D. W. Lozier, R. F. Boisvert, and C. W. Clark, editors.
+\newblock \emph{NIST Handbook of Mathematical Functions}.
+\newblock Cambridge University Press, 2010.
+
+\bibitem{Zettl}
+A. Zettl.
+\newblock \emph{Sturm--Liouville Theory}.
+\newblock American Mathematical Society, 2005.
+
+\bibitem{CoddingtonLevinson}
+E. A. Coddington and N. Levinson.
+\newblock \emph{Theory of Ordinary Differential Equations}.
+\newblock McGraw--Hill, 1955.
+
+\bibitem{ArfkenWeber}
+G. B. Arfken, H. J. Weber, and F. E. Harris.
+\newblock \emph{Mathematical Methods for Physicists}.
+\newblock 7th edition, Academic Press, 2013.
+
+\end{thebibliography}
+
+\end{document}

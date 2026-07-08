@@ -1,4 +1,8 @@
 *.vt?
 *.key
 *.msh
+*.aux
+*.out
+*.bbl
+*.synctex*
 !.gitignore

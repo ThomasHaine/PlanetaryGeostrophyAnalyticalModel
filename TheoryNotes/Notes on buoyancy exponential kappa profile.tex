@@ -1,4 +1,4 @@
-\documentclass[11pt]{amsart}
+\documentclass[10pt]{amsart}
 \usepackage{geometry}                % See geometry.pdf to learn the layout options. There are lots.
 \geometry{letterpaper}                   % ... or a4paper or a5paper or ... 
 %\geometry{landscape}                % Activate for for rotated page geometry
@@ -6,6 +6,7 @@
 \usepackage{graphicx}
 \usepackage{amssymb}
 \usepackage{epstopdf}
+\usepackage{hyperref}
 \DeclareGraphicsRule{.tif}{png}{.png}{`convert #1 `dirname #1`/`basename #1 .tif`.png}
 
 \title{Notes on solution to the buoyancy equation with exponential $\kappa$ profile}
@@ -15,674 +16,455 @@
 \begin{document}
 \maketitle
 
-\section{Problem}
 
-Consider the homogeneous ODE associated with the vertical Green's function problem
-\begin{equation}
-    \frac{Ek}{\Gamma}
-    \frac{d}{dz}
-    \left(
-        \kappa(z)\frac{db}{dz}
-    \right)
-    - b = 0.
-\end{equation}
-Equivalently, define
-\begin{equation}
-    \mu^2 = \frac{\Gamma}{Ek},
-\end{equation}
-so that the ODE becomes
-\begin{equation}
-    \frac{d}{dz}
-    \left(
-        \kappa(z)b_z
-    \right)
-    - \mu^2 b = 0.
-    \label{eq:homogeneous_ode}
-\end{equation}
+\section{Problem statement}
 
-We consider the exponential diffusivity profile
+Consider the one-dimensional vertical boundary-value problem
 \begin{equation}
-    \kappa(z)
-    =
-    a + \exp\left[-\frac{z+H}{h}\right],
-    \label{eq:kappa_profile}
+E k\,\partial_z\!\left(\kappa(z)\,\partial_z b\right)
+=
+\Gamma \left(b-B\right),
+\label{eq:main}
 \end{equation}
-where, in the specific example of interest,
-\begin{equation}
-    a = 10^{-2},
-    \qquad
-    h = 0.1.
-\end{equation}
-
-Thus the ODE is
-\begin{equation}
-    \frac{d}{dz}
-    \left[
-        \left(
-            a + \exp\left[-\frac{z+H}{h}\right]
-        \right)b_z
-    \right]
-    - \mu^2 b = 0.
-    \label{eq:ode_exp_kappa}
-\end{equation}
-
-\section{Change of Variables}
-
-Let
-\begin{equation}
-    s = z+H,
-\end{equation}
-so that \(s=0\) at the bottom \(z=-H\) and \(s=H\) at the surface \(z=0\). Then
-\begin{equation}
-    \kappa(s) = a + e^{-s/h}.
-\end{equation}
-
-Now define a nondimensional exponential coordinate
-\begin{equation}
-    r
-    =
-    \frac{e^{-s/h}}{a}
-    =
-    \frac{1}{a}
-    \exp\left[-\frac{z+H}{h}\right].
-    \label{eq:r_definition}
-\end{equation}
-Then
-\begin{equation}
-    e^{-s/h} = ar,
-\end{equation}
-and therefore
-\begin{equation}
-    \kappa = a(1+r).
-\end{equation}
-
-Moreover,
-\begin{equation}
-    \frac{dr}{dz}
-    =
-    -\frac{1}{h}r,
-\end{equation}
-so that
-\begin{equation}
-    \frac{d}{dz}
-    =
-    -\frac{r}{h}\frac{d}{dr}.
-    \label{eq:dz_to_dr}
-\end{equation}
-
-Let
-\begin{equation}
-    b(z)=B(r).
-\end{equation}
-Then
-\begin{equation}
-    b_z
-    =
-    \frac{dB}{dr}\frac{dr}{dz}
-    =
-    -\frac{r}{h}B_r.
-\end{equation}
-Therefore,
-\begin{equation}
-    \kappa b_z
-    =
-    a(1+r)
-    \left(
-        -\frac{r}{h}B_r
-    \right)
-    =
-    -\frac{a}{h}r(1+r)B_r.
-\end{equation}
-
-Differentiating once more,
+on the interval
+\[
+-H \le z \le 0,
+\]
+with boundary conditions
 \begin{align}
-    \frac{d}{dz}
-    \left(
-        \kappa b_z
-    \right)
-    &=
-    -\frac{r}{h}
-    \frac{d}{dr}
-    \left[
-        -\frac{a}{h}r(1+r)B_r
-    \right] \\
-    &=
-    \frac{ar}{h^2}
-    \frac{d}{dr}
-    \left[
-        r(1+r)B_r
-    \right].
+b(0) &= b_s, \label{eq:bc_surface}\\
+\partial_z b(-H) &= 0. \label{eq:bc_bottom}
 \end{align}
 
-Since
+Here \(B=B(x,y,z)\) is a prescribed buoyancy profile, \(b_s=b_s(x,y)\) is the imposed surface buoyancy, \(\Gamma\) is a relaxation coefficient, and \(E k\) is a constant prefactor.
+
+We take the vertical diffusivity to be
 \begin{equation}
-    \frac{d}{dr}
-    \left[
-        r(1+r)B_r
-    \right]
-    =
-    r(1+r)B_{rr}
-    +
-    (1+2r)B_r,
+\kappa(z)
+=
+a+\beta \exp\!\left[-\frac{z+H}{h}\right],
+\label{eq:kappa}
 \end{equation}
-equation \eqref{eq:ode_exp_kappa} becomes
+where \(a>0\), \(h>0\), and \(\beta\) is a constant. I use the symbol \(\beta\) for the exponential coefficient in \(\kappa\) to avoid notational conflict with the buoyancy solution \(b\).
+
+The horizontal dependence \(x,y\) is parametric in this vertical problem, so it will be suppressed in most of the derivation.
+
+Define
 \begin{equation}
-    \frac{ar}{h^2}
-    \left[
-        r(1+r)B_{rr}
-        +
-        (1+2r)B_r
-    \right]
-    -
-    \mu^2 B
-    =
-    0.
+\mu = \frac{\Gamma}{E k}.
+\label{eq:mu}
+\end{equation}
+Then \eqref{eq:main} may be written as
+\begin{equation}
+\partial_z\!\left(\kappa b_z\right)-\mu b
+=
+-\mu B.
+\label{eq:sl_form}
 \end{equation}
 
-Dividing by \(a/h^2\) gives
+This is a forced Sturm--Liouville problem with mixed Dirichlet--Neumann boundary conditions.
+
+\section{Homogeneous equation}
+
+The associated homogeneous equation is
 \begin{equation}
-    r
-    \left[
-        r(1+r)B_{rr}
-        +
-        (1+2r)B_r
-    \right]
-    -
-    \frac{\mu^2 h^2}{a}B
-    =
-    0.
+\partial_z\!\left(\kappa b_z\right)-\mu b =0.
+\label{eq:homogeneous}
 \end{equation}
-Hence
+
+Using
+\[
+\kappa(z)=a+\beta \exp\!\left[-\frac{z+H}{h}\right],
+\]
+introduce the transformed variable
 \begin{equation}
-    r^2(1+r)B_{rr}
-    +
-    r(1+2r)B_r
-    -
-    \beta^2 B
-    =
-    0,
-    \label{eq:B_equation}
+X(z)
+=
+-\frac{\beta}{a}\exp\!\left[-\frac{z+H}{h}\right].
+\label{eq:X_def}
+\end{equation}
+Then
+\begin{equation}
+\kappa(z)=a(1-X).
+\end{equation}
+
+Also define the dimensionless parameter
+\begin{equation}
+\nu
+=
+h\sqrt{\frac{\mu}{a}}
+=
+h\sqrt{\frac{\Gamma}{E k\,a}}.
+\label{eq:nu_def}
+\end{equation}
+
+With these definitions, a convenient basis of homogeneous solutions is
+\begin{align}
+y_+(z)
+&=
+X(z)^{\nu}\,
+{}_2F_1\!\left(\nu,\nu+1;2\nu+1;X(z)\right),
+\label{eq:yplus}
+\\[0.5em]
+y_-(z)
+&=
+X(z)^{-\nu}\,
+{}_2F_1\!\left(-\nu,1-\nu;1-2\nu;X(z)\right).
+\label{eq:yminus}
+\end{align}
+
+Therefore the general homogeneous solution is
+\begin{equation}
+b_h(z)=C_+ y_+(z)+C_- y_-(z).
+\label{eq:general_homogeneous}
+\end{equation}
+
+The function \({}_2F_1\) is the Gauss hypergeometric function. When \(\beta>0\), one has \(X<0\), and the real-valued branch should be chosen consistently.
+
+\section{Construction of boundary-adapted homogeneous solutions}
+
+We now construct two special homogeneous solutions.
+
+Let \(\phi(z)\) solve
+\begin{equation}
+L\phi=0,
+\qquad
+\phi_z(-H)=0,
+\label{eq:phi_def}
 \end{equation}
 where
 \begin{equation}
-    \beta^2
-    =
-    \frac{\mu^2h^2}{a}
-    =
-    \frac{\Gamma h^2}{a\,Ek}.
-    \label{eq:beta_squared}
-\end{equation}
-Thus
-\begin{equation}
-    \beta
-    =
-    h\sqrt{\frac{\Gamma}{a\,Ek}}.
-    \label{eq:beta}
+L f := \partial_z(\kappa f_z)-\mu f.
 \end{equation}
 
-\section{Reduction to Hypergeometric Form}
-
-Equation \eqref{eq:B_equation} has a regular singular point at \(r=0\).
-To determine the leading-order behavior, try
+Similarly, let \(\psi(z)\) solve
 \begin{equation}
-    B(r) = r^\lambda.
-\end{equation}
-Near \(r=0\), equation \eqref{eq:B_equation} reduces to
-\begin{equation}
-    r^2B_{rr} + rB_r - \beta^2B = 0.
-\end{equation}
-Substituting \(B=r^\lambda\) gives
-\begin{equation}
-    \lambda(\lambda-1)+\lambda-\beta^2=0,
-\end{equation}
-or
-\begin{equation}
-    \lambda^2-\beta^2=0.
-\end{equation}
-Therefore,
-\begin{equation}
-    \lambda=\pm\beta.
+L\psi=0,
+\qquad
+\psi(0)=0.
+\label{eq:psi_def}
 \end{equation}
 
-Choose the positive exponent and write
+Using the homogeneous basis \(y_\pm\), a convenient choice is
 \begin{equation}
-    B(r)=r^\beta Y(r).
-    \label{eq:B_substitution}
+\phi(z)
+=
+y_-'(-H)y_+(z)-y_+'(-H)y_-(z),
+\label{eq:phi_explicit}
 \end{equation}
-Then
-\begin{equation}
-    B_r
-    =
-    \beta r^{\beta-1}Y
-    +
-    r^\beta Y_r,
-\end{equation}
-and
-\begin{equation}
-    B_{rr}
-    =
-    \beta(\beta-1)r^{\beta-2}Y
-    +
-    2\beta r^{\beta-1}Y_r
-    +
-    r^\beta Y_{rr}.
-\end{equation}
+because
+\[
+\phi_z(-H)
+=
+y_-'(-H)y_+'(-H)-y_+'(-H)y_-'(-H)
+=
+0.
+\]
 
-Substitution into equation \eqref{eq:B_equation}, followed by simplification, yields
+Likewise, a convenient choice for \(\psi\) is
 \begin{equation}
-    r(1+r)Y_{rr}
-    +
-    \left[
-        2\beta+1+(2\beta+2)r
-    \right]Y_r
-    +
-    \beta(\beta+1)Y
-    =
-    0.
-    \label{eq:Y_r_equation}
+\psi(z)
+=
+y_-(0)y_+(z)-y_+(0)y_-(z),
+\label{eq:psi_explicit}
 \end{equation}
+because
+\[
+\psi(0)
+=
+y_-(0)y_+(0)-y_+(0)y_-(0)
+=
+0.
+\]
 
-This equation is transformed to the standard Gauss hypergeometric equation by setting
-\begin{equation}
-    x=-r.
-    \label{eq:x_definition}
-\end{equation}
-Since
-\begin{equation}
-    \frac{dY}{dr}
-    =
-    -\frac{dY}{dx},
-    \qquad
-    \frac{d^2Y}{dr^2}
-    =
-    \frac{d^2Y}{dx^2},
-\end{equation}
-equation \eqref{eq:Y_r_equation} becomes
-\begin{equation}
-    x(1-x)Y_{xx}
-    +
-    \left[
-        2\beta+1-(2\beta+2)x
-    \right]Y_x
-    -
-    \beta(\beta+1)Y
-    =
-    0.
-    \label{eq:hypergeometric_form}
-\end{equation}
+\section{Green's function}
 
-The standard Gauss hypergeometric equation is
+The Green's function \(G(z,\zeta)\) is defined by
 \begin{equation}
-    x(1-x)Y_{xx}
-    +
-    \left[
-        c-(A+B+1)x
-    \right]Y_x
-    -
-    ABY
-    =
-    0.
-    \label{eq:standard_hypergeometric}
-\end{equation}
-Comparison of \eqref{eq:hypergeometric_form} and
-\eqref{eq:standard_hypergeometric} gives
-\begin{equation}
-    c = 2\beta+1,
-\end{equation}
-\begin{equation}
-    A+B+1 = 2\beta+2,
-\end{equation}
-and
-\begin{equation}
-    AB = \beta(\beta+1).
-\end{equation}
-One convenient choice is
-\begin{equation}
-    A=\beta,
-    \qquad
-    B=\beta+1,
-    \qquad
-    c=2\beta+1.
-    \label{eq:hypergeometric_parameters}
-\end{equation}
-
-\section{Analytic Homogeneous Solutions}
-
-A standard solution of the Gauss hypergeometric equation is
-\begin{equation}
-    Y_1(x)
-    =
-    {}_2F_1(A,B;c;x).
-\end{equation}
-Using \eqref{eq:hypergeometric_parameters},
-\begin{equation}
-    Y_1(x)
-    =
-    {}_2F_1
-    \left(
-        \beta,\beta+1;2\beta+1;x
-    \right).
-\end{equation}
-
-Since \(x=-r\) and \(B(r)=r^\beta Y(r)\), one homogeneous solution is
-\begin{equation}
-    B_1(r)
-    =
-    r^\beta
-    {}_2F_1
-    \left(
-        \beta,\beta+1;2\beta+1;-r
-    \right).
-\end{equation}
-
-Returning to the original coordinate \(z\), with
-\begin{equation}
-    r(z)
-    =
-    \frac{1}{a}
-    \exp\left[-\frac{z+H}{h}\right],
-\end{equation}
-the first solution is
-\begin{equation}
-    b_1(z)
-    =
-    r(z)^\beta
-    {}_2F_1
-    \left(
-        \beta,\beta+1;2\beta+1;-r(z)
-    \right).
-    \label{eq:b1_solution}
-\end{equation}
-
-The second linearly independent solution corresponds to the other indicial exponent \(-\beta\). It is
-\begin{equation}
-    b_2(z)
-    =
-    r(z)^{-\beta}
-    {}_2F_1
-    \left(
-        -\beta,1-\beta;1-2\beta;-r(z)
-    \right).
-    \label{eq:b2_solution}
-\end{equation}
-
-Therefore, the general homogeneous solution is
-\begin{align}
-    b(z)
-    &=
-    C_1
-    r(z)^\beta
-    {}_2F_1
-    \left(
-        \beta,\beta+1;2\beta+1;-r(z)
-    \right)
-    \nonumber\\
-    &\quad
-    +
-    C_2
-    r(z)^{-\beta}
-    {}_2F_1
-    \left(
-        -\beta,1-\beta;1-2\beta;-r(z)
-    \right).
-    \label{eq:general_solution}
-\end{align}
-
-\section{Specialization to \(a=10^{-2}\), \(h=0.1\)}
-
-For the specific diffusivity profile
-\begin{equation}
-    \kappa(z)
-    =
-    10^{-2}
-    +
-    \exp\left[-\frac{z+H}{0.1}\right],
-\end{equation}
-we have
-\begin{equation}
-    a=10^{-2},
-    \qquad
-    h=0.1.
-\end{equation}
-Then
-\begin{equation}
-    r(z)
-    =
-    \frac{1}{10^{-2}}
-    \exp\left[-\frac{z+H}{0.1}\right]
-    =
-    100\exp[-10(z+H)].
-\end{equation}
-Furthermore,
-\begin{equation}
-    \beta
-    =
-    h\sqrt{\frac{\Gamma}{a\,Ek}}
-    =
-    0.1
-    \sqrt{
-        \frac{\Gamma}{10^{-2}Ek}
-    }
-    =
-    \sqrt{\frac{\Gamma}{Ek}}.
-\end{equation}
-Thus, for this profile,
-\begin{equation}
-    \beta=\sqrt{\frac{\Gamma}{Ek}}.
-\end{equation}
-
-The homogeneous solution becomes
-\begin{align}
-    b(z)
-    &=
-    C_1
-    r(z)^\beta
-    {}_2F_1
-    \left(
-        \beta,\beta+1;2\beta+1;-r(z)
-    \right)
-    \nonumber\\
-    &\quad
-    +
-    C_2
-    r(z)^{-\beta}
-    {}_2F_1
-    \left(
-        -\beta,1-\beta;1-2\beta;-r(z)
-    \right),
-\end{align}
-with
-\begin{equation}
-    r(z)=100\exp[-10(z+H)],
-    \qquad
-    \beta=\sqrt{\frac{\Gamma}{Ek}}.
-\end{equation}
-
-\section{Green's Function Construction}
-
-The Green's function \(G_b(z,\xi)\) satisfies
-\begin{equation}
-    \frac{Ek}{\Gamma}
-    \frac{d}{dz}
-    \left(
-        \kappa(z)\frac{\partial G_b}{\partial z}
-    \right)
-    -
-    G_b
-    =
-    -\delta(z-\xi),
-    \label{eq:green_problem}
+L_z G(z,\zeta)=\delta(z-\zeta),
+\label{eq:green_def}
 \end{equation}
 with boundary conditions
-\begin{equation}
-    \frac{\partial G_b}{\partial z}(-H,\xi)=0,
-    \qquad
-    G_b(0,\xi)=0.
-\end{equation}
+\begin{align}
+G(0,\zeta)&=0,\\
+\partial_z G(-H,\zeta)&=0.
+\end{align}
 
-Let \(u(z)\) be the homogeneous solution satisfying the bottom Neumann condition
+For a Sturm--Liouville operator of the form
+\[
+L f = \partial_z(\kappa f_z)-\mu f,
+\]
+the weighted Wronskian
 \begin{equation}
-    u'(-H)=0,
-\end{equation}
-and let \(v(z)\) be the homogeneous solution satisfying the surface Dirichlet condition
-\begin{equation}
-    v(0)=0.
-\end{equation}
-
-Both \(u\) and \(v\) are linear combinations of the two basis solutions
-\eqref{eq:b1_solution} and \eqref{eq:b2_solution}. The generalized Wronskian
-\begin{equation}
-    W
-    =
-    \kappa(z)
-    \left[
-        u(z)v'(z)
-        -
-        u'(z)v(z)
-    \right]
-    \label{eq:wronskian}
+W
+=
+\kappa(z)
+\left[
+\phi(z)\psi_z(z)-\phi_z(z)\psi(z)
+\right]
+\label{eq:wronskian}
 \end{equation}
 is independent of \(z\).
 
 The Green's function is then
 \begin{equation}
-    G_b(z,\xi)
-    =
-    -\frac{\Gamma}{Ek\,W}
-    \begin{cases}
-        u(z)v(\xi), & z\le \xi, \\[2mm]
-        u(\xi)v(z), & z\ge \xi.
-    \end{cases}
-    \label{eq:green_function}
+G(z,\zeta)
+=
+\begin{cases}
+\dfrac{\phi(z)\psi(\zeta)}{W},
+& z<\zeta,\\[1.2em]
+\dfrac{\phi(\zeta)\psi(z)}{W},
+& z>\zeta.
+\end{cases}
+\label{eq:green}
 \end{equation}
 
-The jump condition follows by integrating \eqref{eq:green_problem}
-across \(z=\xi\):
+This convention corresponds to the jump condition
 \begin{equation}
-    \frac{Ek}{\Gamma}
-    \left[
-        \kappa G_{b,z}
-    \right]_{\xi^-}^{\xi^+}
-    =
-    -1,
-\end{equation}
-or
-\begin{equation}
-    \left[
-        \kappa G_{b,z}
-    \right]_{\xi^-}^{\xi^+}
-    =
-    -\frac{\Gamma}{Ek}.
-    \label{eq:jump_condition}
+\kappa(\zeta)
+\left[
+G_z(\zeta^+,\zeta)-G_z(\zeta^-,\zeta)
+\right]
+=1.
 \end{equation}
 
-\section{Summary}
+\section{Solution of the forced problem}
 
-Starting from
+The inhomogeneous problem is
 \begin{equation}
-    \frac{d}{dz}
-    \left[
-        \left(
-            a+e^{-(z+H)/h}
-        \right)b_z
-    \right]
-    -
-    \frac{\Gamma}{Ek}b
-    =
-    0,
+L b = -\mu B,
 \end{equation}
-define
+with
+\[
+b(0)=b_s,
+\qquad
+b_z(-H)=0.
+\]
+
+The boundary condition at the surface is nonhomogeneous, so we decompose the solution into a boundary-forced part and an internally forced part.
+
+The solution satisfying the surface condition \(b(0)=b_s\) and the bottom Neumann condition is
 \begin{equation}
-    r
-    =
-    \frac{1}{a}e^{-(z+H)/h},
-    \qquad
-    x=-r,
-    \qquad
-    \beta
-    =
-    h\sqrt{\frac{\Gamma}{a\,Ek}}.
-\end{equation}
-Then, with
-\begin{equation}
-    b(z)=r^\beta Y(x),
-\end{equation}
-the ODE becomes the standard Gauss hypergeometric equation
-\begin{equation}
-    x(1-x)Y_{xx}
-    +
-    \left[
-        2\beta+1-(2\beta+2)x
-    \right]Y_x
-    -
-    \beta(\beta+1)Y
-    =
-    0,
-\end{equation}
-corresponding to parameters
-\begin{equation}
-    A=\beta,
-    \qquad
-    B=\beta+1,
-    \qquad
-    c=2\beta+1.
+b_{\mathrm{surf}}(z)
+=
+b_s\,\frac{\phi(z)}{\phi(0)}.
+\label{eq:surface_solution}
 \end{equation}
 
-Therefore the homogeneous solution is
+The solution forced by the interior source \(-\mu B\) and satisfying homogeneous boundary conditions is
+\begin{equation}
+b_{\mathrm{int}}(z)
+=
+-\mu
+\int_{-H}^{0}
+G(z,\zeta)B(\zeta)\,d\zeta.
+\label{eq:interior_solution}
+\end{equation}
+
+Therefore the full solution is
+\begin{equation}
+\boxed{
+b(z)
+=
+b_s\,\frac{\phi(z)}{\phi(0)}
+-
+\mu
+\int_{-H}^{0}
+G(z,\zeta)B(\zeta)\,d\zeta
+}
+\label{eq:solution_1d}
+\end{equation}
+or, restoring the horizontal dependence,
+\begin{equation}
+\boxed{
+b(x,y,z)
+=
+b_s(x,y)\,\frac{\phi(z)}{\phi(0)}
+-
+\frac{\Gamma}{E k}
+\int_{-H}^{0}
+G(z,\zeta)B(x,y,\zeta)\,d\zeta.
+}
+\label{eq:solution_full}
+\end{equation}
+
+\section{Summary of definitions}
+
+The diffusivity is
+\begin{equation}
+\kappa(z)
+=
+a+\beta \exp\!\left[-\frac{z+H}{h}\right].
+\end{equation}
+
+Define
+\begin{equation}
+\mu = \frac{\Gamma}{E k},
+\qquad
+\nu
+=
+h\sqrt{\frac{\mu}{a}}
+=
+h\sqrt{\frac{\Gamma}{E k\,a}},
+\end{equation}
+and
+\begin{equation}
+X(z)
+=
+-\frac{\beta}{a}\exp\!\left[-\frac{z+H}{h}\right].
+\end{equation}
+
+The homogeneous basis functions are
 \begin{align}
-    b(z)
-    &=
-    C_1
-    r(z)^\beta
-    {}_2F_1
-    \left(
-        \beta,\beta+1;2\beta+1;-r(z)
-    \right)
-    \nonumber\\
-    &\quad
-    +
-    C_2
-    r(z)^{-\beta}
-    {}_2F_1
-    \left(
-        -\beta,1-\beta;1-2\beta;-r(z)
-    \right).
+y_+(z)
+&=
+X(z)^{\nu}\,
+{}_2F_1\!\left(\nu,\nu+1;2\nu+1;X(z)\right),
+\\[0.5em]
+y_-(z)
+&=
+X(z)^{-\nu}\,
+{}_2F_1\!\left(-\nu,1-\nu;1-2\nu;X(z)\right).
 \end{align}
+
+The bottom-adapted and surface-adapted homogeneous solutions are
+\begin{align}
+\phi(z)
+&=
+y_-'(-H)y_+(z)-y_+'(-H)y_-(z),
+\\[0.5em]
+\psi(z)
+&=
+y_-(0)y_+(z)-y_+(0)y_-(z).
+\end{align}
+
+The weighted Wronskian is
+\begin{equation}
+W
+=
+\kappa(z)
+\left[
+\phi(z)\psi_z(z)-\phi_z(z)\psi(z)
+\right],
+\end{equation}
+which is independent of \(z\).
+
+The Green's function is
+\begin{equation}
+G(z,\zeta)
+=
+\begin{cases}
+\dfrac{\phi(z)\psi(\zeta)}{W},
+& z<\zeta,\\[1.2em]
+\dfrac{\phi(\zeta)\psi(z)}{W},
+& z>\zeta.
+\end{cases}
+\end{equation}
+
+Thus,
+\begin{equation}
+\boxed{
+b(x,y,z)
+=
+b_s(x,y)\frac{\phi(z)}{\phi(0)}
+-
+\frac{\Gamma}{E k}
+\int_{-H}^{0}
+G(z,\zeta)B(x,y,\zeta)\,d\zeta.
+}
+\end{equation}
+
+\section{Constant-diffusivity limit}
+
+If \(\beta=0\), then \(\kappa=a\), and the governing equation becomes
+\begin{equation}
+a b_{zz}-\mu b=-\mu B.
+\end{equation}
+
+Define
+\begin{equation}
+\lambda = \sqrt{\frac{\mu}{a}}
+=
+\sqrt{\frac{\Gamma}{E k\,a}}.
+\end{equation}
+
+The homogeneous solutions are simply
+\begin{equation}
+b_h(z)=C_1\cosh\!\left[\lambda(z+H)\right]
++
+C_2\sinh\!\left[\lambda(z+H)\right].
+\end{equation}
+
+The bottom condition \(b_z(-H)=0\) selects
+\begin{equation}
+\phi(z)=\cosh\!\left[\lambda(z+H)\right],
+\end{equation}
+while the surface-vanishing solution may be chosen as
+\begin{equation}
+\psi(z)=\sinh(\lambda z),
+\end{equation}
+up to an arbitrary multiplicative constant. The same Green's-function construction applies.
+
+This limiting case is useful for checking signs and normalization.
+
+\section{Remarks}
+
+\begin{itemize}
+    \item The operator
+    \[
+    L=\partial_z(\kappa \partial_z)-\mu
+    \]
+    is self-adjoint on \([-H,0]\) with the mixed Dirichlet--Neumann boundary conditions used above.
+
+    \item The Green's function is symmetric:
+    \[
+    G(z,\zeta)=G(\zeta,z),
+    \]
+    provided the same normalization convention is used.
+
+    \item The horizontal variables \(x,y\) enter only through the data \(B(x,y,z)\) and \(b_s(x,y)\). For each fixed \((x,y)\), the vertical problem is independent.
+
+    \item The formula assumes \(a>0\) and \(\kappa(z)>0\) on \([-H,0]\). Thus one should require
+    \[
+    a+\beta \exp\!\left[-\frac{z+H}{h}\right] >0
+    \]
+    throughout the water column.
+\end{itemize}
 
 \begin{thebibliography}{9}
 
-\bibitem{abramowitz_stegun}
-M.~Abramowitz and I.~A. Stegun,
-\textit{Handbook of Mathematical Functions with Formulas, Graphs, and Mathematical Tables},
-Dover Publications, 1965.
+\bibitem{DLMF}
+NIST Digital Library of Mathematical Functions.
+\newblock \emph{Gauss Hypergeometric Function}.
+\newblock Sections 15.2--15.10.
+\newblock \url{https://dlmf.nist.gov/15}
 
-\bibitem{dlmf}
-NIST Digital Library of Mathematical Functions,
-\textit{Chapter 15: Hypergeometric Function},
-\url{https://dlmf.nist.gov/15}.
+\bibitem{Olver2010}
+F. W. J. Olver, D. W. Lozier, R. F. Boisvert, and C. W. Clark, editors.
+\newblock \emph{NIST Handbook of Mathematical Functions}.
+\newblock Cambridge University Press, 2010.
 
-\bibitem{olver}
-F.~W.~J. Olver, D.~W. Lozier, R.~F. Boisvert, and C.~W. Clark, editors,
-\textit{NIST Handbook of Mathematical Functions},
-Cambridge University Press, 2010.
+\bibitem{AbramowitzStegun}
+M. Abramowitz and I. A. Stegun.
+\newblock \emph{Handbook of Mathematical Functions with Formulas, Graphs, and Mathematical Tables}.
+\newblock Dover Publications, 1965.
 
-\bibitem{arfken}
-G.~B. Arfken, H.~J. Weber, and F.~E. Harris,
-\textit{Mathematical Methods for Physicists},
-7th ed.,
-Academic Press, 2013.
+\bibitem{CoddingtonLevinson}
+E. A. Coddington and N. Levinson.
+\newblock \emph{Theory of Ordinary Differential Equations}.
+\newblock McGraw--Hill, 1955.
 
-\bibitem{courant_hilbert}
-R.~Courant and D.~Hilbert,
-\textit{Methods of Mathematical Physics, Volume I},
-Wiley-Interscience, 1989.
+\bibitem{Zettl}
+A. Zettl.
+\newblock \emph{Sturm--Liouville Theory}.
+\newblock American Mathematical Society, 2005.
 
-\bibitem{zauderer}
-E.~Zauderer,
-\textit{Partial Differential Equations of Applied Mathematics},
-3rd ed.,
-Wiley-Interscience, 2006.
+\bibitem{ArfkenWeber}
+G. B. Arfken, H. J. Weber, and F. E. Harris.
+\newblock \emph{Mathematical Methods for Physicists}.
+\newblock 7th edition, Academic Press, 2013.
 
 \end{thebibliography}
 
-\end{document}  
+\end{document}
+
