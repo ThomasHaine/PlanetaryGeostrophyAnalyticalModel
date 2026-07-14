@@ -8,3 +8,5 @@
 *.synctex*
 !.gitignore
 Development*
+.vscode*
+.DS_Store
