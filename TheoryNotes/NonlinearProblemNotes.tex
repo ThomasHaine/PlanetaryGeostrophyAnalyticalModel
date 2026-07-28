@@ -1,0 +1,587 @@
+\documentclass[10pt]{amsart}
+\usepackage{geometry}                % See geometry.pdf to learn the layout options. There are lots.
+\geometry{letterpaper}                   % ... or a4paper or a5paper or ... 
+%\geometry{landscape}                % Activate for for rotated page geometry
+%\usepackage[parfill]{parskip}    % Activate to begin paragraphs with an empty line rather than an indent
+\usepackage{graphicx}
+\usepackage{amssymb}
+\usepackage{epstopdf}
+\DeclareGraphicsRule{.tif}{png}{.png}{`convert #1 `dirname #1`/`basename #1 .tif`.png}
+
+\title{Notes on the Nonlinear Dissipative Thermocline Equations}
+\author{GPT5.5 and TWNH \\ (related to discussions with Steve Griffies, Jonathan Gregory, and Quran Wu in June '26)}
+\date{}                                           % Activate to display a given date or no date
+
+\begin{document}
+\maketitle
+%\section{}
+%\subsection{}
+
+\section{Green's functions, boundary propagators, and nonlinear upstream memory}
+
+Consider the nondimensional buoyancy--momentum system
+\begin{align}
+-fv &= -p_x+\mathrm{Ek}\,\partial_z(\nu u_z), \\
+fu &= -p_y+\mathrm{Ek}\,\partial_z(\nu v_z), \\
+u_x+v_y+w_z &=0, \\
+p_z &= b, \\
+\mathrm{Pr}\,\mathrm{Bu}\,(u b_x+v b_y+w b_z)
+&=
+\mathrm{Ek}\,\partial_z(k b_z)+\Gamma(B-b).
+\end{align}
+The boundary conditions are
+\begin{align}
+\left[\nu \partial_z(u,v)\right]_{z=\eta}
+&=(\tau^x,\tau^y), \\
+b|_{z=\eta} &= b_s, \\
+(u,v)|_{z=-H} &=(0,0), \\
+\left[
+\delta^2(b_x H_x+b_y H_y)+b_z
+\right]_{z=-H}&=0.
+\end{align}
+
+Let
+\[
+\varepsilon=\mathrm{Pr}\,\mathrm{Bu}.
+\]
+When \(\varepsilon=0\), the buoyancy equation is linear and the system can be solved using Green's functions. When \(\varepsilon\neq 0\), the term
+\[
+\varepsilon\,\mathbf u\cdot\nabla b
+=
+\varepsilon(u b_x+v b_y+w b_z)
+\]
+makes the coupled problem nonlinear, because the velocity field \(\mathbf u=(u,v,w)\) is itself determined by the buoyancy field through the momentum, hydrostatic, and continuity equations.
+
+\subsection{The prescribed-velocity buoyancy equation}
+
+If the velocity field \(\mathbf u(\mathbf x,t)\) is prescribed, the buoyancy equation becomes a linear advection--diffusion--relaxation equation:
+\begin{equation}
+b_t+\varepsilon \mathbf u\cdot\nabla b
+=
+\mathrm{Ek}\,\partial_z(k b_z)+\Gamma(B-b).
+\end{equation}
+Equivalently,
+\begin{equation}
+b_t+\mathcal L_{\mathbf u} b=\Gamma B,
+\end{equation}
+where
+\begin{equation}
+\mathcal L_{\mathbf u}
+=
+\varepsilon \mathbf u\cdot\nabla
+-\mathrm{Ek}\,\partial_z(k\partial_z)
++\Gamma.
+\end{equation}
+
+For a steady problem, the corresponding operator is
+\begin{equation}
+\mathcal L_{\mathbf u} b
+=
+\varepsilon \mathbf u\cdot\nabla b
+-\mathrm{Ek}\,\partial_z(k b_z)
++\Gamma b.
+\end{equation}
+
+Because \(\mathcal L_{\mathbf u}\) contains advection, it is generally non-self-adjoint. Therefore the Green's-function representation uses the adjoint Green's function. Formally, the Green's function \(G_{\mathbf u}\) satisfies
+\begin{equation}
+\left(
+-\partial_{t_0}
++\mathcal L_{\mathbf u}^{\dagger}
+\right)
+G_{\mathbf u}(\mathbf x,t;\mathbf x_0,t_0)
+=
+\delta(\mathbf x-\mathbf x_0)\delta(t-t_0),
+\end{equation}
+with homogeneous versions of the boundary conditions imposed on \(b\).
+
+For example, if \(\nabla\cdot\mathbf u=0\), then the adjoint of the advective part is
+\[
+(\varepsilon\mathbf u\cdot\nabla)^\dagger
+=
+-\varepsilon\mathbf u\cdot\nabla,
+\]
+up to boundary terms. More generally,
+\[
+(\varepsilon\mathbf u\cdot\nabla)^\dagger G
+=
+-\varepsilon\nabla\cdot(\mathbf u G).
+\]
+
+The time-dependent Green's-function solution has the schematic form
+\begin{align}
+b(\mathbf x,t)
+={}&
+\int_{0}^{t}\int_{\Omega}
+G_{\mathbf u}(\mathbf x,t;\mathbf x_0,t_0)
+\Gamma(\mathbf x_0,t_0)B(\mathbf x_0,t_0)
+\,dV_0\,dt_0
+\nonumber \\
+&+
+\int_{\Omega}
+G_{\mathbf u}(\mathbf x,t;\mathbf x_0,0)
+b(\mathbf x_0,0)\,dV_0
+\nonumber \\
+&-
+\int_{0}^{t}\int_{S_\eta}
+\mathrm{Ek}\,k(\mathbf x_s,t_0)
+\nabla_{\mathbf x_s}G_{\mathbf u}(\mathbf x,t;\mathbf x_s,t_0)
+\cdot \hat{\mathbf n}_s\,
+b_s(\mathbf x_s,t_0)
+\,dS_s\,dt_0.
+\end{align}
+Here \(S_\eta\) is the upper boundary and \(\hat{\mathbf n}_s\) is the outward normal there.
+
+\subsection{Boundary propagator for the linear prescribed-velocity problem}
+
+The surface boundary contribution can be written in terms of a boundary propagator. Define
+\begin{equation}
+G'_{\mathbf u}(\mathbf x,t;\mathbf x_s,t_0)
+=
+-
+\left[
+\mathbf K_b(\mathbf x_s,t_0)
+\nabla_{\mathbf x_s}G_{\mathbf u}(\mathbf x,t;\mathbf x_s,t_0)
+\right]\cdot \hat{\mathbf n}_s,
+\end{equation}
+where, for purely vertical diffusion,
+\begin{equation}
+\mathbf K_b
+=
+\mathrm{Ek}\,k\,\hat{\mathbf z}\hat{\mathbf z}.
+\end{equation}
+Thus, for a nearly flat upper surface,
+\begin{equation}
+G'_{\mathbf u}(\mathbf x,t;\mathbf x_s,t_0)
+\simeq
+-\mathrm{Ek}\,k(\mathbf x_s,t_0)
+\partial_{z_s}G_{\mathbf u}(\mathbf x,t;\mathbf x_s,t_0)
+\bigg|_{z_s=\eta}.
+\end{equation}
+
+If we neglect initial data and interior sources, or isolate the surface-forced part of the solution, then
+\begin{equation}
+b_{\mathrm{surf}}(\mathbf x,t)
+=
+\int_{-\infty}^{t}\int_{S_\eta}
+G'_{\mathbf u}(\mathbf x,t;\mathbf x_s,t_0)
+b_s(\mathbf x_s,t_0)
+\,dS_s\,dt_0.
+\end{equation}
+
+If the velocity and mixing fields are statistically steady or time independent, one may write \(t_0=t-\tau\), where \(\tau\) is the transit time since surface contact:
+\begin{equation}
+b_{\mathrm{surf}}(\mathbf x,t)
+=
+\int_0^\infty \int_{S_\eta}
+G'_{\mathbf u}(\mathbf x;\mathbf x_s,\tau)
+b_s(\mathbf x_s,t-\tau)
+\,dS_s\,d\tau.
+\end{equation}
+
+The quantity
+\begin{equation}
+G'_{\mathbf u}(\mathbf x;\mathbf x_s,\tau)\,dS_s\,d\tau
+\end{equation}
+can be interpreted as the contribution to \(b(\mathbf x,t)\) from buoyancy imposed on the surface patch \(dS_s\) around \(\mathbf x_s\), at a prior time \(t-\tau\), over a time interval \(d\tau\).
+
+Thus \(G'_{\mathbf u}\) is a surface-to-interior transit-time distribution. It describes:
+\begin{itemize}
+\item which surface regions influence a given interior point;
+\item the distribution of times since surface contact;
+\item ventilation pathways;
+\item the memory of prior boundary conditions in the interior buoyancy field.
+\end{itemize}
+
+\subsection{The nonlinear coupled problem}
+
+In the fully coupled problem, the velocity is not prescribed. Rather,
+\begin{equation}
+\mathbf u=\mathcal M[b;\tau^x,\tau^y],
+\end{equation}
+where \(\mathcal M\) denotes the diagnostic map from buoyancy and wind stress to velocity, obtained by solving the momentum, hydrostatic, and continuity equations.
+
+The buoyancy equation may therefore be written schematically as
+\begin{equation}
+b_t+\varepsilon \mathcal M[b]\cdot\nabla b
+=
+\mathrm{Ek}\,\partial_z(k b_z)+\Gamma(B-b).
+\end{equation}
+This is nonlinear because both \(b\) and \(\mathcal M[b]\) appear in the advective term.
+
+There is no single fixed Green's function, independent of the solution, that maps boundary data to the buoyancy field. However, for any realized nonlinear solution \((b,\mathbf u)\), one may freeze the realized velocity field and define the associated linear transport operator
+\begin{equation}
+\mathcal L_{\mathbf u[b]}
+=
+\partial_t
++
+\varepsilon \mathbf u[b]\cdot\nabla
+-\mathrm{Ek}\,\partial_z(k\partial_z)
++\Gamma.
+\end{equation}
+The Green's function and boundary propagator of this operator are then well-defined as diagnostics of the realized state.
+
+Formally, the nonlinear solution can be represented implicitly as
+\begin{align}
+b(\mathbf x,t)
+={}&
+\int_{-\infty}^{t}\int_{S_\eta}
+G'_{\mathbf u[b]}(\mathbf x,t;\mathbf x_s,t_0)
+b_s(\mathbf x_s,t_0)
+\,dS_s\,dt_0
+\nonumber \\
+&+
+\int_{-\infty}^{t}\int_{\Omega}
+G_{\mathbf u[b]}(\mathbf x,t;\mathbf x_0,t_0)
+\Gamma(\mathbf x_0,t_0)B(\mathbf x_0,t_0)
+\,dV_0\,dt_0
++\cdots.
+\end{align}
+The ellipsis denotes possible initial-condition terms and any additional forcing terms.
+
+This formula is not a linear superposition formula, because
+\begin{equation}
+G'_{\mathbf u[b]}
+\end{equation}
+depends on the solution \(b\) itself. Changing the boundary forcing \(b_s\) changes \(b\), which changes \(\mathbf u\), which changes the propagator.
+
+Thus the nonlinear relation is better written schematically as
+\begin{equation}
+b
+=
+\mathcal G_{\mathbf u[b]}[b_s,\Gamma B],
+\end{equation}
+or
+\begin{equation}
+b(\mathbf x,t)
+=
+\int_{-\infty}^{t}\int_{S_\eta}
+G'_{\mathbf u[b]}(\mathbf x,t;\mathbf x_s,t_0)
+b_s(\mathbf x_s,t_0)
+\,dS_s\,dt_0
++\cdots.
+\end{equation}
+
+\subsection{Interpretation: state-dependent upstream memory}
+
+The boundary-propagator interpretation survives in the nonlinear problem, but with an important qualification: the propagator is state dependent.
+
+In the linear prescribed-velocity problem,
+\begin{equation}
+G'_{\mathbf u}
+\end{equation}
+is fixed once \(\mathbf u\) is specified. Therefore \(G'_{\mathbf u}\) gives a direct linear weighting of prior boundary buoyancy values.
+
+In the nonlinear coupled problem,
+\begin{equation}
+G'_{\mathbf u}=G'_{\mathbf u[b]}.
+\end{equation}
+The propagator is determined by the realized nonlinear state. It should therefore be interpreted as a conditional diagnostic:
+\[
+\text{current state}
+=
+\text{history of boundary/interior forcing filtered through state-dependent pathways}.
+\]
+
+Equivalently,
+\begin{equation}
+b_s
+\longrightarrow b
+\longrightarrow \mathbf u
+\longrightarrow G'_{\mathbf u[b]}
+\longrightarrow b.
+\end{equation}
+
+Thus the present buoyancy field depends on prior upstream boundary conditions, but the transport pathways carrying that memory are themselves shaped by the buoyancy-driven circulation.
+
+The velocity field also inherits this memory through
+\begin{equation}
+\mathbf u(\mathbf x,t)
+=
+\mathcal M[b;\tau^x,\tau^y].
+\end{equation}
+Hence, schematically,
+\begin{equation}
+\mathbf u(\mathbf x,t)
+=
+\mathcal M
+\left[
+\int_{-\infty}^{t}\int_{S_\eta}
+G'_{\mathbf u[b]}(\cdot,t;\mathbf x_s,t_0)
+b_s(\mathbf x_s,t_0)
+\,dS_s\,dt_0
++\cdots
+;\tau^x,\tau^y
+\right].
+\end{equation}
+
+A useful statement is:
+
+\begin{quote}
+Although the fully coupled problem is nonlinear and therefore lacks a boundary propagator independent of the solution, any realized nonlinear state defines an associated linear transport operator obtained by freezing the realized velocity field. The boundary propagator of this operator provides a physically meaningful diagnostic of how prior boundary buoyancy conditions are communicated to the interior along the realized transport pathways. In this sense, the present buoyancy and velocity fields retain a memory of upstream forcing, with the memory kernel determined by the nonlinear state itself.
+\end{quote}
+
+\subsection{Diagnostic memory versus causal sensitivity}
+
+It is important to distinguish three related ideas.
+
+\paragraph{1. Frozen-flow boundary propagator.}
+The frozen-flow boundary propagator
+\begin{equation}
+G'_{\mathbf u[b]}
+\end{equation}
+diagnoses the pathways and transit-time distribution associated with a realized nonlinear state. It answers questions such as:
+\begin{itemize}
+\item Which boundary regions contribute to the present state?
+\item What prior times are most relevant?
+\item What are the ventilation pathways?
+\item How old is the boundary influence at a given interior point?
+\end{itemize}
+
+\paragraph{2. Tangent-linear or adjoint sensitivity.}
+For infinitesimal perturbations to the boundary forcing, one should linearize the full nonlinear system about the realized state. If
+\[
+b\mapsto \mathbf u[b],
+\]
+then perturbations satisfy a tangent-linear system of the form
+\begin{equation}
+\delta b_t
++
+\varepsilon \mathbf u[b]\cdot\nabla \delta b
++
+\varepsilon \delta\mathbf u\cdot\nabla b
+=
+\mathrm{Ek}\,\partial_z(k\delta b_z)
+-\Gamma \delta b
++
+\delta(\Gamma B),
+\end{equation}
+with
+\begin{equation}
+\delta \mathbf u
+=
+D\mathcal M[b]\,\delta b.
+\end{equation}
+The resulting response kernel includes both the direct transport of \(\delta b\) by the frozen flow and the indirect effect of changes in the velocity field.
+
+Thus the full infinitesimal causal response has the schematic form
+\begin{equation}
+\delta b(\mathbf x,t)
+=
+\int
+\mathcal K(\mathbf x,t;\mathbf x_s,t_0)
+\delta b_s(\mathbf x_s,t_0)
+\,dS_s\,dt_0,
+\end{equation}
+where \(\mathcal K\) is the tangent-linear or adjoint sensitivity kernel of the full nonlinear system.
+
+In general,
+\begin{equation}
+\mathcal K\neq G'_{\mathbf u[b]}.
+\end{equation}
+
+\paragraph{3. Finite-amplitude counterfactuals.}
+For finite-amplitude changes to \(b_s\), the circulation changes, the propagator changes, and linear superposition fails. In that case, one generally needs:
+\begin{itemize}
+\item a new nonlinear simulation,
+\item an ensemble of nonlinear simulations,
+\item a perturbation expansion, or
+\item an adjoint/tangent-linear method if the perturbation is sufficiently small.
+\end{itemize}
+
+Thus:
+\[
+\boxed{
+\text{frozen-flow propagator}
+=
+\text{state-dependent pathway/memory diagnostic},
+}
+\]
+whereas
+\[
+\boxed{
+\text{tangent-linear/adjoint kernel}
+=
+\text{infinitesimal causal sensitivity}.
+}
+\]
+
+\subsection{Small-\(\varepsilon\) perturbation viewpoint}
+
+If
+\[
+\varepsilon=\mathrm{Pr}\,\mathrm{Bu}
+\]
+is small, one may expand
+\begin{align}
+b &= b^{(0)}+\varepsilon b^{(1)}+\varepsilon^2 b^{(2)}+\cdots,\\
+\mathbf u &= \mathbf u^{(0)}+\varepsilon \mathbf u^{(1)}+\varepsilon^2\mathbf u^{(2)}+\cdots.
+\end{align}
+
+At leading order,
+\begin{equation}
+\mathcal L_0 b^{(0)}=\Gamma B,
+\end{equation}
+where
+\begin{equation}
+\mathcal L_0
+=
+-\mathrm{Ek}\,\partial_z(k\partial_z)+\Gamma.
+\end{equation}
+This is the linear \(\varepsilon=0\) Green's-function problem.
+
+At first order,
+\begin{equation}
+\mathcal L_0 b^{(1)}
+=
+-\mathbf u^{(0)}\cdot\nabla b^{(0)},
+\end{equation}
+up to sign conventions depending on how \(\mathcal L_0\) is defined.
+
+Thus each correction solves a linear problem forced by lower-order solutions. The corresponding boundary propagator can be expanded as
+\begin{equation}
+G'_{\mathbf u[b]}
+=
+G'^{(0)}
++
+\varepsilon G'^{(1)}
++
+\varepsilon^2 G'^{(2)}
++\cdots.
+\end{equation}
+Here \(G'^{(0)}\) gives the leading-order memory kernel, while \(G'^{(1)}\) and higher corrections describe how nonlinear feedback modifies the transport pathways.
+
+\subsection{When does the upstream-memory idea apply?}
+
+The upstream-memory interpretation is not a generic property of all nonlinear PDEs. It applies most naturally to well-posed evolutionary transport problems in which initial, boundary, or source data are communicated to the current state along identifiable pathways.
+
+It applies well when:
+\begin{enumerate}
+\item The PDE is well posed as an input--state map:
+\[
+\text{forcing/boundary history}
+\longmapsto
+\text{state at time }t.
+\]
+
+\item The equation has a causal evolution structure, so that prior data influence later states.
+
+\item There is a meaningful direction of information flow, such as advection, diffusion, wave propagation, or characteristic propagation.
+
+\item The boundary or source data lie in the domain of dependence of the point of interest.
+
+\item A frozen-coefficient, linearized, or tangent-linear propagator can be meaningfully defined.
+
+\item The propagator is interpreted as state-dependent in the nonlinear problem.
+\end{enumerate}
+
+This includes many systems of the form
+\begin{equation}
+q_t+\mathbf u(q)\cdot\nabla q
+=
+\nabla\cdot(K(q)\nabla q)+R(q)+F,
+\end{equation}
+such as:
+\begin{itemize}
+\item advection--diffusion--reaction equations;
+\item passive and active tracer equations;
+\item buoyancy, temperature, and salinity transport;
+\item atmospheric and oceanic chemical transport;
+\item groundwater contaminant transport;
+\item nonlinear diffusion equations;
+\item hyperbolic systems before shock formation;
+\item linearized perturbations about nonlinear background states.
+\end{itemize}
+
+\subsection{Limits of the upstream-memory interpretation}
+
+The interpretation is weaker or may fail in the following situations.
+
+\paragraph{Ill-posed problems.}
+If the PDE is ill posed, nonunique, or lacks continuous dependence on data, then a stable memory map from prior forcing to current state may not exist.
+
+\paragraph{Purely elliptic problems.}
+For nonlinear elliptic boundary-value problems such as
+\begin{equation}
+-\nabla\cdot(a(u)\nabla u)=f,
+\end{equation}
+boundary data influence the interior nonlocally, but there is no natural notion of prior time or upstream propagation. One may still discuss boundary influence, but not upstream memory in the transit-time sense.
+
+\paragraph{Outflow boundaries without diffusion.}
+For pure advection,
+\begin{equation}
+q_t+\mathbf u\cdot\nabla q=0,
+\end{equation}
+boundary data influence the interior only on inflow boundaries where
+\begin{equation}
+\mathbf u\cdot\hat{\mathbf n}<0.
+\end{equation}
+On outflow boundaries, imposed Dirichlet data are not causally communicated into the interior. Similarly, for a diffusive boundary propagator proportional to
+\begin{equation}
+-\mathbf K\nabla G\cdot\hat{\mathbf n},
+\end{equation}
+the boundary propagator vanishes if \(\mathbf K=0\) and there is no inflow mechanism.
+
+\paragraph{Shocks and singularities.}
+For nonlinear hyperbolic conservation laws, characteristics may intersect and shocks may form. Before shocks, upstream memory along characteristics is clear. After shocks, memory is mediated by weak solutions, entropy conditions, and discontinuities. A smooth Green's-function picture may no longer apply.
+
+\paragraph{Strong chaos and long-time sensitivity.}
+In chaotic systems, the tangent-linear propagator may exist but grow rapidly due to positive Lyapunov exponents. Deterministic memory may become practically unrecoverable over long times. In dissipative systems, old memory may instead decay, leaving only a finite effective memory time.
+
+\paragraph{Finite-amplitude counterfactuals.}
+In nonlinear systems, changing the forcing changes the state and hence the propagator. Therefore a state-dependent propagator should not be used as a fixed kernel for arbitrary finite-amplitude counterfactuals.
+
+\subsection{Summary}
+
+For a linear prescribed-velocity buoyancy equation, the boundary propagator gives a direct map from prior surface buoyancy values to the interior buoyancy field:
+\begin{equation}
+b(\mathbf x,t)
+=
+\int_{-\infty}^{t}\int_{S_\eta}
+G'_{\mathbf u}(\mathbf x,t;\mathbf x_s,t_0)
+b_s(\mathbf x_s,t_0)
+\,dS_s\,dt_0
++\cdots.
+\end{equation}
+
+For the nonlinear coupled buoyancy--velocity problem, the same expression can be used only in a state-dependent sense:
+\begin{equation}
+b(\mathbf x,t)
+=
+\int_{-\infty}^{t}\int_{S_\eta}
+G'_{\mathbf u[b]}(\mathbf x,t;\mathbf x_s,t_0)
+b_s(\mathbf x_s,t_0)
+\,dS_s\,dt_0
++\cdots.
+\end{equation}
+
+The propagator \(G'_{\mathbf u[b]}\) is determined by the realized nonlinear circulation. It is therefore a diagnostic of the upstream memory embedded in the current state, not a universal linear response function.
+
+A concise summary is:
+\[
+\boxed{
+\text{Linear problem: fixed boundary propagator.}
+}
+\]
+\[
+\boxed{
+\text{Nonlinear problem: state-dependent boundary propagator.}
+}
+\]
+\[
+\boxed{
+\text{Frozen-flow propagator: pathway and memory diagnostic.}
+}
+\]
+\[
+\boxed{
+\text{Tangent-linear/adjoint kernel: infinitesimal causal sensitivity.}
+}
+\]
+\[
+\boxed{
+\text{Finite-amplitude counterfactual: requires nonlinear re-solution.}
+}
+\]
+
+
+\end{document}  
