@@ -20,12 +20,12 @@ function read_woa_climatology(tempfile, saltfile;
     tempvar="t_an", saltvar="s_an",
     lonvar="lon", latvar="lat", zvar="depth")
 
-    print("Reading WOA climatology from: ",tempfile," and ",saltfile,"...")
+    print("Reading WOA climatology from: ", tempfile, " and ", saltfile, "...")
     dT = NCDataset(tempfile)
 
-    x = collect(dT[lonvar][:])
-    y = collect(dT[latvar][:])
-    z = collect(dT[zvar][:])
+    x = Float64.(collect(dT[lonvar][:]))
+    y = Float64.(collect(dT[latvar][:]))
+    z = -Float64.(collect(dT[zvar][:]))   # negative-down, but may be decreasing
 
     Traw = Array(dT[tempvar][:, :, :, :])
     close(dT)
@@ -34,15 +34,19 @@ function read_woa_climatology(tempfile, saltfile;
     Sraw = Array(dS[saltvar][:, :, :, :])
     close(dS)
 
-    # WOA files are typically (lon, lat, depth, time)
     T = dropdims(Traw; dims=4)
     S = dropdims(Sraw; dims=4)
 
-    # Replace missings with NaN and convert to Float64
     T = Float64.(coalesce.(T, NaN))
     S = Float64.(coalesce.(S, NaN))
-    println("done.")
 
+    # sort z into increasing order for Interpolations.jl
+    p = sortperm(z)
+    z = z[p]
+    T = T[:, :, p]
+    S = S[:, :, p]
+
+    println("done.")
     return x, y, z, T, S
 end
 
@@ -56,57 +60,123 @@ function inspect_nc_var(filename, varname)
     close(ds)
 end
 
-function teos10_density(SP, t, p, lon, lat)
+"""
+    column_valid_range(T, S, i, j)
+
+Return the index range of finite values in the vertical column at (i,j).
+If no valid values exist, return (nothing, nothing).
+"""
+function column_valid_range(T, S, i, j)
+    nz = size(T, 3)
+    valid = falses(nz)
+    for k in 1:nz
+        valid[k] = isfinite(T[i,j,k]) && isfinite(S[i,j,k])
+    end
+
+    if !any(valid)
+        return nothing, nothing
+    end
+
+    kmin = findfirst(valid)
+    kmax = findlast(valid)
+    return kmin, kmax
+end
+
+"""
+    infer_ocean_depth_from_nans(z, T, S)
+
+Infer local ocean depth from the deepest finite T/S values in each column.
+Returns:
+- depth2d: 2D array of inferred bottom depth
+- kbot:    2D array of deepest valid index
+- ktop:    2D array of shallowest valid index
+"""
+function infer_ocean_depth_from_nans(z, T, S)
+    nx, ny, nz = size(T)
+    @assert size(S) == size(T)
+
+    depth2d = fill(NaN, nx, ny)
+    kbot = fill(0, nx, ny)
+    ktop = fill(0, nx, ny)
+
+    for i in 1:nx, j in 1:ny
+        kmin, kmax = column_valid_range(T, S, i, j)
+        if kmin !== nothing
+            ktop[i,j] = kmin
+            kbot[i,j] = kmax
+            depth2d[i,j] = -z[kmax]   # local bottom depth at deepest valid level
+        end
+    end
+
+    return depth2d, ktop, kbot
+end
+
+"""
+    infer_surface_level_from_nans(T, S)
+
+Return the shallowest valid vertical index in each column.
+"""
+function infer_surface_level_from_nans(T, S)
+    nx, ny, nz = size(T)
+    ktop = fill(0, nx, ny)
+
+    for i in 1:nx, j in 1:ny
+        for k in 1:nz
+            if isfinite(T[i,j,k]) && isfinite(S[i,j,k])
+                ktop[i,j] = k
+                break
+            end
+        end
+    end
+
+    return ktop
+end
+
+function teos10_density_buoyancy(SP, t, p, lon, lat)
     SA = gsw_sa_from_sp(SP, p, lon, lat)
     CT = gsw_ct_from_t(SA, t, p)
     ρ  = gsw_rho(SA, CT, p)
-    return ρ
+    b  = -g * ρ / ρ0
+    return b, ρ
 end
 
-function teos10_buoyancy(SP, t, p, lon, lat)
-    ρ = teos10_density(SP, t, p, lon, lat)
-    return -g * (ρ - ρ0) / ρ0
-end
-
-finite_mask(A) = isfinite.(A)
-
-# ------------------------------
-# Compute buoyancy fields
-# ------------------------------
-"""
-    compute_buoyancy_fields(T, S)
-
-Return 3D buoyancy B and 2D surface buoyancy bs.
-Assumes T and S are size (nx, ny, nz).
-Surface buoyancy is taken at the top level z = 1 (adjust if needed).
-"""
-function compute_buoyancy_TEOS10(x, y, z, T, S)
-    print("Computing buoyancy using TEOS10 functions...")
+function compute_buoyancy_density_depth_TEOS10(x, y, z, T, S)
+    print("Computing buoyancy using TEOS10 functions and inferring ocean depth...")
     @assert size(T) == size(S)
     nx, ny, nz = size(T)
 
     B = fill(NaN, nx, ny, nz)
+    ρ = fill(NaN, nx, ny, nz)
 
     for i in 1:nx, j in 1:ny, k in 1:nz
         if isfinite(T[i, j, k]) && isfinite(S[i, j, k])
             lon = x[i]
             lat = y[j]
             p   = gsw_p_from_z(z[k], lat)
-            B[i, j, k] = teos10_buoyancy(S[i, j, k], T[i, j, k], p, lon, lat)
+            B[i, j, k], ρ[i, j, k] = teos10_density_buoyancy(S[i, j, k], T[i, j, k], p, lon, lat)
         end
     end
 
+    # infer local ocean top level from finite values
     bs = fill(NaN, nx, ny)
+    depth2d = fill(NaN, nx, ny)
+
     for i in 1:nx, j in 1:ny
-        if isfinite(T[i, j, 1]) && isfinite(S[i, j, 1])
+        kmin, kmax = column_valid_range(T, S, i, j)
+        if kmin !== nothing
             lon = x[i]
             lat = y[j]
-            p   = gsw_p_from_z(z[1], lat)
-            bs[i, j] = teos10_buoyancy(S[i, j, 1], T[i, j, 1], p, lon, lat)
+
+            # local "surface" buoyancy = shallowest valid ocean level
+            p = gsw_p_from_z(z[kmax], lat)
+            bs[i, j],_ = teos10_density_buoyancy(S[i, j, kmax], T[i, j, kmax], p, lon, lat)
+
+            # local bottom depth = deepest valid level
+            depth2d[i, j] = -z[kmin]
         end
     end
     println("done.")
-    return B, bs
+    return B, bs, ρ, depth2d
 end
 
 function fill_nan_neighbors!(A; maxiter=100, radius=2)
@@ -195,6 +265,9 @@ function build_uniform_bspline_3d(x, y, z, B; nx=length(x), ny=length(y), nz=len
     print("Building uniform bspline interpolation model in 3D...")
     @assert size(B) == (length(x), length(y), length(z)) "B must have size (length(x), length(y), length(z))"
     @assert all(isfinite, B) "B still contains NaNs or Infs"
+    @assert issorted(x) "x must be strictly increasing"
+    @assert issorted(y) "y must be strictly increasing"
+    @assert issorted(z) "z must be strictly increasing"
 
     # --- temporary interpolant on the original grid ---
     # This works for nonuniform rectilinear grids
@@ -230,9 +303,11 @@ resample it onto a uniform grid, and return:
 """
 function build_uniform_bspline_2d(x, y, bs; nx=length(x), ny=length(y),
                                   xuniform=nothing, yuniform=nothing)
-    print("Building uniform bspline interpolation model in 2D")
+    print("Building uniform bspline interpolation model in 2D...")
     @assert size(bs) == (length(x), length(y)) "bs must have size (length(x), length(y))"
     @assert all(isfinite, bs) "bs still contains NaNs or Infs"
+    @assert issorted(x) "x must be strictly increasing"
+    @assert issorted(y) "y must be strictly increasing"
 
     tmp_itp = interpolate((x, y), bs, Gridded(Linear()))
 
@@ -374,6 +449,97 @@ function plot_north_atlantic_surface(Bsp, xu, yu, zsurf;
     return p
 end
 
+function plot_ocean_depth(depth2d, x, y; lonlim=nothing, latlim=nothing, positive_down=true)
+    dep = copy(depth2d)
+
+    # convert to positive downward depth if requested
+    if positive_down
+        dep = -dep
+    end
+
+    vals = dep[isfinite.(dep)]
+    @assert !isempty(vals) "No finite depth values to plot."
+
+    clim = (minimum(vals), maximum(vals))
+
+    p = heatmap(
+        x, y, dep',
+        xlabel = "Longitude",
+        ylabel = "Latitude",
+        title = "Inferred ocean depth",
+        color = :viridis,
+        colorbar_title = "Depth (m)",
+        clims = clim
+    )
+
+    if lonlim !== nothing
+        xlims!(p, lonlim)
+    end
+    if latlim !== nothing
+        ylims!(p, latlim)
+    end
+
+    return p
+end
+
+function plot_vertical_profile_comparison(x0, y0, z, B, T, S, ρ, Bsp, Tsp, Ssp, ρsp, xgrid, ygrid;
+    use_logz=false)
+
+    # nearest original horizontal grid point
+    ix = argmin(abs.(xgrid .- x0))
+    iy = argmin(abs.(ygrid .- y0))
+    println("ix,iy = ", ix, ", ", iy)
+
+    # original profiles
+    trueB  = [B[ix, iy, k] for k in 1:length(z)]
+    trueT  = [T[ix, iy, k] for k in 1:length(z)]
+    trueS  = [S[ix, iy, k] for k in 1:length(z)]
+    trueρ  = [ρ[ix, iy, k] for k in 1:length(z)]
+
+    # interpolated profiles
+    approxB = [Bsp(x0, y0, zk) for zk in z]
+    approxT = [Tsp(x0, y0, zk) for zk in z]
+    approxS = [Ssp(x0, y0, zk) for zk in z]
+    approxρ = [ρsp(x0, y0, zk) for zk in z]
+
+    # finite masks
+    okB = isfinite.(trueB) .& isfinite.(approxB)
+    okT = isfinite.(trueT) .& isfinite.(approxT)
+    okS = isfinite.(trueS) .& isfinite.(approxS)
+    okρ = isfinite.(trueρ) .& isfinite.(approxρ)
+
+    @assert any(okB) "No overlapping finite values in buoyancy profile."
+    @assert any(okT) "No overlapping finite values in temperature profile."
+    @assert any(okS) "No overlapping finite values in salinity profile."
+    @assert any(okρ) "No overlapping finite values in density profile."
+
+    p = plot(layout=(1,4), size=(1800, 600), legend=:bottomright)
+
+    # Buoyancy
+    plot!(p[1], trueB[okB], z[okB], label="Original", linewidth=2, xlabel="Buoyancy", ylabel="Depth (m)", title="Buoyancy")
+    plot!(p[1], approxB[okB], z[okB], label="Spline", linewidth=2, linestyle=:dash)
+
+    # Temperature
+    plot!(p[2], trueT[okT], z[okT], label="Original", linewidth=2, xlabel="T (°C)", ylabel="Depth (m)", title="Temperature")
+    plot!(p[2], approxT[okT], z[okT], label="Spline", linewidth=2, linestyle=:dash)
+
+    # Salinity
+    plot!(p[3], trueS[okS], z[okS], label="Original", linewidth=2, xlabel="S (psu)", ylabel="Depth (m)", title="Salinity")
+    plot!(p[3], approxS[okS], z[okS], label="Spline", linewidth=2, linestyle=:dash)
+
+    # Density
+    plot!(p[4], trueρ[okρ], z[okρ], label="Original", linewidth=2, xlabel="ρ (kg m⁻³)", ylabel="Depth (m)", title="Density")
+    plot!(p[4], approxρ[okρ], z[okρ], label="Spline", linewidth=2, linestyle=:dash)
+
+    if use_logz
+        for i in 1:4
+            yaxis!(p[i], :log)
+        end
+    end
+
+    return p
+end
+
 # ------------------------------
 # User-set physical constants
 # ------------------------------
@@ -385,19 +551,44 @@ const S0    = 35.0
 x, y, z, T, S = read_woa_climatology("woa23_decav_t00_01.nc",
                                      "woa23_decav_s00_01.nc")
 
-B, bs = compute_buoyancy_TEOS10(x, y, z, T, S)
+B, bs, ρ, depth2d = compute_buoyancy_density_depth_TEOS10(x, y, z, T, S)
+println("NaNs in depth2d: ", count(!isfinite, depth2d))
+println("Min depth: ", minimum(depth2d[isfinite.(depth2d)]))
+println("Max depth: ", maximum(depth2d[isfinite.(depth2d)]))
+
+pdepth = plot_ocean_depth(depth2d, x, y; lonlim=(-80, 20), latlim=(0, 70), positive_down=false)
+display(pdepth)
 
 Bfill  = fill_nan_neighbors!(B; radius=2)
-bsfill = fill_nan_neighbors_2d!(bs; radius=2)
-
 println("NaNs in Bfill: ", count(!isfinite, Bfill))
+Tfill  = fill_nan_neighbors!(T; radius=2)
+println("NaNs in Tfill: ", count(!isfinite, Tfill))
+Sfill  = fill_nan_neighbors!(S; radius=2)
+println("NaNs in Sfill: ", count(!isfinite, Sfill))
+ρfill  = fill_nan_neighbors!(ρ; radius=2)
+println("NaNs in ρfill: ", count(!isfinite, ρfill))
+bsfill = fill_nan_neighbors_2d!(bs; radius=2)
 println("NaNs in bsfill: ", count(!isfinite, bsfill))
 
-xu, yu, zu, Bu, Bsp = build_uniform_bspline_3d(x, y, z, Bfill; nx=128, ny=128, nz=64)
-xu2, yu2, bsu, bsp = build_uniform_bspline_2d(x, y, bsfill; nx=128, ny=128)
+xu, yu, zu, Bu, Bsp = build_uniform_bspline_3d(x, y, z, Bfill; nx=512, ny=256, nz=128)
+xu, yu, zu, Tu, Tsp = build_uniform_bspline_3d(x, y, z, Tfill; nx=512, ny=256, nz=128)
+xu, yu, zu, Su, Ssp = build_uniform_bspline_3d(x, y, z, Sfill; nx=512, ny=256, nz=128)
+xu, yu, zu, ρu, ρsp = build_uniform_bspline_3d(x, y, z, ρfill; nx=512, ny=256, nz=128)
+xu2, yu2, bsu, bsp = build_uniform_bspline_2d(x, y, bsfill; nx=512, ny=256)
 
-statsprof, trueprof, approxprof = check_vertical_profile(-40.0, 30.0, z, Bfill, Bsp, x, y)
-println("Vertical profile reproduction: ", statsprof)
+lat_check = 40.0
+lon_check = -30.0
+statsprof, trueprof, approxprof = check_vertical_profile(lat_check, lon_check, z, Bfill, Bsp, x, y)
+println("Vertical profile reproduction at ",lon_check,"oE, ",lat_check,"oN: ", statsprof)
+
+pprof = plot_vertical_profile_comparison(
+    -30.0, 40.0, z,
+    Bfill, Tfill, Sfill, ρfill,
+    Bsp, Tsp, Ssp, ρsp,
+    x, y
+)
+display(pprof)
+STOP
 
 stats_grid_3d, errgrid3d = check_grid_reproduction_3d(xu, yu, zu, Bu, Bsp)
 println("3D grid reproduction: ", stats_grid_3d)
@@ -407,4 +598,4 @@ stats_rand_3d, _, _ = check_3d_interpolation_accuracy(x, y, z, Bsp, tmpB; nsamp=
 println("3D random-point error: ", stats_rand_3d)
 
 pNA = plot_north_atlantic_surface(Bsp, xu, yu, zu[1])
-display(pNA)
+# display(pNA)
