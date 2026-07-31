@@ -16,13 +16,14 @@ export read_woa_climatology,
        fill_nan_neighbors_2d!,
        build_uniform_bspline_3d,
        build_uniform_bspline_2d,
+       interp2d_on_grid,
        interp_error_stats,
        check_3d_interpolation_accuracy,
        check_vertical_profile,
        check_grid_reproduction_3d,
        surface_slice,
-       plot_north_atlantic_surface,
-       plot_ocean_depth,
+       plot_north_atlantic_surface_masked,
+       plot_ocean_depth_masked,
        plot_vertical_profile_comparison,
        build_all_woa_fields,
        basic_field_tests,
@@ -47,10 +48,15 @@ const ρ0 = 1026.0
 
 Read WOA climatological temperature and salinity from separate NetCDF files.
 
+Convention:
+- `z` is height, positive upward
+- `z = 0` at the sea surface
+- `z < 0` below the surface
+
 Returns:
 - `x` : longitude vector
 - `y` : latitude vector
-- `z` : vertical coordinate vector, converted to negative-down and sorted increasing
+- `z` : height vector, sorted increasing
 - `T` : temperature array of size `(nx, ny, nz)`
 - `S` : salinity array of size `(nx, ny, nz)`
 """
@@ -63,6 +69,8 @@ function read_woa_climatology(tempfile, saltfile;
     dT = NCDataset(tempfile)
     x = Float64.(collect(dT[lonvar][:]))
     y = Float64.(collect(dT[latvar][:]))
+
+    # WOA depth is positive downward; convert to height positive upward
     z = -Float64.(collect(dT[zvar][:]))
 
     Traw = Array(dT[tempvar][:, :, :, :])
@@ -72,12 +80,15 @@ function read_woa_climatology(tempfile, saltfile;
     Sraw = Array(dS[saltvar][:, :, :, :])
     close(dS)
 
+    # Remove singleton time dimension
     T = dropdims(Traw; dims=4)
     S = dropdims(Sraw; dims=4)
 
+    # Replace missing values with NaN
     T = Float64.(coalesce.(T, NaN))
     S = Float64.(coalesce.(S, NaN))
 
+    # Sort z into increasing order for Interpolations.jl
     p = sortperm(z)
     z = z[p]
     T = T[:, :, p]
@@ -126,8 +137,8 @@ end
 """
     column_valid_range(T, S, i, j)
 
-Return `(kmin, kmax)` for finite values in the vertical column at `(i,j)`.
-If none exist, return `(nothing, nothing)`.
+Return `(kmin, kmax)` for finite values in the vertical column at `(i,j)`,
+requiring both temperature and salinity to be finite.
 """
 function column_valid_range(T, S, i, j)
     nz = size(T, 3)
@@ -147,7 +158,11 @@ end
 """
     infer_ocean_depth_from_nans(z, T, S)
 
-Infer bathymetry from deepest finite T/S values in each column.
+Infer bathymetry from finite T/S values in each column.
+
+Convention:
+- `z` is height, positive upward
+- `depth2d` is positive downward, i.e. `H = -z_bottom`
 
 Returns:
 - `depth2d` : positive-down inferred bottom depth
@@ -167,7 +182,9 @@ function infer_ocean_depth_from_nans(z, T, S)
         if kmin !== nothing
             ktop[i,j] = kmin
             kbot[i,j] = kmax
-            depth2d[i,j] = -z[kmax]
+
+            # deepest valid level = first finite index in increasing-z ordering
+            depth2d[i,j] = -z[kmin]
         end
     end
 
@@ -175,19 +192,25 @@ function infer_ocean_depth_from_nans(z, T, S)
 end
 
 """
-    compute_buoyancy_density_depth_TEOS10(x, y, z, T, S; surface_level=:deepest)
+    compute_buoyancy_density_depth_TEOS10(x, y, z, T, S; surface_level=:shallowest)
 
 Compute:
-- `B`     : buoyancy
-- `bs`    : representative 2D buoyancy field
-- `ρ`     : density
+- `B`      : buoyancy
+- `bs`     : representative 2D buoyancy field
+- `ρ`      : density
 - `depth2d`: inferred bathymetry
 
-`surface_level` controls how `bs` is chosen per column:
-- `:shallowest` = use shallowest valid level
-- `:deepest`    = use deepest valid level
+Convention:
+- `z` is height, positive upward
+- `z = 0` at sea surface
+- `z < 0` below sea surface
+- `depth2d > 0` is depth
+
+Arguments:
+- `surface_level = :shallowest` uses the level closest to the surface (`kmax`)
+- `surface_level = :deepest` uses the deepest valid level (`kmin`)
 """
-function compute_buoyancy_density_depth_TEOS10(x, y, z, T, S; surface_level=:deepest)
+function compute_buoyancy_density_depth_TEOS10(x, y, z, T, S; surface_level=:shallowest)
     println("Computing buoyancy, density, and inferred depth ...")
 
     @assert size(T) == size(S)
@@ -196,6 +219,7 @@ function compute_buoyancy_density_depth_TEOS10(x, y, z, T, S; surface_level=:dee
     B = fill(NaN, nx, ny, nz)
     ρ = fill(NaN, nx, ny, nz)
 
+    # 3D fields
     @inbounds for i in 1:nx, j in 1:ny, k in 1:nz
         if isfinite(T[i,j,k]) && isfinite(S[i,j,k])
             lon = x[i]
@@ -207,6 +231,7 @@ function compute_buoyancy_density_depth_TEOS10(x, y, z, T, S; surface_level=:dee
         end
     end
 
+    # 2D representative buoyancy and bathymetry
     bs = fill(NaN, nx, ny)
     depth2d = fill(NaN, nx, ny)
 
@@ -216,11 +241,14 @@ function compute_buoyancy_density_depth_TEOS10(x, y, z, T, S; surface_level=:dee
             lon = x[i]
             lat = y[j]
 
-            ksurf = surface_level === :shallowest ? kmin : kmax
+            # Choose representative level
+            ksurf = surface_level === :shallowest ? kmax : kmin
+
             p = gsw_p_from_z(z[ksurf], lat)
             bs[i,j], _ = teos10_buoyancy_density(S[i,j,ksurf], T[i,j,ksurf], p, lon, lat)
 
-            depth2d[i,j] = -z[kmax]
+            # Bottom depth from deepest valid level
+            depth2d[i,j] = -z[kmin]
         end
     end
 
@@ -378,6 +406,15 @@ function build_uniform_bspline_2d(x, y, F; nx=length(x), ny=length(y),
     return xu, yu, Fu, sitp
 end
 
+function interp2d_on_grid(F, x, y, xnew, ynew)
+    itp = interpolate((x, y), F, Gridded(Linear()))
+    G = Array{Float64}(undef, length(xnew), length(ynew))
+    for i in eachindex(xnew), j in eachindex(ynew)
+        G[i,j] = itp(xnew[i], ynew[j])
+    end
+    return G
+end
+
 # ============================================================================
 # Diagnostics
 # ============================================================================
@@ -495,20 +532,36 @@ function surface_slice(Fsp, xu, yu, zlevel)
 end
 
 """
-    plot_north_atlantic_surface(Fsp, xu, yu, zsurf; lonlim=(-100,40), latlim=(0,80))
+    mask_land(A, depth2d)
 
-Plot a surface slice over the North Atlantic.
+Return a copy of `A` with entries set to `NaN` wherever `depth2d == 0`
+(or non-finite). Intended for plotting ocean-only fields.
 """
-function plot_north_atlantic_surface(Fsp, xu, yu, zsurf; lonlim=(-100, 40), latlim=(0, 80))
-    A = surface_slice(Fsp, xu, yu, zsurf)
-    Aplot = copy(A)
-    Aplot[.!isfinite.(Aplot)] .= NaN
+function mask_land(A, depth2d)
+    Am = copy(A)
+    land = .!(isfinite.(depth2d) .& (depth2d .> 0))
+    Am[land] .= NaN
+    return Am
+end
 
-    vals = Aplot[isfinite.(Aplot)]
+"""
+    plot_north_atlantic_surface_masked(Fsp, xu, yu, zsurf, depth2d; lonlim=(-100,40), latlim=(0,80))
+
+Plot a surface slice over the North Atlantic, masking land using `depth2d`.
+"""
+function plot_north_atlantic_surface_masked(Fsp, xu, yu, zsurf, depth2d;
+    lonlim=(-100, 40), latlim=(0, 80))
+
+    A = surface_slice(Fsp, xu, yu, zsurf)
+
+    # Mask land
+    A = mask_land(A, depth2d)
+
+    vals = A[isfinite.(A)]
     @assert !isempty(vals) "No finite values in plot region."
 
     return heatmap(
-        xu, yu, Aplot',
+        xu, yu, A',
         xlim=lonlim, ylim=latlim,
         xlabel="Longitude", ylabel="Latitude",
         title="Surface buoyancy: North Atlantic",
@@ -519,23 +572,23 @@ function plot_north_atlantic_surface(Fsp, xu, yu, zsurf; lonlim=(-100, 40), latl
     )
 end
 
-"""
-    plot_ocean_depth(depth2d, x, y; lonlim=nothing, latlim=nothing, positive_down=true)
+function plot_ocean_depth_masked(depth2d, x, y; lonlim=nothing, latlim=nothing)
+    dep = copy(depth2d)
 
-Plot the inferred ocean depth field.
-"""
-function plot_ocean_depth(depth2d, x, y; lonlim=nothing, latlim=nothing, positive_down=true)
-    dep = positive_down ? depth2d : -depth2d
+    # Mask land and nonfinite points
+    dep[.!isfinite.(dep) .| (dep .<= 0)] .= NaN
+
     vals = dep[isfinite.(dep)]
-    @assert !isempty(vals) "No finite depth values to plot."
+    @assert !isempty(vals) "No finite ocean depth values to plot."
 
     p = heatmap(
         x, y, dep',
-        xlabel="Longitude", ylabel="Latitude",
-        title="Inferred ocean depth",
-        color=:viridis,
-        colorbar_title="Depth (m)",
-        clims=(minimum(vals), maximum(vals))
+        xlabel = "Longitude",
+        ylabel = "Latitude",
+        title = "Inferred ocean depth",
+        color = :viridis,
+        colorbar_title = "Depth (m)",
+        clims = (minimum(vals), maximum(vals))
     )
 
     lonlim !== nothing && xlims!(p, lonlim)
