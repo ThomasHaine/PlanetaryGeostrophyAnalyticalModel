@@ -6,6 +6,7 @@ include("OceanBuoyancyTools.jl")
 # --------------------------------------------------------------------------
 case = :woa
 # case = :ideal_elliptical
+# case = :ideal_ridge
 # case = :ideal_constriction
 # case = :woa
 
@@ -23,8 +24,8 @@ if case == :woa
     fields = OceanBuoyancyTools.build_case_fields(:woa;
         tempfile = "woa23_decav_t00_01.nc",
         saltfile  = "woa23_decav_s00_01.nc",
-        surface_level = :deepest,
-        nx = 512, ny = 256, nz = 128,
+        surface_level = :shallowest,
+        nx = 256, ny = 128, nz = 64,
         lon0 = -30.0, lat0 = 40.0
     )
 

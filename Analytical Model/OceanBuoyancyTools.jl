@@ -6,6 +6,7 @@ using Interpolations
 using Statistics
 using Random
 using Plots
+using Infiltrator
 
 export OceanScales,
        read_woa_climatology,

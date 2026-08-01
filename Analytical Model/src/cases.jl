@@ -28,19 +28,32 @@ function build_case_fields(case::Symbol; kwargs...)
 end
 
 
+# ============================================================================
+# WOA case
+# ============================================================================
+
 """
     build_woa_case_fields(; tempfile, saltfile, surface_level=:deepest,
                            nx=512, ny=256, nz=128,
                            lon0=0.0, lat0=0.0)
 
-Build a WOA-based case in local Cartesian coordinates.
+Build a WOA-based case in local Cartesian coordinates for interpolation/model work.
 
-Returns a named tuple containing:
-- dimensional input fields
+Workflow:
+1. Read WOA in lon/lat/z
+2. Compute buoyancy, density, and inferred bathymetry using geographic lon/lat
+3. Convert lon/lat to Cartesian x/y
+4. Fill NaNs
+5. Build spline interpolants on uniform grids
+
+Returns a named tuple with:
+- geographic coordinates: `lon`, `lat`
+- Cartesian coordinates: `x`, `y`
+- vertical coordinate: `z`
+- raw fields
 - filled fields
-- bathymetry
-- uniform-grid resampled fields
-- spline interpolants
+- uniform grids
+- interpolants
 """
 function build_woa_case_fields(; tempfile,
                                saltfile,
@@ -48,25 +61,25 @@ function build_woa_case_fields(; tempfile,
                                nx=512, ny=256, nz=128,
                                lon0=0.0, lat0=0.0)
 
-    # Read WOA data in lon/lat
+    # Read WOA in geographic coordinates
     lon, lat, z, T, S = read_woa_climatology(tempfile, saltfile)
 
-    # Convert to local Cartesian coordinates
-    x, y = lonlat_to_cartesian_xy(lon, lat; lon0=lon0, lat0=lat0)
-
-    # Compute buoyancy, density, and inferred bathymetry
-    B, bs, ρ, depth2d = compute_buoyancy_density_depth_TEOS10(
-        x, y, z, T, S; surface_level=surface_level
+    # Compute buoyancy/density/depth using geographic lon/lat
+    Bgeo, bsgeo, ρgeo, depth2dgeo = compute_buoyancy_density_depth_TEOS10(
+        lon, lat, z, T, S; surface_level=surface_level
     )
 
+    # Convert lon/lat to local Cartesian coordinates for model work
+    x, y = lonlat_to_cartesian_xy(lon, lat; lon0=lon0, lat0=lat0)
+
     # Fill missing values before spline construction
-    Bfill  = fill_nan_neighbors!(B; radius=2)
+    Bfill  = fill_nan_neighbors!(Bgeo; radius=2)
     Tfill  = fill_nan_neighbors!(T; radius=2)
     Sfill  = fill_nan_neighbors!(S; radius=2)
-    ρfill  = fill_nan_neighbors!(ρ; radius=2)
-    bsfill = fill_nan_neighbors_2d!(bs; radius=2)
+    ρfill  = fill_nan_neighbors!(ρgeo; radius=2)
+    bsfill = fill_nan_neighbors_2d!(bsgeo; radius=2)
 
-    # Build spline interpolants on uniform grids
+    # Build interpolants on uniform Cartesian grids
     xu, yu, zu, Bu, Bsp = build_uniform_bspline_3d(x, y, z, Bfill; nx=nx, ny=ny, nz=nz)
     _,  _,  _,  Tu, Tsp = build_uniform_bspline_3d(x, y, z, Tfill; nx=nx, ny=ny, nz=nz)
     _,  _,  _,  Su, Ssp = build_uniform_bspline_3d(x, y, z, Sfill; nx=nx, ny=ny, nz=nz)
@@ -76,26 +89,57 @@ function build_woa_case_fields(; tempfile,
     return (
         case = :woa,
 
-        # original grid and fields
-        x = x, y = y, z = z,
-        T = T, S = S,
-        B = B, bs = bs, ρ = ρ, depth2d = depth2d,
+        # geographic coordinates
+        lon = lon,
+        lat = lat,
+
+        # Cartesian model coordinates
+        x = x,
+        y = y,
+        z = z,
+
+        # raw fields
+        T = T,
+        S = S,
+        B = Bgeo,
+        bs = bsgeo,
+        ρ = ρgeo,
+        depth2d = depth2dgeo,
 
         # filled fields
-        Bfill = Bfill, Tfill = Tfill, Sfill = Sfill, ρfill = ρfill, bsfill = bsfill,
+        Bfill = Bfill,
+        Tfill = Tfill,
+        Sfill = Sfill,
+        ρfill = ρfill,
+        bsfill = bsfill,
 
         # uniform grids
-        xu = xu, yu = yu, zu = zu,
-        xu2 = xu2, yu2 = yu2,
+        xu = xu,
+        yu = yu,
+        zu = zu,
+        xu2 = xu2,
+        yu2 = yu2,
 
         # resampled fields
-        Bu = Bu, Tu = Tu, Su = Su, ρu = ρu, bsu = bsu,
+        Bu = Bu,
+        Tu = Tu,
+        Su = Su,
+        ρu = ρu,
+        bsu = bsu,
 
         # interpolants
-        Bsp = Bsp, Tsp = Tsp, Ssp = Ssp, ρsp = ρsp, bsp = bsp
+        Bsp = Bsp,
+        Tsp = Tsp,
+        Ssp = Ssp,
+        ρsp = ρsp,
+        bsp = bsp
     )
 end
 
+
+# ============================================================================
+# Idealized cases
+# ============================================================================
 
 """
     build_ideal_case_fields(kind; x, y, z, ...)
@@ -149,7 +193,7 @@ function build_ideal_case_fields(kind::Symbol; x, y, z,
     # Full buoyancy field
     B = ideal_buoyancy_field(x, y, z; bs=0.0, Δb=buoyancy_amp, λ=buoyancy_λ, hx=bs)
 
-    # Mask outside the ocean
+    # Mask outside ocean
     mask = ideal_basin_mask(x, y, z, H)
     Bmasked = copy(B)
     Bmasked[.!mask] .= NaN
@@ -158,7 +202,7 @@ function build_ideal_case_fields(kind::Symbol; x, y, z,
     Bfill = fill_nan_neighbors!(Bmasked; radius=2)
     bsfill = fill_nan_neighbors_2d!(bs; radius=2)
 
-    # Build spline interpolants on uniform grids
+    # Build interpolants on uniform grids
     xu, yu, zu, Bu, Bsp = build_uniform_bspline_3d(x, y, z, Bfill; nx=nx, ny=ny, nz=nz)
     xu2, yu2, bsu, bsp  = build_uniform_bspline_2d(x, y, bsfill; nx=nx, ny=ny)
 
@@ -166,20 +210,30 @@ function build_ideal_case_fields(kind::Symbol; x, y, z,
         case = kind,
 
         # original grid and fields
-        x = x, y = y, z = z,
-        H = H, bs = bs, B = Bmasked,
+        x = x,
+        y = y,
+        z = z,
+        H = H,
+        bs = bs,
+        B = Bmasked,
 
         # filled fields
-        Bfill = Bfill, bsfill = bsfill,
+        Bfill = Bfill,
+        bsfill = bsfill,
 
         # uniform grids
-        xu = xu, yu = yu, zu = zu,
-        xu2 = xu2, yu2 = yu2,
+        xu = xu,
+        yu = yu,
+        zu = zu,
+        xu2 = xu2,
+        yu2 = yu2,
 
         # resampled fields
-        Bu = Bu, bsu = bsu,
+        Bu = Bu,
+        bsu = bsu,
 
         # interpolants
-        Bsp = Bsp, bsp = bsp
+        Bsp = Bsp,
+        bsp = bsp
     )
 end
