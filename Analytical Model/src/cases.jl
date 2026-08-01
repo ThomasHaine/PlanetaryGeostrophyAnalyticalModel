@@ -1,0 +1,185 @@
+# ============================================================================
+# High-level case builders
+# ============================================================================
+
+"""
+    build_case_fields(case; kwargs...)
+
+Build either WOA-based or idealized fields and their spline interpolants.
+
+`case` may be:
+- `:woa`
+- `:ideal_elliptical`
+- `:ideal_ridge`
+- `:ideal_constriction`
+"""
+function build_case_fields(case::Symbol; kwargs...)
+    if case == :woa
+        return build_woa_case_fields(; kwargs...)
+    elseif case == :ideal_elliptical
+        return build_ideal_case_fields(:elliptical; kwargs...)
+    elseif case == :ideal_ridge
+        return build_ideal_case_fields(:ridge; kwargs...)
+    elseif case == :ideal_constriction
+        return build_ideal_case_fields(:constriction; kwargs...)
+    else
+        error("Unknown case: $case")
+    end
+end
+
+
+"""
+    build_woa_case_fields(; tempfile, saltfile, surface_level=:deepest,
+                           nx=512, ny=256, nz=128,
+                           lon0=0.0, lat0=0.0)
+
+Build a WOA-based case in local Cartesian coordinates.
+
+Returns a named tuple containing:
+- dimensional input fields
+- filled fields
+- bathymetry
+- uniform-grid resampled fields
+- spline interpolants
+"""
+function build_woa_case_fields(; tempfile,
+                               saltfile,
+                               surface_level=:deepest,
+                               nx=512, ny=256, nz=128,
+                               lon0=0.0, lat0=0.0)
+
+    # Read WOA data in lon/lat
+    lon, lat, z, T, S = read_woa_climatology(tempfile, saltfile)
+
+    # Convert to local Cartesian coordinates
+    x, y = lonlat_to_cartesian_xy(lon, lat; lon0=lon0, lat0=lat0)
+
+    # Compute buoyancy, density, and inferred bathymetry
+    B, bs, ρ, depth2d = compute_buoyancy_density_depth_TEOS10(
+        x, y, z, T, S; surface_level=surface_level
+    )
+
+    # Fill missing values before spline construction
+    Bfill  = fill_nan_neighbors!(B; radius=2)
+    Tfill  = fill_nan_neighbors!(T; radius=2)
+    Sfill  = fill_nan_neighbors!(S; radius=2)
+    ρfill  = fill_nan_neighbors!(ρ; radius=2)
+    bsfill = fill_nan_neighbors_2d!(bs; radius=2)
+
+    # Build spline interpolants on uniform grids
+    xu, yu, zu, Bu, Bsp = build_uniform_bspline_3d(x, y, z, Bfill; nx=nx, ny=ny, nz=nz)
+    _,  _,  _,  Tu, Tsp = build_uniform_bspline_3d(x, y, z, Tfill; nx=nx, ny=ny, nz=nz)
+    _,  _,  _,  Su, Ssp = build_uniform_bspline_3d(x, y, z, Sfill; nx=nx, ny=ny, nz=nz)
+    _,  _,  _,  ρu, ρsp = build_uniform_bspline_3d(x, y, z, ρfill; nx=nx, ny=ny, nz=nz)
+    xu2, yu2, bsu, bsp  = build_uniform_bspline_2d(x, y, bsfill; nx=nx, ny=ny)
+
+    return (
+        case = :woa,
+
+        # original grid and fields
+        x = x, y = y, z = z,
+        T = T, S = S,
+        B = B, bs = bs, ρ = ρ, depth2d = depth2d,
+
+        # filled fields
+        Bfill = Bfill, Tfill = Tfill, Sfill = Sfill, ρfill = ρfill, bsfill = bsfill,
+
+        # uniform grids
+        xu = xu, yu = yu, zu = zu,
+        xu2 = xu2, yu2 = yu2,
+
+        # resampled fields
+        Bu = Bu, Tu = Tu, Su = Su, ρu = ρu, bsu = bsu,
+
+        # interpolants
+        Bsp = Bsp, Tsp = Tsp, Ssp = Ssp, ρsp = ρsp, bsp = bsp
+    )
+end
+
+
+"""
+    build_ideal_case_fields(kind; x, y, z, ...)
+
+Build an idealized basin and buoyancy field, then interpolate it.
+
+`kind` may be:
+- `:elliptical`
+- `:ridge`
+- `:constriction`
+
+Required keywords:
+- `x`, `y`, `z`
+
+Optional keywords:
+- `nx`, `ny`, `nz`
+- `buoyancy_bs`
+- `buoyancy_amp`
+- `buoyancy_λ`
+- geometry keywords passed through to basin constructors
+"""
+function build_ideal_case_fields(kind::Symbol; x, y, z,
+                                 nx=length(x), ny=length(y), nz=length(z),
+                                 buoyancy_bs=nothing,
+                                 buoyancy_amp=2e-4,
+                                 buoyancy_λ=800.0,
+                                 kwargs...)
+
+    x = collect(x)
+    y = collect(y)
+    z = collect(z)
+
+    # Build bathymetry
+    H = if kind == :elliptical
+        ideal_elliptical_basin(x, y; kwargs...)
+    elseif kind == :ridge
+        ideal_basin_with_ridge(x, y; kwargs...)
+    elseif kind == :constriction
+        ideal_basin_with_constriction(x, y; kwargs...)
+    else
+        error("Unknown ideal kind: $kind")
+    end
+
+    # Surface buoyancy
+    bs = buoyancy_bs === nothing ?
+        ideal_surface_buoyancy(x, y; b0=0.0, amp=buoyancy_amp) :
+        buoyancy_bs
+
+    @assert size(bs) == (length(x), length(y))
+
+    # Full buoyancy field
+    B = ideal_buoyancy_field(x, y, z; bs=0.0, Δb=buoyancy_amp, λ=buoyancy_λ, hx=bs)
+
+    # Mask outside the ocean
+    mask = ideal_basin_mask(x, y, z, H)
+    Bmasked = copy(B)
+    Bmasked[.!mask] .= NaN
+
+    # Fill NaNs for spline construction
+    Bfill = fill_nan_neighbors!(Bmasked; radius=2)
+    bsfill = fill_nan_neighbors_2d!(bs; radius=2)
+
+    # Build spline interpolants on uniform grids
+    xu, yu, zu, Bu, Bsp = build_uniform_bspline_3d(x, y, z, Bfill; nx=nx, ny=ny, nz=nz)
+    xu2, yu2, bsu, bsp  = build_uniform_bspline_2d(x, y, bsfill; nx=nx, ny=ny)
+
+    return (
+        case = kind,
+
+        # original grid and fields
+        x = x, y = y, z = z,
+        H = H, bs = bs, B = Bmasked,
+
+        # filled fields
+        Bfill = Bfill, bsfill = bsfill,
+
+        # uniform grids
+        xu = xu, yu = yu, zu = zu,
+        xu2 = xu2, yu2 = yu2,
+
+        # resampled fields
+        Bu = Bu, bsu = bsu,
+
+        # interpolants
+        Bsp = Bsp, bsp = bsp
+    )
+end
