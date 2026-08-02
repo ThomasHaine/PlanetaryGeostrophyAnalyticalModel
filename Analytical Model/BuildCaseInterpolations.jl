@@ -86,6 +86,21 @@ else
 end
 
 # --------------------------------------------------------------------------
+# Nondimensionalize the case
+# --------------------------------------------------------------------------
+S = OceanBuoyancyTools.OceanScales(
+    L = 2.0e6,
+    H0 = 4.5e3,
+    f0 = 1.0e-4,
+    N0 = 1.0e-3,
+    ν0 = 1.0e-2,
+    κ0 = 1.0e-3,
+    γ  = 1.0e-5,
+    τ0 = 0.1
+)
+fields_nd = OceanBuoyancyTools.nondimensionalize_case(fields, S)
+
+# --------------------------------------------------------------------------
 # Diagnostics and figures
 # --------------------------------------------------------------------------
 println("Running diagnostics for case = $case")

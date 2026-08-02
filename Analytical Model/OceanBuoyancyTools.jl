@@ -21,7 +21,9 @@ export OceanScales,
        ideal_basin_mask,
        build_case_fields,
        build_all_woa_fields,
-       run_case_diagnostics
+       run_case_diagnostics,
+       nondimensionalize_case,
+       redimensionalize_case
 
 const g  = 9.81
 const ρ0 = 1026.0
@@ -31,5 +33,6 @@ include("src/woa.jl")
 include("src/interp.jl")
 include("src/diagnostics.jl")
 include("src/cases.jl")
+include("src/NonDimensionalizationTools.jl")
 
 end # module
