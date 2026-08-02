@@ -8,8 +8,7 @@ using Random
 using Plots
 using Infiltrator
 
-export OceanScales,
-       read_woa_climatology,
+export read_woa_climatology,
        lonlat_to_cartesian_xy,
        teos10_buoyancy_density,
        ideal_elliptical_basin,
@@ -22,8 +21,13 @@ export OceanScales,
        build_case_fields,
        build_all_woa_fields,
        run_case_diagnostics,
+       OceanScales,
        nondimensionalize_case,
-       redimensionalize_case
+       redimensionalize_case,
+       rebuild_nondimensional_case,
+       plot_ocean_depth_nd,
+       plot_surface_buoyancy_nd,
+       plot_vertical_profile_comparison_nd
 
 const g  = 9.81
 const ρ0 = 1026.0

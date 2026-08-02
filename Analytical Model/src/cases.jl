@@ -104,7 +104,7 @@ function build_woa_case_fields(; tempfile,
         B = Bgeo,
         bs = bsgeo,
         ρ = ρgeo,
-        depth2d = depth2dgeo,
+        H = depth2dgeo,
 
         # filled fields
         Bfill = Bfill,

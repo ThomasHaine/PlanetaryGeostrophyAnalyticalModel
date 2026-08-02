@@ -4,7 +4,7 @@ include("OceanBuoyancyTools.jl")
 # --------------------------------------------------------------------------
 # User choice
 # --------------------------------------------------------------------------
-case = :ideal_elliptical
+case = :ideal_ridge
 # case = :ideal_elliptical
 # case = :ideal_ridge
 # case = :ideal_constriction
@@ -86,21 +86,6 @@ else
 end
 
 # --------------------------------------------------------------------------
-# Nondimensionalize the case
-# --------------------------------------------------------------------------
-S = OceanBuoyancyTools.OceanScales(
-    L = 2.0e6,
-    H0 = 4.5e3,
-    f0 = 1.0e-4,
-    N0 = 1.0e-3,
-    ν0 = 1.0e-2,
-    κ0 = 1.0e-3,
-    γ  = 1.0e-5,
-    τ0 = 0.1
-)
-fields_nd = OceanBuoyancyTools.nondimensionalize_case(fields, S)
-
-# --------------------------------------------------------------------------
 # Diagnostics and figures
 # --------------------------------------------------------------------------
 println("Running diagnostics for case = $case")
@@ -119,3 +104,31 @@ OceanBuoyancyTools.run_case_diagnostics(fields;
     latlim = latlim,
     sample_points = sample_points
 )
+
+# --------------------------------------------------------------------------
+# Nondimensionalize the case
+# --------------------------------------------------------------------------
+S = OceanBuoyancyTools.OceanScales(
+    L = 2.0e6,
+    H0 = 5.0e3,
+    f0 = 1.0e-4,
+    N0 = 1.0e-3,
+    ν0 = 1.0e-2,
+    κ0 = 1.0e-3,
+    γ  = 1.0e-5,
+    τ0 = 0.1
+)
+
+fields_nd = OceanBuoyancyTools.rebuild_nondimensional_case(fields, S)
+p = OceanBuoyancyTools.plot_vertical_profile_comparison_nd(
+    0.0, 0.0, fields_nd.z,
+    fields_nd.Bfill, fields_nd.Bsp,
+    fields_nd.x, fields_nd.y
+)
+display(p)
+
+p2 = OceanBuoyancyTools.plot_surface_buoyancy_nd(fields_nd.bsfill, fields_nd.x, fields_nd.y, fields_nd.H)
+display(p2)
+
+p3 = OceanBuoyancyTools.plot_ocean_depth_nd(fields_nd.H,fields_nd.x, fields_nd.y)
+display(p3)

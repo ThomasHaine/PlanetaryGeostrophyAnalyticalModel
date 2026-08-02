@@ -132,7 +132,7 @@ function plot_ideal_basin(x, y, H; lonlim=nothing, latlim=nothing)
         x, y, H',
         xlabel = "x",
         ylabel = "y",
-        title = "Ideal ocean basin depth",
+        title = "Ocean basin depth",
         color = :viridis,
         colorbar_title = "H",
         clims = (minimum(vals), maximum(vals))
@@ -375,7 +375,7 @@ function run_case_diagnostics(fields; lonlim=nothing, latlim=nothing, sample_poi
         A = mask_land(surface_slice(fields.Bsp, fields.xu, fields.yu, fields.zu[1]), H_on_spline)
         vals = A[isfinite.(A)]
         push!(plots_out, heatmap(fields.xu, fields.yu, A',
-                                 title = "Surface buoyancy (ideal case)",
+                                 title = "Surface buoyancy)",
                                  xlabel = "x", ylabel = "y",
                                  color = :balance, aspect_ratio = :equal,
                                  clims = (minimum(vals), maximum(vals))))
