@@ -387,9 +387,6 @@ function run_case_diagnostics(fields; lonlim=nothing, latlim=nothing, sample_poi
         if haskey(fields, :Tfill)
             _, p = sample_profile_test(fields; x0 = -30.0, y0 = 40.0)
             push!(plots_out, p)
-        else
-            _, p = sample_profile_test(fields; x0 = fields.x[end÷2], y0 = fields.y[end÷2])
-            push!(plots_out, p)
         end
     end
 

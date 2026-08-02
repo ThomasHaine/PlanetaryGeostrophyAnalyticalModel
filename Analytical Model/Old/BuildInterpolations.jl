@@ -40,7 +40,7 @@ H = ideal_basin_with_ridge(collect(x), collect(y);
 pH = plot_ideal_basin(collect(x), collect(y), H)
 display(pH)
 
-bs = ideal_surface_buoyancy(collect(x), collect(y); b0=0.0, amp=2e-4, x0=0.0, y0=0.0, ax=8e5, ay=8e5)
+bs = ideal_surface_buoyancy(collect(x), collect(y); ρ0=1026.0, Δρ=2e-4, x0=0.0, y0=0.0, ax=8e5, ay=8e5)
 
 B = ideal_buoyancy_field(collect(x), collect(y), collect(z); bs=0.0, Δb=2e-4, λ=800.0, hx=bs)
 

@@ -4,7 +4,7 @@ include("OceanBuoyancyTools.jl")
 # --------------------------------------------------------------------------
 # User choice
 # --------------------------------------------------------------------------
-case = :woa
+case = :ideal_elliptical
 # case = :ideal_elliptical
 # case = :ideal_ridge
 # case = :ideal_constriction
@@ -91,12 +91,12 @@ end
 println("Running diagnostics for case = $case")
 println(OceanBuoyancyTools.basic_field_tests(fields))
 
-stats, p = OceanBuoyancyTools.sample_profile_test(fields; x0=-30.0, y0=40.0)
+stats, p = OceanBuoyancyTools.sample_profile_test(fields)
 println(stats)
 display(p)
 
-p2 = OceanBuoyancyTools.plot_sample_vertical_profiles(fields, sample_points)
-display(p2)
+# p2 = OceanBuoyancyTools.plot_sample_vertical_profiles(fields, sample_points)
+# display(p2)
 
 # General diagnostic plots
 OceanBuoyancyTools.run_case_diagnostics(fields;

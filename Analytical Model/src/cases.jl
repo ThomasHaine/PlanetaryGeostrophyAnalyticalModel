@@ -183,15 +183,22 @@ function build_ideal_case_fields(kind::Symbol; x, y, z,
         error("Unknown ideal kind: $kind")
     end
 
-    # Surface buoyancy
     bs = buoyancy_bs === nothing ?
-        ideal_surface_buoyancy(x, y; b0=0.0, amp=buoyancy_amp) :
+        ideal_surface_buoyancy(x, y; b0=-g, amp=buoyancy_amp) :
         buoyancy_bs
 
-    @assert size(bs) == (length(x), length(y))
+    B = ideal_buoyancy_field(x, y, z;
+        bs = bs,
+        bdeep = -9.83,
+        a1 = 0.004,
+        λ1 = 100.0,
+        a2 = 0.006,
+        λ2 = 500.0,
+        a3 = 0.002,
+        λ3 = 1800.0
+    )
 
-    # Full buoyancy field
-    B = ideal_buoyancy_field(x, y, z; bs=0.0, Δb=buoyancy_amp, λ=buoyancy_λ, hx=bs)
+    @assert size(bs) == (length(x), length(y))
 
     # Mask outside ocean
     mask = ideal_basin_mask(x, y, z, H)

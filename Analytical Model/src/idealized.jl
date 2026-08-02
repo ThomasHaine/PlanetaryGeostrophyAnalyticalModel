@@ -67,44 +67,79 @@ function ideal_basin_with_constriction(x, y; H0=4000.0, ax=1.0e6, ay=1.0e6,
 end
 
 """
-    ideal_exponential_buoyancy(z; bs=0.0, Δb=1.0e-3, λ=500.0)
+    ideal_surface_buoyancy(x, y; b0=-9.83, amp=2e-3, x0=0.0, y0=0.0, ax=1.0e6, ay=1.0e6)
 
-Exponential vertical buoyancy profile.
-"""
-ideal_exponential_buoyancy(z; bs=0.0, Δb=1.0e-3, λ=500.0) =
-    bs .+ Δb .* (1 .- exp.(z ./ λ))
+Gaussian surface buoyancy anomaly added to a background buoyancy `b0`.
 
-"""
-    ideal_surface_buoyancy(x, y; ...)
+Returns a 2D buoyancy field `b_s(x,y)`.
 
-Gaussian surface buoyancy anomaly.
+This is meant to be used as the upper boundary value for idealized buoyancy
+fields in the same sign convention as the model:
+- buoyancy near `-g` in units of m/s²
+- small horizontal variations about that background
 """
-function ideal_surface_buoyancy(x, y; b0=0.0, amp=1.0e-3, x0=0.0, y0=0.0,
+function ideal_surface_buoyancy(x, y; b0=-9.83, amp=2e-3, x0=0.0, y0=0.0,
                                 ax=1.0e6, ay=1.0e6)
     bs = Array{Float64}(undef, length(x), length(y))
+
     for i in eachindex(x), j in eachindex(y)
         ξ = (x[i] - x0) / ax
         η = (y[j] - y0) / ay
         bs[i, j] = b0 + amp * exp(-(ξ^2 + η^2))
     end
+
     return bs
 end
 
 """
-    ideal_buoyancy_field(x, y, z; ...)
+    ideal_buoyancy_field(x, y, z; bs=nothing,
+                         bdeep=-9.83,
+                         a1=0.004, λ1=100.0,
+                         a2=0.006, λ2=500.0,
+                         a3=0.002, λ3=1800.0)
 
-3D buoyancy field built from a surface buoyancy field and exponential vertical structure.
+Construct an ideal buoyancy field `b(x,y,z)` with a realistic vertical profile.
+
+The vertical structure is represented as a sum of exponentials:
+    b_vert(z) = bdeep + a1*exp(z/λ1) + a2*exp(z/λ2) + a3*exp(z/λ3)
+
+with `z` positive upward and `z=0` at the sea surface.
+
+If `bs` is provided, it is used as the surface buoyancy field `b_s(x,y)`.
+Otherwise a constant background surface buoyancy `bdeep` is used.
+
+The field is then constructed so that the surface value matches `bs`:
+    b(x,y,z) = bs(x,y) + [b_vert(z) - b_vert(0)]
 """
-function ideal_buoyancy_field(x, y, z; bs=0.0, Δb=1.0e-3, λ=500.0, hx=nothing)
+function ideal_buoyancy_field(x, y, z; bs=nothing,
+                              bdeep=-9.83,
+                              a1=0.004, λ1=100.0,
+                              a2=0.006, λ2=500.0,
+                              a3=0.002, λ3=1800.0)
+
     nx, ny, nz = length(x), length(y), length(z)
     B = Array{Float64}(undef, nx, ny, nz)
 
-    Bsurf = hx === nothing ? fill(bs, nx, ny) : hx
+    # surface buoyancy field
+    Bsurf = bs === nothing ? fill(bdeep, nx, ny) : bs
     @assert size(Bsurf) == (nx, ny)
 
-    for i in 1:nx, j in 1:ny, k in 1:nz
-        B[i, j, k] = Bsurf[i, j] + Δb * (1 - exp(z[k] / λ))
+    # vertical buoyancy profile relative to deep background
+    bvert = similar(z, Float64)
+    for k in eachindex(z)
+        bvert[k] = bdeep +
+                   a1 * exp(z[k] / λ1) +
+                   a2 * exp(z[k] / λ2) +
+                   a3 * exp(z[k] / λ3)
     end
+
+    # shift so that the correction vanishes at the surface z = 0
+    bsurfvert = bdeep + a1 * exp(0.0 / λ1) + a2 * exp(0.0 / λ2) + a3 * exp(0.0 / λ3)
+
+    for i in 1:nx, j in 1:ny, k in 1:nz
+        B[i, j, k] = Bsurf[i, j] + (bvert[k] - bsurfvert)
+    end
+
     return B
 end
 
