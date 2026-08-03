@@ -27,7 +27,9 @@ export read_woa_climatology,
        rebuild_nondimensional_case,
        plot_ocean_depth_nd,
        plot_surface_buoyancy_nd,
-       plot_vertical_profile_comparison_nd
+       plot_vertical_profile_comparison_nd,
+       run_nd_case_diagnostics,
+       print_spline_diagnostic_table
 
 const g  = 9.81
 const ρ0 = 1026.0

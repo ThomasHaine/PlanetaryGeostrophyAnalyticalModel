@@ -132,3 +132,6 @@ display(p2)
 
 p3 = OceanBuoyancyTools.plot_ocean_depth_nd(fields_nd.Ĥ,fields_nd.x̂, fields_nd.ŷ)
 display(p3)
+
+results, plots = OceanBuoyancyTools.run_nd_case_diagnostics(fields_nd; sample_points=[(0.1, 0.2), (0.5, 0.5)])
+OceanBuoyancyTools.print_spline_diagnostic_table(results)

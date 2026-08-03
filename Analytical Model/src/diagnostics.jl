@@ -1,3 +1,5 @@
+using Printf
+
 # ============================================================================
 # Diagnostics and plotting
 # ============================================================================
@@ -368,4 +370,348 @@ function run_case_diagnostics(fields; lonlim=nothing, latlim=nothing, sample_poi
     end
 
     return plots_out
+end
+
+"""
+    eval_vertical_spline_column(spl, zgrid)
+
+Evaluate a 1D spline object on a vertical grid.
+"""
+function eval_vertical_spline_column(spl, zgrid)
+    return [spl(z) for z in zgrid]
+end
+
+"""
+    central_diff_1d(f, z)
+
+Compute centered finite differences of a 1D sampled profile.
+Returns an array of the same length as `f`.
+Endpoints use one-sided differences.
+"""
+function central_diff_1d(f, z)
+    n = length(f)
+    @assert length(z) == n
+    df = similar(f)
+
+    if n < 2
+        return fill(NaN, n)
+    end
+
+    df[1] = (f[2] - f[1]) / (z[2] - z[1])
+    @inbounds for k in 2:n-1
+        df[k] = (f[k+1] - f[k-1]) / (z[k+1] - z[k-1])
+    end
+    df[n] = (f[n] - f[n-1]) / (z[n] - z[n-1])
+
+    return df
+end
+
+"""
+    trapz_1d(f, z)
+
+Compute the trapezoidal integral of a sampled 1D profile.
+"""
+function trapz_1d(f, z)
+    @assert length(f) == length(z)
+    s = 0.0
+    @inbounds for k in 1:length(z)-1
+        s += 0.5 * (f[k] + f[k+1]) * (z[k+1] - z[k])
+    end
+    return s
+end
+
+"""
+    spline_profile_stats(z, f, spl)
+
+Compare a sampled profile `f(z)` against spline `spl(z)`.
+
+Returns statistics for values, derivatives, and integrals.
+"""
+function spline_profile_stats(z, f, spl)
+    approx = eval_vertical_spline_column(spl, z)
+    valstats = interp_error_stats(f, approx)
+
+    # Derivative comparison
+    dfdz_fd = central_diff_1d(f, z)
+    dfdz_sp = [BSplineKit.diff(spl)(zk) for zk in z]
+    derivstats = interp_error_stats(dfdz_fd, dfdz_sp)
+
+    # Integral comparison
+    int_fd = trapz_1d(f, z)
+    int_sp = spline_definite_integral(spl, first(z), last(z))
+
+    return (
+        values = valstats,
+        derivative = derivstats,
+        integral_abs_error = abs(int_sp - int_fd),
+        integral_fd = int_fd,
+        integral_sp = int_sp
+    )
+end
+
+"""
+    check_vertical_spline_field_3d(Bu, Bzsplines, zgrid)
+
+Compare every spline column in a 3D field against the resampled grid data.
+
+Returns summary stats for:
+- values
+- derivatives
+- integrals
+"""
+function check_vertical_spline_field_3d(Bu, Bzsplines, zgrid)
+    nx, ny, nz = size(Bu)
+
+    val_true = Float64[]
+    val_approx = Float64[]
+    d_true = Float64[]
+    d_approx = Float64[]
+    int_err = Float64[]
+
+    @inbounds for i in 1:nx, j in 1:ny
+        f = vec(Bu[i, j, :])
+        spl = Bzsplines[i, j]
+
+        # values
+        approx = eval_vertical_spline_column(spl, zgrid)
+        append!(val_true, f)
+        append!(val_approx, approx)
+
+        # derivatives
+        fd = central_diff_1d(f, zgrid)
+        ad = [BSplineKit.diff(spl)(zk) for zk in zgrid]
+        append!(d_true, fd)
+        append!(d_approx, ad)
+
+        # integrals
+        int_fd = trapz_1d(f, zgrid)
+        int_sp = spline_definite_integral(spl, first(zgrid), last(zgrid))
+        push!(int_err, abs(int_sp - int_fd))
+    end
+
+    return (
+        values = interp_error_stats(val_true, val_approx),
+        derivatives = interp_error_stats(d_true, d_approx),
+        integral_abs_error = (
+            maxabs = maximum(int_err),
+            rmse = sqrt(mean(int_err.^2)),
+            mae = mean(abs.(int_err))
+        )
+    )
+end
+
+"""
+    check_surface_spline_field_2d(bsu, bssplines, ygrid)
+
+Compare every spline row against the resampled 2D field data.
+"""
+function check_surface_spline_field_2d(bsu, bssplines, ygrid)
+    nx, ny = size(bsu)
+
+    val_true = Float64[]
+    val_approx = Float64[]
+    d_true = Float64[]
+    d_approx = Float64[]
+    int_err = Float64[]
+
+    @inbounds for i in 1:nx
+        f = vec(bsu[i, :])
+        spl = bssplines[i]
+
+        approx = [spl(y) for y in ygrid]
+        append!(val_true, f)
+        append!(val_approx, approx)
+
+        fd = central_diff_1d(f, ygrid)
+        ad = [BSplineKit.diff(spl)(yk) for yk in ygrid]
+        append!(d_true, fd)
+        append!(d_approx, ad)
+
+        int_fd = trapz_1d(f, ygrid)
+        int_sp = spline_definite_integral(spl, first(ygrid), last(ygrid))
+        push!(int_err, abs(int_sp - int_fd))
+    end
+
+    return (
+        values = interp_error_stats(val_true, val_approx),
+        derivatives = interp_error_stats(d_true, d_approx),
+        integral_abs_error = (
+            maxabs = maximum(int_err),
+            rmse = sqrt(mean(int_err.^2)),
+            mae = mean(abs.(int_err))
+        )
+    )
+end
+
+"""
+    plot_vertical_spline_validation(x̂0, ŷ0, ẑ, B̂u, B̂zsplines, x̂grid, ŷgrid)
+
+Plot a profile and its spline reconstruction in nondimensional space.
+"""
+function plot_vertical_spline_validation(x̂0, ŷ0, ẑ, B̂u, B̂zsplines, x̂grid, ŷgrid)
+    ix = argmin(abs.(x̂grid .- x̂0))
+    iy = argmin(abs.(ŷgrid .- ŷ0))
+
+    trueB = vec(B̂u[ix, iy, :])
+    spl = B̂zsplines[ix, iy]
+    approxB = [spl(zk) for zk in ẑ]
+
+    ok = isfinite.(trueB) .& isfinite.(approxB)
+
+    p = plot(
+        trueB[ok], ẑ[ok],
+        label = "Grid",
+        linewidth = 2,
+        xlabel = "b̂",
+        ylabel = "ẑ",
+        title = "Vertical spline validation",
+        legend = :bottomright
+    )
+    plot!(p, approxB[ok], ẑ[ok], label = "Spline", linewidth = 2, linestyle = :dash)
+    return p
+end
+
+"""
+    plot_vertical_derivative_validation(x̂0, ŷ0, ẑ, B̂u, B̂zsplines, x̂grid, ŷgrid)
+
+Compare analytic spline derivative to finite differences.
+"""
+function plot_vertical_derivative_validation(x̂0, ŷ0, ẑ, B̂u, B̂zsplines, x̂grid, ŷgrid)
+    ix = argmin(abs.(x̂grid .- x̂0))
+    iy = argmin(abs.(ŷgrid .- ŷ0))
+
+    f = vec(B̂u[ix, iy, :])
+    spl = B̂zsplines[ix, iy]
+
+    fd = central_diff_1d(f, ẑ)
+    ad = [BSplineKit.diff(spl)(zk) for zk in ẑ]
+
+    ok = isfinite.(fd) .& isfinite.(ad)
+
+    p = plot(
+        fd[ok], ẑ[ok],
+        label = "Finite diff",
+        linewidth = 2,
+        xlabel = "db̂/dẑ",
+        ylabel = "ẑ",
+        title = "Vertical derivative validation",
+        legend = :bottomright
+    )
+    plot!(p, ad[ok], ẑ[ok], label = "Spline derivative", linewidth = 2, linestyle = :dash)
+    return p
+end
+
+"""
+    run_nd_case_diagnostics(fields_nd; sample_points=Tuple[])
+
+Run validation checks for a nondimensional case.
+"""
+function run_nd_case_diagnostics(fields_nd; sample_points=Tuple[])
+    results = Dict{Symbol, Any}()
+    plots_out = Any[]
+
+    # 3D buoyancy spline checks
+    if haskey(fields_nd, :B̂u) && haskey(fields_nd, :B̂zsplines)
+        results[:B̂_spline_stats] = check_vertical_spline_field_3d(
+            fields_nd.B̂u, fields_nd.B̂zsplines, fields_nd.ẑu
+        )
+
+        if !isempty(sample_points)
+            for (x0, y0) in sample_points
+                push!(plots_out, plot_vertical_spline_validation(
+                    x0, y0, fields_nd.ẑu, fields_nd.B̂u, fields_nd.B̂zsplines, fields_nd.x̂u, fields_nd.ŷu
+                ))
+                push!(plots_out, plot_vertical_derivative_validation(
+                    x0, y0, fields_nd.ẑu, fields_nd.B̂u, fields_nd.B̂zsplines, fields_nd.x̂u, fields_nd.ŷu
+                ))
+            end
+        end
+    end
+
+    # 2D surface buoyancy checks
+    if haskey(fields_nd, :b̂su) && haskey(fields_nd, :b̂ssplines)
+        results[:b̂s_spline_stats] = check_surface_spline_field_2d(
+            fields_nd.b̂su, fields_nd.b̂ssplines, fields_nd.ŷu2
+        )
+    end
+
+    return results, plots_out
+end
+
+function print_spline_diagnostic_table(stats_dict)
+    rows = Vector{Vector{String}}()
+
+    for (name, stats) in sort(collect(stats_dict); by = x -> String(x[1]))
+        if !(stats isa NamedTuple)
+            continue
+        end
+
+        v = hasproperty(stats, :values) ? stats.values : (maxabs=NaN, rmse=NaN, mae=NaN)
+        d = hasproperty(stats, :derivatives) ? stats.derivatives : (maxabs=NaN, rmse=NaN, mae=NaN)
+        i = hasproperty(stats, :integral_abs_error) ? stats.integral_abs_error : (maxabs=NaN, rmse=NaN, mae=NaN)
+
+        push!(rows, [
+            String(name),
+            @sprintf("%.3e", v.maxabs),
+            @sprintf("%.3e", v.rmse),
+            @sprintf("%.3e", v.mae),
+            @sprintf("%.3e", d.maxabs),
+            @sprintf("%.3e", d.rmse),
+            @sprintf("%.3e", d.mae),
+            @sprintf("%.3e", i.maxabs),
+            @sprintf("%.3e", i.rmse),
+            @sprintf("%.3e", i.mae)
+        ])
+    end
+
+    if isempty(rows)
+        println("No spline diagnostics found to print.")
+        return nothing
+    end
+
+    headers = [
+        "Field",
+        "Value max|e|", "Value RMSE", "Value MAE",
+        "Deriv max|e|", "Deriv RMSE", "Deriv MAE",
+        "Int max|e|", "Int RMSE", "Int MAE"
+    ]
+
+    # compute column widths
+    ncol = length(headers)
+    widths = [length(h) for h in headers]
+    for r in rows
+        for j in 1:ncol
+            widths[j] = max(widths[j], length(r[j]))
+        end
+    end
+
+    # helper to print a separator
+    function print_sep()
+        print("+")
+        for w in widths
+            print(repeat("-", w + 2), "+")
+        end
+        println()
+    end
+
+    # header
+    print_sep()
+    print("|")
+    for j in 1:ncol
+        print(" ", rpad(headers[j], widths[j]), " |")
+    end
+    println()
+    print_sep()
+
+    # rows
+    for r in rows
+        print("|")
+        for j in 1:ncol
+            print(" ", rpad(r[j], widths[j]), " |")
+        end
+        println()
+    end
+    print_sep()
+
+    return nothing
 end
