@@ -2,7 +2,7 @@ module OceanBuoyancyTools
 
 using NCDatasets
 using GibbsSeaWater
-using Interpolations
+using BSplineKit
 using Statistics
 using Random
 using Plots
