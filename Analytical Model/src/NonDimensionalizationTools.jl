@@ -148,8 +148,7 @@ redimensionalize_depth(deptĥ, S::OceanScales) = deptĥ .* S.H0
 """
     nondimensionalize_case(fields, S)
 
-Nondimensionalize a `fields` named tuple from either a WOA or ideal case.
-
+Nondimensionalize a case named tuple.
 Returns a new named tuple with nondimensional coordinates and fields.
 """
 function nondimensionalize_case(fields, S::OceanScales)
@@ -157,13 +156,13 @@ function nondimensionalize_case(fields, S::OceanScales)
 
     # Coordinates
     if haskey(fields, :x)
-        out[:x] = nondimensionalize_field(fields.x, S.L)
+        out[:x̂] = nondimensionalize_field(fields.x̂, S.L)
     end
     if haskey(fields, :y)
-        out[:y] = nondimensionalize_field(fields.y, S.L)
+        out[:ŷ] = nondimensionalize_field(fields.ŷ, S.L)
     end
     if haskey(fields, :z)
-        out[:z] = nondimensionalize_field(fields.z, S.H0)
+        out[:ẑ] = nondimensionalize_field(fields.ẑ, S.H0)
     end
     if haskey(fields, :lon)
         out[:lon] = fields.lon
@@ -174,24 +173,24 @@ function nondimensionalize_case(fields, S::OceanScales)
 
     # Raw fields
     if haskey(fields, :B)
-        out[:B] = nondimensionalize_buoyancy(fields.B, S)
+        out[:B̂] = nondimensionalize_buoyancy(fields.B, S)
     end
     if haskey(fields, :bs)
-        out[:bs] = nondimensionalize_buoyancy(fields.bs, S)
+        out[:b̂s] = nondimensionalize_buoyancy(fields.bs, S)
     end
     if haskey(fields, :H)
-        out[:H] = nondimensionalize_bathymetry(fields.H, S)
+        out[:Ĥ] = nondimensionalize_bathymetry(fields.H, S)
     end
     if haskey(fields, :depth2d)
-        out[:depth2d] = nondimensionalize_depth(fields.depth2d, S)
+        out[:depth2d̂] = nondimensionalize_depth(fields.depth2d, S)
     end
 
     # Filled fields
     if haskey(fields, :Bfill)
-        out[:Bfill] = nondimensionalize_buoyancy(fields.Bfill, S)
+        out[:B̂fill] = nondimensionalize_buoyancy(fields.Bfill, S)
     end
     if haskey(fields, :bsfill)
-        out[:bsfill] = nondimensionalize_buoyancy(fields.bsfill, S)
+        out[:b̂sfill] = nondimensionalize_buoyancy(fields.bsfill, S)
     end
 
     # WOA thermodynamic fields are left dimensional for now
@@ -216,44 +215,36 @@ function nondimensionalize_case(fields, S::OceanScales)
 
     # Grids
     if haskey(fields, :xu)
-        out[:xu] = nondimensionalize_field(fields.xu, S.L)
+        out[:x̂u] = nondimensionalize_field(fields.xu, S.L)
     end
     if haskey(fields, :yu)
-        out[:yu] = nondimensionalize_field(fields.yu, S.L)
+        out[:ŷu] = nondimensionalize_field(fields.yu, S.L)
     end
     if haskey(fields, :zu)
-        out[:zu] = nondimensionalize_field(fields.zu, S.H0)
+        out[:ẑu] = nondimensionalize_field(fields.zu, S.H0)
     end
     if haskey(fields, :xu2)
-        out[:xu2] = nondimensionalize_field(fields.xu2, S.L)
+        out[:x̂u2] = nondimensionalize_field(fields.xu2, S.L)
     end
     if haskey(fields, :yu2)
-        out[:yu2] = nondimensionalize_field(fields.yu2, S.L)
+        out[:ŷu2] = nondimensionalize_field(fields.yu2, S.L)
     end
 
     # Resampled buoyancy fields
     if haskey(fields, :Bu)
-        out[:Bu] = nondimensionalize_buoyancy(fields.Bu, S)
+        out[:B̂u] = nondimensionalize_buoyancy(fields.Bu, S)
     end
     if haskey(fields, :bsu)
-        out[:bsu] = nondimensionalize_buoyancy(fields.bsu, S)
+        out[:b̂su] = nondimensionalize_buoyancy(fields.bsu, S)
     end
-
-    # Interpolants are preserved; they are still dimensional unless rebuilt
-    if haskey(fields, :Bsp)
-        out[:Bsp] = fields.Bsp
+    if haskey(fields, :Tu)
+        out[:T̂u] = fields.Tu
     end
-    if haskey(fields, :bsp)
-        out[:bsp] = fields.bsp
+    if haskey(fields, :Su)
+        out[:Ŝu] = fields.Su
     end
-    if haskey(fields, :Tsp)
-        out[:Tsp] = fields.Tsp
-    end
-    if haskey(fields, :Ssp)
-        out[:Ssp] = fields.Ssp
-    end
-    if haskey(fields, :ρsp)
-        out[:ρsp] = fields.ρsp
+    if haskey(fields, :ρu)
+        out[:ρ̂u] = fields.ρu
     end
 
     return (; out...)
@@ -267,14 +258,14 @@ Redimensionalize a nondimensional case named tuple.
 function redimensionalize_case(fieldŝ, S::OceanScales)
     out = Dict{Symbol, Any}()
 
-    if haskey(fieldŝ, :x)
-        out[:x] = rd_x(fieldŝ.x, S)
+    if haskey(fieldŝ, :x̂)
+        out[:x] = rd_x(fieldŝ.x̂, S)
     end
-    if haskey(fieldŝ, :y)
-        out[:y] = rd_y(fieldŝ.y, S)
+    if haskey(fieldŝ, :ŷ)
+        out[:y] = rd_y(fieldŝ.ŷ, S)
     end
-    if haskey(fieldŝ, :z)
-        out[:z] = rd_z(fieldŝ.z, S)
+    if haskey(fieldŝ, :ẑ)
+        out[:z] = rd_z(fieldŝ.ẑ, S)
     end
     if haskey(fieldŝ, :lon)
         out[:lon] = fieldŝ.lon
@@ -283,23 +274,23 @@ function redimensionalize_case(fieldŝ, S::OceanScales)
         out[:lat] = fieldŝ.lat
     end
 
-    if haskey(fieldŝ, :B)
-        out[:B] = redimensionalize_buoyancy(fieldŝ.B, S)
+    if haskey(fieldŝ, :B̂)
+        out[:B] = redimensionalize_buoyancy(fieldŝ.B̂, S)
     end
-    if haskey(fieldŝ, :bs)
-        out[:bs] = redimensionalize_buoyancy(fieldŝ.bs, S)
+    if haskey(fieldŝ, :b̂s)
+        out[:bs] = redimensionalize_buoyancy(fieldŝ.b̂s, S)
     end
-    if haskey(fieldŝ, :H)
-        out[:H] = redimensionalize_bathymetry(fieldŝ.H, S)
+    if haskey(fieldŝ, :Ĥ)
+        out[:H] = redimensionalize_bathymetry(fieldŝ.Ĥ, S)
     end
-    if haskey(fieldŝ, :depth2d)
-        out[:depth2d] = redimensionalize_depth(fieldŝ.depth2d, S)
+    if haskey(fieldŝ, :depth2d̂)
+        out[:depth2d] = redimensionalize_depth(fieldŝ.depth2d̂, S)
     end
-    if haskey(fieldŝ, :Bfill)
-        out[:Bfill] = redimensionalize_buoyancy(fieldŝ.Bfill, S)
+    if haskey(fieldŝ, :B̂fill)
+        out[:Bfill] = redimensionalize_buoyancy(fieldŝ.B̂fill, S)
     end
-    if haskey(fieldŝ, :bsfill)
-        out[:bsfill] = redimensionalize_buoyancy(fieldŝ.bsfill, S)
+    if haskey(fieldŝ, :b̂sfill)
+        out[:bsfill] = redimensionalize_buoyancy(fieldŝ.b̂sfill, S)
     end
 
     if haskey(fieldŝ, :T)
@@ -321,43 +312,36 @@ function redimensionalize_case(fieldŝ, S::OceanScales)
         out[:ρfill] = fieldŝ.ρfill
     end
 
-    if haskey(fieldŝ, :xu)
-        out[:xu] = rd_x(fieldŝ.xu, S)
+    if haskey(fieldŝ, :x̂u)
+        out[:xu] = rd_x(fieldŝ.x̂u, S)
     end
-    if haskey(fieldŝ, :yu)
-        out[:yu] = rd_y(fieldŝ.yu, S)
+    if haskey(fieldŝ, :ŷu)
+        out[:yu] = rd_y(fieldŝ.ŷu, S)
     end
-    if haskey(fieldŝ, :zu)
-        out[:zu] = rd_z(fieldŝ.zu, S)
+    if haskey(fieldŝ, :ẑu)
+        out[:zu] = rd_z(fieldŝ.ẑu, S)
     end
-    if haskey(fieldŝ, :xu2)
-        out[:xu2] = rd_x(fieldŝ.xu2, S)
+    if haskey(fieldŝ, :x̂u2)
+        out[:xu2] = rd_x(fieldŝ.x̂u2, S)
     end
-    if haskey(fieldŝ, :yu2)
-        out[:yu2] = rd_y(fieldŝ.yu2, S)
-    end
-
-    if haskey(fieldŝ, :Bu)
-        out[:Bu] = redimensionalize_buoyancy(fieldŝ.Bu, S)
-    end
-    if haskey(fieldŝ, :bsu)
-        out[:bsu] = redimensionalize_buoyancy(fieldŝ.bsu, S)
+    if haskey(fieldŝ, :ŷu2)
+        out[:yu2] = rd_y(fieldŝ.ŷu2, S)
     end
 
-    if haskey(fieldŝ, :Bsp)
-        out[:Bsp] = fieldŝ.Bsp
+    if haskey(fieldŝ, :B̂u)
+        out[:Bu] = redimensionalize_buoyancy(fieldŝ.B̂u, S)
     end
-    if haskey(fieldŝ, :bsp)
-        out[:bsp] = fieldŝ.bsp
+    if haskey(fieldŝ, :b̂su)
+        out[:bsu] = redimensionalize_buoyancy(fieldŝ.b̂su, S)
     end
-    if haskey(fieldŝ, :Tsp)
-        out[:Tsp] = fieldŝ.Tsp
+    if haskey(fieldŝ, :T̂u)
+        out[:Tu] = fieldŝ.T̂u
     end
-    if haskey(fieldŝ, :Ssp)
-        out[:Ssp] = fieldŝ.Ssp
+    if haskey(fieldŝ, :Ŝu)
+        out[:Su] = fieldŝ.Ŝu
     end
-    if haskey(fieldŝ, :ρsp)
-        out[:ρsp] = fieldŝ.ρsp
+    if haskey(fieldŝ, :ρ̂u)
+        out[:ρu] = fieldŝ.ρ̂u
     end
 
     return (; out...)
@@ -367,6 +351,11 @@ end
 # Rebuild nondimensional interpolants
 # ----------------------------------------------------------------------------
 
+"""
+    rebuild_nondimensional_case(fields, S)
+
+Nondimensionalize a case and then rebuild spline objects in nondimensional space.
+"""
 function rebuild_nondimensional_case(fields, S::OceanScales)
     out = Dict{Symbol, Any}()
 
@@ -374,92 +363,90 @@ function rebuild_nondimensional_case(fields, S::OceanScales)
     # Coordinates
     # ---------------------------------------------------------------------
     x̂ = haskey(fields, :x) ? nondimensionalize_field(fields.x, S.L) : nothing
-    ŷ = haskey(fields, :y) ? nondimensionalize_field(fields.y, S.L) : nothing
+    ŷ = haskey(fields, :y) ? nondimensionalize_field(fields.y, S.L) : nothing
     ẑ = haskey(fields, :z) ? nondimensionalize_field(fields.z, S.H0) : nothing
 
     if x̂ !== nothing
-        out[:x] = x̂
+        out[:x̂] = x̂
     end
-    if ŷ !== nothing
-        out[:y] = ŷ
+    if ŷ !== nothing
+        out[:ŷ] = ŷ
     end
     if ẑ !== nothing
-        out[:z] = ẑ
+        out[:ẑ] = ẑ
     end
 
     # ---------------------------------------------------------------------
     # Nondimensionalize primary fields
     # ---------------------------------------------------------------------
     if haskey(fields, :Bfill)
-        out[:Bfill] = nondimensionalize_buoyancy(fields.Bfill, S)
+        out[:B̂fill] = nondimensionalize_buoyancy(fields.Bfill, S)
     elseif haskey(fields, :B)
-        out[:Bfill] = nondimensionalize_buoyancy(fields.B, S)
+        out[:B̂fill] = nondimensionalize_buoyancy(fields.B, S)
     end
 
     if haskey(fields, :bsfill)
-        out[:bsfill] = nondimensionalize_buoyancy(fields.bsfill, S)
+        out[:b̂sfill] = nondimensionalize_buoyancy(fields.bsfill, S)
     elseif haskey(fields, :bs)
-        out[:bsfill] = nondimensionalize_buoyancy(fields.bs, S)
+        out[:b̂sfill] = nondimensionalize_buoyancy(fields.bs, S)
     end
 
     if haskey(fields, :H)
-        out[:H] = nondimensionalize_bathymetry(fields.H, S)
+        out[:Ĥ] = nondimensionalize_bathymetry(fields.H, S)
     end
 
     # ---------------------------------------------------------------------
-    # Rebuild 3D buoyancy spline: Bsp
+    # Rebuild 3D buoyancy spline columns in nondimensional space
     # ---------------------------------------------------------------------
-    if haskey(out, :x) && haskey(out, :y) && haskey(out, :z) && haskey(out, :Bfill)
-        xu, yu, zu, Bu, Bsp = build_uniform_bspline_3d(
-            out[:x], out[:y], out[:z], out[:Bfill];
-            nx = length(out[:x]),
-            ny = length(out[:y]),
-            nz = length(out[:z])
+    if haskey(out, :x̂) && haskey(out, :ŷ) && haskey(out, :ẑ) && haskey(out, :B̂fill)
+        x̂u, ŷu, ẑu, B̂u, B̂zsplines = build_uniform_bspline_3d_bsplinekit(
+            out[:x̂], out[:ŷ], out[:ẑ], out[:B̂fill];
+            nx = length(out[:x̂]),
+            ny = length(out[:ŷ]),
+            nz = length(out[:ẑ])
         )
 
-        out[:xu] = xu
-        out[:yu] = yu
-        out[:zu] = zu
-        out[:Bu] = Bu
-        out[:Bsp] = Bsp
+        out[:x̂u] = x̂u
+        out[:ŷu] = ŷu
+        out[:ẑu] = ẑu
+        out[:B̂u] = B̂u
+        out[:B̂zsplines] = B̂zsplines
     end
 
     # ---------------------------------------------------------------------
-    # Rebuild 2D surface buoyancy spline: bsp
+    # Rebuild 2D surface buoyancy spline rows in nondimensional space
     # ---------------------------------------------------------------------
-    if haskey(out, :x) && haskey(out, :y) && haskey(out, :bsfill)
-        bs_work = copy(out[:bsfill])
-        bs_work = fill_nan_neighbors_2d!(bs_work)
+    if haskey(out, :x̂) && haskey(out, :ŷ) && haskey(out, :b̂sfill)
+        bs_work = fill_nan_neighbors_2d!(copy(out[:b̂sfill]))
 
-        xus, yus, Bsu, bsp = build_uniform_bspline_2d(
-            out[:x], out[:y], bs_work;
-            nx = length(out[:x]),
-            ny = length(out[:y])
+        x̂u2, ŷu2, b̂su, b̂ssplines = build_uniform_bspline_2d_bsplinekit(
+            out[:x̂], out[:ŷ], bs_work;
+            nx = length(out[:x̂]),
+            ny = length(out[:ŷ])
         )
 
-        out[:xus] = xus
-        out[:yus] = yus
-        out[:bsu] = Bsu
-        out[:bsp] = bsp
+        out[:x̂u2] = x̂u2
+        out[:ŷu2] = ŷu2
+        out[:b̂su] = b̂su
+        out[:b̂ssplines] = b̂ssplines
     end
 
     # ---------------------------------------------------------------------
-    # Rebuild 2D bathymetry/depth spline: Hsp
+    # Rebuild 2D bathymetry spline if needed
     # ---------------------------------------------------------------------
-    if haskey(out, :x) && haskey(out, :y) && haskey(out, :H)
-        H_work = copy(out[:H])
-        H_work = fill_nan_neighbors_2d!(H_work)
+    if haskey(out, :x̂) && haskey(out, :ŷ) && haskey(out, :Ĥ)
+        H_work = fill_nan_neighbors_2d!(copy(out[:Ĥ]))
 
-        xh, yh, Hf, Hsp = build_uniform_bspline_2d(
-            out[:x], out[:y], H_work;
-            nx = length(out[:x]),
-            ny = length(out[:y])
+        x̂h, ŷh, Ĥf, Ĥsplines = build_uniform_bspline_2d_bsplinekit(
+            out[:x̂], out[:ŷ], H_work;
+            nx = length(out[:x̂]),
+            ny = length(out[:ŷ])
         )
 
-        out[:xh] = xh
-        out[:yh] = yh
-        out[:Hf] = Hf
-        out[:Hsp] = Hsp
+        out[:x̂h] = x̂h
+        out[:ŷh] = ŷh
+        out[:Ĥf] = Ĥf
+        out[:Ĥsplines] = Ĥsplines
     end
 
     return (; out...)
@@ -470,21 +457,21 @@ end
 # ----------------------------------------------------------------------------
 
 """
-    plot_ocean_depth_nd(deptĥ, x̂, ŷ; xlim=[-1, 1], ylim=[-1, 1])
+    plot_ocean_depth_nd(deptĥ, x̂, ŷ; xlim=[-1, 1], ylim=[-1, 1])
 
 Plot nondimensional ocean depth.
 """
-function plot_ocean_depth_nd(deptĥ, x̂, ŷ; xlim=[-1, 1], ylim=[-1, 1])
-    dep = copy(deptĥ)
+function plot_ocean_depth_nd(deptĥ, x̂, ŷ; xlim=[-1, 1], ylim=[-1, 1])
+    dep = copy(deptĥ)
     dep[.!isfinite.(dep) .| (dep .<= 0)] .= NaN
     vals = dep[isfinite.(dep)]
     @assert !isempty(vals) "No finite nondimensional depth values to plot."
 
     p = heatmap(
-        x̂, ŷ, dep',
+        x̂, ŷ, dep',
         xlim = xlim, ylim = ylim,
         xlabel = "x̂",
-        ylabel = "ŷ",
+        ylabel = "ŷ",
         title = "Nondimensional ocean depth",
         color = :viridis,
         colorbar_title = "Ĥ",
@@ -495,13 +482,13 @@ function plot_ocean_depth_nd(deptĥ, x̂, ŷ; xlim=[-1, 1], ylim=[-1, 1])
 end
 
 """
-    plot_surface_buoyancy_nd(B̂sp, x̂u, ŷu, deptĥ; xlim=[-1, 1], ylim=[-1, 1])
+    plot_surface_buoyancy_nd(b̂s, x̂u, ŷu, deptĥ; xlim=[-1, 1], ylim=[-1, 1])
 
 Plot nondimensional surface buoyancy, masking land.
 """
-function plot_surface_buoyancy_nd(bs, x̂u, ŷu, deptĥ;
+function plot_surface_buoyancy_nd(b̂s, x̂u, ŷu, deptĥ;
                                   xlim=[-1, 1], ylim=[-1, 1])
-    A = mask_land(bs, deptĥ)
+    A = mask_land(b̂s, deptĥ)
 
     vals = A[isfinite.(A)]
     @assert !isempty(vals) "No finite nondimensional surface buoyancy values."
@@ -510,27 +497,27 @@ function plot_surface_buoyancy_nd(bs, x̂u, ŷu, deptĥ;
         x̂u, ŷu, A',
         xlim = xlim, ylim = ylim,
         xlabel = "x̂",
-        ylabel = "ŷ",
+        ylabel = "ŷ",
         title = "Nondimensional surface buoyancy",
         color = :balance,
         aspect_ratio = :equal,
-        colorbar_title = "b̂",
+        colorbar_title = "b̂s",
         clims = (minimum(vals), maximum(vals))
     )
     return p
 end
 
 """
-    plot_vertical_profile_comparison_nd(x̂0, ŷ0, ẑ, B̂, B̂sp, x̂grid, ŷgrid)
+    plot_vertical_profile_comparison_nd(x̂0, ŷ0, ẑ, B̂, B̂zsplines, x̂grid, ŷgrid)
 
 Plot a nondimensional buoyancy profile comparison.
 """
-function plot_vertical_profile_comparison_nd(x̂0, ŷ0, ẑ, B̂, B̂sp, x̂grid, ŷgrid)
+function plot_vertical_profile_comparison_nd(x̂0, ŷ0, ẑ, B̂, B̂zsplines, x̂grid, ŷgrid)
     ix = argmin(abs.(x̂grid .- x̂0))
-    iy = argmin(abs.(ŷgrid .- ŷ0))
+    iy = argmin(abs.(ŷgrid .- ŷ0))
 
     trueB   = [B̂[ix, iy, k] for k in 1:length(ẑ)]
-    approxB = [B̂sp(x̂0, ŷ0, zk) for zk in ẑ]
+    approxB = [B̂zsplines[ix, iy](zk) for zk in ẑ]
 
     ok = isfinite.(trueB) .& isfinite.(approxB)
 

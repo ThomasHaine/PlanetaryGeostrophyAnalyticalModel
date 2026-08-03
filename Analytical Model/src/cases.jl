@@ -5,7 +5,7 @@
 """
     build_case_fields(case; kwargs...)
 
-Build either WOA-based or idealized fields and their spline interpolants.
+Build either WOA-based or idealized fields.
 
 `case` may be:
 - `:woa`
@@ -37,23 +37,10 @@ end
                            nx=512, ny=256, nz=128,
                            lon0=0.0, lat0=0.0)
 
-Build a WOA-based case in local Cartesian coordinates for interpolation/model work.
+Build a WOA-based case in local Cartesian coordinates.
 
-Workflow:
-1. Read WOA in lon/lat/z
-2. Compute buoyancy, density, and inferred bathymetry using geographic lon/lat
-3. Convert lon/lat to Cartesian x/y
-4. Fill NaNs
-5. Build spline interpolants on uniform grids
-
-Returns a named tuple with:
-- geographic coordinates: `lon`, `lat`
-- Cartesian coordinates: `x`, `y`
-- vertical coordinate: `z`
-- raw fields
-- filled fields
-- uniform grids
-- interpolants
+Returns a named tuple with dimensional fields and uniform-grid resampled fields.
+Spline fitting is done later in nondimensionalizationtools.jl.
 """
 function build_woa_case_fields(; tempfile,
                                saltfile,
@@ -72,19 +59,29 @@ function build_woa_case_fields(; tempfile,
     # Convert lon/lat to local Cartesian coordinates for model work
     x, y = lonlat_to_cartesian_xy(lon, lat; lon0=lon0, lat0=lat0)
 
-    # Fill missing values before spline construction
+    # Fill missing values before later spline construction
     Bfill  = fill_nan_neighbors!(Bgeo; radius=2)
     Tfill  = fill_nan_neighbors!(T; radius=2)
     Sfill  = fill_nan_neighbors!(S; radius=2)
     ρfill  = fill_nan_neighbors!(ρgeo; radius=2)
     bsfill = fill_nan_neighbors_2d!(bsgeo; radius=2)
 
-    # Build interpolants on uniform Cartesian grids
-    xu, yu, zu, Bu, Bsp = build_uniform_bspline_3d(x, y, z, Bfill; nx=nx, ny=ny, nz=nz)
-    _,  _,  _,  Tu, Tsp = build_uniform_bspline_3d(x, y, z, Tfill; nx=nx, ny=ny, nz=nz)
-    _,  _,  _,  Su, Ssp = build_uniform_bspline_3d(x, y, z, Sfill; nx=nx, ny=ny, nz=nz)
-    _,  _,  _,  ρu, ρsp = build_uniform_bspline_3d(x, y, z, ρfill; nx=nx, ny=ny, nz=nz)
-    xu2, yu2, bsu, bsp  = build_uniform_bspline_2d(x, y, bsfill; nx=nx, ny=ny)
+    # Build uniform-grid resampled fields
+    xu, yu, zu, Bu, _ = build_uniform_bspline_3d_bsplinekit(
+        x, y, z, Bfill; nx=nx, ny=ny, nz=nz
+    )
+    _, _, _, Tu, _ = build_uniform_bspline_3d_bsplinekit(
+        x, y, z, Tfill; nx=nx, ny=ny, nz=nz
+    )
+    _, _, _, Su, _ = build_uniform_bspline_3d_bsplinekit(
+        x, y, z, Sfill; nx=nx, ny=ny, nz=nz
+    )
+    _, _, _, ρu, _ = build_uniform_bspline_3d_bsplinekit(
+        x, y, z, ρfill; nx=nx, ny=ny, nz=nz
+    )
+    xu2, yu2, bsu, _ = build_uniform_bspline_2d_bsplinekit(
+        x, y, bsfill; nx=nx, ny=ny
+    )
 
     return (
         case = :woa,
@@ -125,14 +122,7 @@ function build_woa_case_fields(; tempfile,
         Tu = Tu,
         Su = Su,
         ρu = ρu,
-        bsu = bsu,
-
-        # interpolants
-        Bsp = Bsp,
-        Tsp = Tsp,
-        Ssp = Ssp,
-        ρsp = ρsp,
-        bsp = bsp
+        bsu = bsu
     )
 end
 
@@ -144,22 +134,12 @@ end
 """
     build_ideal_case_fields(kind; x, y, z, ...)
 
-Build an idealized basin and buoyancy field, then interpolate it.
+Build an idealized basin and buoyancy field.
 
 `kind` may be:
 - `:elliptical`
 - `:ridge`
 - `:constriction`
-
-Required keywords:
-- `x`, `y`, `z`
-
-Optional keywords:
-- `nx`, `ny`, `nz`
-- `buoyancy_bs`
-- `buoyancy_amp`
-- `buoyancy_λ`
-- geometry keywords passed through to basin constructors
 """
 function build_ideal_case_fields(kind::Symbol; x, y, z,
                                  nx=length(x), ny=length(y), nz=length(z),
@@ -205,13 +185,17 @@ function build_ideal_case_fields(kind::Symbol; x, y, z,
     Bmasked = copy(B)
     Bmasked[.!mask] .= NaN
 
-    # Fill NaNs for spline construction
+    # Fill NaNs for later spline construction
     Bfill = fill_nan_neighbors!(Bmasked; radius=2)
     bsfill = fill_nan_neighbors_2d!(bs; radius=2)
 
-    # Build interpolants on uniform grids
-    xu, yu, zu, Bu, Bsp = build_uniform_bspline_3d(x, y, z, Bfill; nx=nx, ny=ny, nz=nz)
-    xu2, yu2, bsu, bsp  = build_uniform_bspline_2d(x, y, bsfill; nx=nx, ny=ny)
+    # Build uniform-grid resampled fields
+    xu, yu, zu, Bu, _ = build_uniform_bspline_3d_bsplinekit(
+        x, y, z, Bfill; nx=nx, ny=ny, nz=nz
+    )
+    xu2, yu2, bsu, _ = build_uniform_bspline_2d_bsplinekit(
+        x, y, bsfill; nx=nx, ny=ny
+    )
 
     return (
         case = kind,
@@ -237,10 +221,6 @@ function build_ideal_case_fields(kind::Symbol; x, y, z,
 
         # resampled fields
         Bu = Bu,
-        bsu = bsu,
-
-        # interpolants
-        Bsp = Bsp,
-        bsp = bsp
+        bsu = bsu
     )
 end

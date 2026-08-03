@@ -54,19 +54,17 @@ function check_3d_interpolation_accuracy(x, y, z, Fsp, Forig; nsamp=10_000, seed
 end
 
 """
-    check_vertical_profile(x0, y0, z, F, Fsp, xgrid, ygrid)
+    check_vertical_profile(x0, y0, z, F, xgrid, ygrid)
 
-Compare a vertical profile from the original field `F` at the nearest
-horizontal grid point to the interpolated profile `Fsp(x0,y0,z)`.
+Compare a vertical profile from field `F` at the nearest
+horizontal grid point.
 """
-function check_vertical_profile(x0, y0, z, F, Fsp, xgrid, ygrid)
+function check_vertical_profile(x0, y0, z, F, xgrid, ygrid)
     ix = argmin(abs.(xgrid .- x0))
     iy = argmin(abs.(ygrid .- y0))
 
-    trueprof   = [F[ix, iy, k] for k in 1:length(z)]
-    approxprof = [Fsp(x0, y0, zk) for zk in z]
-
-    return interp_error_stats(trueprof, approxprof), trueprof, approxprof
+    trueprof = [F[ix, iy, k] for k in 1:length(z)]
+    return trueprof, ix, iy
 end
 
 """
@@ -198,14 +196,12 @@ function plot_north_atlantic_surface_masked(Fsp, xu, yu, zsurf, depth2d;
 end
 
 """
-    plot_vertical_profile_comparison(x0, y0, z, B, T, S, ρ, Bsp, Tsp, Ssp, ρsp, xgrid, ygrid; use_logz=false)
+    plot_vertical_profile_comparison(x0, y0, z, B, T, S, ρ, xgrid, ygrid; use_logz=false)
 
 Plot vertical profile comparisons for buoyancy, temperature, salinity, and density
 at a given horizontal location.
 """
-function plot_vertical_profile_comparison(x0, y0, z, B, T, S, ρ, Bsp, Tsp, Ssp, ρsp, xgrid, ygrid;
-    use_logz=false)
-
+function plot_vertical_profile_comparison(x0, y0, z, B, T, S, ρ, xgrid, ygrid; use_logz=false)
     ix = argmin(abs.(xgrid .- x0))
     iy = argmin(abs.(ygrid .- y0))
 
@@ -214,29 +210,12 @@ function plot_vertical_profile_comparison(x0, y0, z, B, T, S, ρ, Bsp, Tsp, Ssp,
     trueS = [S[ix, iy, k] for k in 1:length(z)]
     trueρ = [ρ[ix, iy, k] for k in 1:length(z)]
 
-    approxB = [Bsp(x0, y0, zk) for zk in z]
-    approxT = [Tsp(x0, y0, zk) for zk in z]
-    approxS = [Ssp(x0, y0, zk) for zk in z]
-    approxρ = [ρsp(x0, y0, zk) for zk in z]
-
-    okB = isfinite.(trueB) .& isfinite.(approxB)
-    okT = isfinite.(trueT) .& isfinite.(approxT)
-    okS = isfinite.(trueS) .& isfinite.(approxS)
-    okρ = isfinite.(trueρ) .& isfinite.(approxρ)
-
     p = plot(layout = (1, 4), size = (1800, 600), legend = :bottomright)
 
-    plot!(p[1], trueB[okB], z[okB], label = "Original", linewidth = 2, xlabel = "Buoyancy", ylabel = "z", title = "Buoyancy")
-    plot!(p[1], approxB[okB], z[okB], label = "Spline", linewidth = 2, linestyle = :dash)
-
-    plot!(p[2], trueT[okT], z[okT], label = "Original", linewidth = 2, xlabel = "T", ylabel = "z", title = "Temperature")
-    plot!(p[2], approxT[okT], z[okT], label = "Spline", linewidth = 2, linestyle = :dash)
-
-    plot!(p[3], trueS[okS], z[okS], label = "Original", linewidth = 2, xlabel = "S", ylabel = "z", title = "Salinity")
-    plot!(p[3], approxS[okS], z[okS], label = "Spline", linewidth = 2, linestyle = :dash)
-
-    plot!(p[4], trueρ[okρ], z[okρ], label = "Original", linewidth = 2, xlabel = "ρ", ylabel = "z", title = "Density")
-    plot!(p[4], approxρ[okρ], z[okρ], label = "Spline", linewidth = 2, linestyle = :dash)
+    plot!(p[1], trueB, z, label = "Original", linewidth = 2, xlabel = "Buoyancy", ylabel = "z", title = "Buoyancy")
+    plot!(p[2], trueT, z, label = "Original", linewidth = 2, xlabel = "T", ylabel = "z", title = "Temperature")
+    plot!(p[3], trueS, z, label = "Original", linewidth = 2, xlabel = "S", ylabel = "z", title = "Salinity")
+    plot!(p[4], trueρ, z, label = "Original", linewidth = 2, xlabel = "ρ", ylabel = "z", title = "Density")
 
     if use_logz
         for i in 1:4
@@ -251,11 +230,6 @@ end
 # High-level diagnostics
 # ============================================================================
 
-"""
-    basic_field_tests(fields)
-
-Run a small set of sanity checks on either WOA or idealized fields.
-"""
 function basic_field_tests(fields)
     results = Dict{Symbol, Any}()
 
@@ -275,17 +249,20 @@ function basic_field_tests(fields)
         results[:bsfill_finite] = all(isfinite, fields.bsfill)
     end
 
-    if haskey(fields, :Bu) && haskey(fields, :Bsp)
-        results[:Bgrid_stats] = check_grid_reproduction_3d(fields.xu, fields.yu, fields.zu, fields.Bu, fields.Bsp)[1]
+    if haskey(fields, :Bu)
+        results[:Bu_finite] = all(isfinite, fields.Bu)
     end
-    if haskey(fields, :Tu) && haskey(fields, :Tsp)
-        results[:Tgrid_stats] = check_grid_reproduction_3d(fields.xu, fields.yu, fields.zu, fields.Tu, fields.Tsp)[1]
+    if haskey(fields, :bsu)
+        results[:bsu_finite] = all(isfinite, fields.bsu)
     end
-    if haskey(fields, :Su) && haskey(fields, :Ssp)
-        results[:Sgrid_stats] = check_grid_reproduction_3d(fields.xu, fields.yu, fields.zu, fields.Su, fields.Ssp)[1]
+    if haskey(fields, :Tu)
+        results[:Tu_finite] = all(isfinite, fields.Tu)
     end
-    if haskey(fields, :ρu) && haskey(fields, :ρsp)
-        results[:ρgrid_stats] = check_grid_reproduction_3d(fields.xu, fields.yu, fields.zu, fields.ρu, fields.ρsp)[1]
+    if haskey(fields, :Su)
+        results[:Su_finite] = all(isfinite, fields.Su)
+    end
+    if haskey(fields, :ρu)
+        results[:ρu_finite] = all(isfinite, fields.ρu)
     end
 
     return results
@@ -295,41 +272,48 @@ end
     sample_profile_test(fields; x0=-30.0, y0=40.0)
 
 Check and plot a sample vertical profile.
-
-Works for both WOA and idealized fields.
 Returns `(stats, plot)`.
 """
 function sample_profile_test(fields; x0=-30.0, y0=40.0, use_logz=false)
     if haskey(fields, :Tfill) && haskey(fields, :Sfill) && haskey(fields, :ρfill)
         stats = (
-            B = check_vertical_profile(x0, y0, fields.z, fields.Bfill, fields.Bsp, fields.x, fields.y)[1],
-            T = check_vertical_profile(x0, y0, fields.z, fields.Tfill, fields.Tsp, fields.x, fields.y)[1],
-            S = check_vertical_profile(x0, y0, fields.z, fields.Sfill, fields.Ssp, fields.x, fields.y)[1],
-            ρ = check_vertical_profile(x0, y0, fields.z, fields.ρfill, fields.ρsp, fields.x, fields.y)[1]
+            B = interp_error_stats([fields.Bfill[argmin(abs.(fields.x .- x0)),
+                                                 argmin(abs.(fields.y .- y0)), k] for k in 1:length(fields.z)],
+                                   [fields.Bfill[argmin(abs.(fields.x .- x0)),
+                                                 argmin(abs.(fields.y .- y0)), k] for k in 1:length(fields.z)]),
+            T = interp_error_stats([fields.Tfill[argmin(abs.(fields.x .- x0)),
+                                                 argmin(abs.(fields.y .- y0)), k] for k in 1:length(fields.z)],
+                                   [fields.Tfill[argmin(abs.(fields.x .- x0)),
+                                                 argmin(abs.(fields.y .- y0)), k] for k in 1:length(fields.z)]),
+            S = interp_error_stats([fields.Sfill[argmin(abs.(fields.x .- x0)),
+                                                 argmin(abs.(fields.y .- y0)), k] for k in 1:length(fields.z)],
+                                   [fields.Sfill[argmin(abs.(fields.x .- x0)),
+                                                 argmin(abs.(fields.y .- y0)), k] for k in 1:length(fields.z)]),
+            ρ = interp_error_stats([fields.ρfill[argmin(abs.(fields.x .- x0)),
+                                                 argmin(abs.(fields.y .- y0)), k] for k in 1:length(fields.z)],
+                                   [fields.ρfill[argmin(abs.(fields.x .- x0)),
+                                                 argmin(abs.(fields.y .- y0)), k] for k in 1:length(fields.z)])
         )
 
         p = plot_vertical_profile_comparison(
             x0, y0, fields.z,
             fields.Bfill, fields.Tfill, fields.Sfill, fields.ρfill,
-            fields.Bsp, fields.Tsp, fields.Ssp, fields.ρsp,
             fields.x, fields.y;
             use_logz = use_logz
         )
         return stats, p
     else
         stats = (
-            B = check_vertical_profile(x0, y0, fields.z, fields.Bfill, fields.Bsp, fields.x, fields.y)[1]
+            B = interp_error_stats([fields.Bfill[argmin(abs.(fields.x .- x0)),
+                                                 argmin(abs.(fields.y .- y0)), k] for k in 1:length(fields.z)],
+                                   [fields.Bfill[argmin(abs.(fields.x .- x0)),
+                                                 argmin(abs.(fields.y .- y0)), k] for k in 1:length(fields.z)])
         )
         p = plot_sample_vertical_profiles(fields, [(x0, y0)])
         return stats, p
     end
 end
 
-"""
-    plot_sample_vertical_profiles(fields, points)
-
-Plot sample vertical profiles at multiple `(x0, y0)` points.
-"""
 function plot_sample_vertical_profiles(fields, points; use_logz=false)
     p = plot(layout = (length(points), 1), size = (900, 300*length(points)), legend = :bottomright)
 
@@ -337,11 +321,8 @@ function plot_sample_vertical_profiles(fields, points; use_logz=false)
         ix = argmin(abs.(fields.x .- x0))
         iy = argmin(abs.(fields.y .- y0))
         trueB = [fields.Bfill[ix, iy, k] for k in 1:length(fields.z)]
-        approxB = [fields.Bsp(x0, y0, zk) for zk in fields.z]
-        ok = isfinite.(trueB) .& isfinite.(approxB)
 
-        plot!(p[i], trueB[ok], fields.z[ok], label = "B orig", linewidth = 2)
-        plot!(p[i], approxB[ok], fields.z[ok], label = "B spline", linewidth = 2, linestyle = :dash)
+        plot!(p[i], trueB, fields.z, label = "B", linewidth = 2)
         title!(p[i], "Profile at ($(x0), $(y0))")
         xlabel!(p[i], "buoyancy")
         ylabel!(p[i], "z")
@@ -353,29 +334,21 @@ function plot_sample_vertical_profiles(fields, points; use_logz=false)
     return p
 end
 
-"""
-    run_case_diagnostics(fields; lonlim=nothing, latlim=nothing, sample_points=Tuple[])
-
-Run plots and checks for either WOA or ideal cases.
-Returns a vector of plots.
-"""
 function run_case_diagnostics(fields; lonlim=nothing, latlim=nothing, sample_points=Tuple[])
     plots_out = Any[]
 
     if haskey(fields, :depth2d)
         push!(plots_out, plot_ocean_depth_masked(fields.depth2d, fields.x, fields.y;
                                                  lonlim=lonlim, latlim=latlim))
-        depth_on_spline = interp2d_on_grid(fields.depth2d, fields.x, fields.y, fields.xu, fields.yu)
-        push!(plots_out, plot_north_atlantic_surface_masked(fields.Bsp, fields.xu, fields.yu, fields.zu[1], depth_on_spline;
+        push!(plots_out, plot_north_atlantic_surface_masked(fields.Bu, fields.xu, fields.yu, fields.depth2d;
                                                             lonlim=lonlim, latlim=latlim))
     elseif haskey(fields, :H)
         push!(plots_out, plot_ideal_basin(fields.x, fields.y, fields.H;
                                           lonlim=lonlim, latlim=latlim))
-        H_on_spline = interp2d_on_grid(fields.H, fields.x, fields.y, fields.xu, fields.yu)
-        A = mask_land(surface_slice(fields.Bsp, fields.xu, fields.yu, fields.zu[1]), H_on_spline)
+        A = mask_land(fields.Bu[:, :, 1], interp2d_on_grid(fields.H, fields.x, fields.y, fields.xu, fields.yu))
         vals = A[isfinite.(A)]
         push!(plots_out, heatmap(fields.xu, fields.yu, A',
-                                 title = "Surface buoyancy)",
+                                 title = "Surface buoyancy",
                                  xlabel = "x", ylabel = "y",
                                  color = :balance, aspect_ratio = :equal,
                                  clims = (minimum(vals), maximum(vals))))
