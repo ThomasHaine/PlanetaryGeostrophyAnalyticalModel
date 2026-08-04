@@ -4,7 +4,7 @@ include("OceanBuoyancyTools.jl")
 # --------------------------------------------------------------------------
 # User choice
 # --------------------------------------------------------------------------
-case = :woa
+case = :ideal_elliptical
 # case = :ideal_elliptical
 # case = :ideal_ridge
 # case = :ideal_constriction
@@ -30,9 +30,9 @@ if case == :woa
     )
 
 elseif case == :ideal_elliptical
-    x = collect(range(-2.0e6, 2.0e6, length=256))
-    y = collect(range(-1.5e6, 1.5e6, length=128))
-    z = collect(range(-5000.0, 0.0, length=128))
+    x = collect(range(-2.0e6, 2.0e6, length=64))
+    y = collect(range(-1.5e6, 1.5e6, length=64))
+    z = collect(range(-5000.0, 0.0, length=32))
 
     fields = OceanBuoyancyTools.build_case_fields(:ideal_elliptical;
         x = x, y = y, z = z,
@@ -120,18 +120,22 @@ S = OceanBuoyancyTools.OceanScales(
 )
 
 fields_nd = OceanBuoyancyTools.rebuild_nondimensional_case(fields, S)
-p = OceanBuoyancyTools.plot_vertical_profile_comparison_nd(
-    0.0, 0.0, fields_nd.ẑ,
-    fields_nd.B̂fill, fields_nd.B̂zsplines,
-    fields_nd.x̂, fields_nd.ŷ
-)
-display(p)
+# p = OceanBuoyancyTools.plot_vertical_profile_comparison_nd(
+#     0.0, 0.0, fields_nd.ẑ,
+#     fields_nd.B̂fill, fields_nd.B̂zsplines,
+#     fields_nd.x̂, fields_nd.ŷ
+# )
+# display(p)
 
-p2 = OceanBuoyancyTools.plot_surface_buoyancy_nd(fields_nd.b̂sfill, fields_nd.x̂, fields_nd.ŷ, fields_nd.Ĥ)
-display(p2)
+# p2 = OceanBuoyancyTools.plot_surface_buoyancy_nd(fields_nd.b̂sfill, fields_nd.x̂, fields_nd.ŷ, fields_nd.Ĥ)
+# display(p2)
 
-p3 = OceanBuoyancyTools.plot_ocean_depth_nd(fields_nd.Ĥ,fields_nd.x̂, fields_nd.ŷ)
-display(p3)
+# p3 = OceanBuoyancyTools.plot_ocean_depth_nd(fields_nd.Ĥ,fields_nd.x̂, fields_nd.ŷ)
+# display(p3)
 
-results, plots = OceanBuoyancyTools.run_nd_case_diagnostics(fields_nd; sample_points=[(0.1, 0.2), (0.5, 0.5)])
-OceanBuoyancyTools.print_spline_diagnostic_table(results)
+# results, plots = OceanBuoyancyTools.run_nd_case_diagnostics(fields_nd; sample_points=[(0.1, 0.2), (0.5, 0.5)])
+# OceanBuoyancyTools.print_spline_diagnostic_table(results)
+
+
+@time J = OceanBuoyancyTools.vertical_integrated_field_from_splines(fields_nd.B̂zsplines, fields_nd.ẑ)
+@time Q, coeffs, basis = OceanBuoyancyTools.build_complex_horizontal_gradient_slices(fields_nd.x̂, fields_nd.ŷ, J)

@@ -29,7 +29,9 @@ export read_woa_climatology,
        plot_surface_buoyancy_nd,
        plot_vertical_profile_comparison_nd,
        run_nd_case_diagnostics,
-       print_spline_diagnostic_table
+       print_spline_diagnostic_table,
+       vertical_integrated_field_from_splines,
+       build_complex_horizontal_gradient_slices
 
 const g  = 9.81
 const ρ0 = 1026.0
@@ -40,5 +42,7 @@ include("src/interp.jl")
 include("src/diagnostics.jl")
 include("src/cases.jl")
 include("src/NonDimensionalizationTools.jl")
+include("src/GreensFunction.jl")
+include("src/TensorSplines.jl")
 
 end # module

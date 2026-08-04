@@ -85,20 +85,6 @@ function fit_cubic_spline_1d(x, f)
 end
 
 """
-    spline_derivative(spline, n=1)
-
-Return the n-th derivative spline.
-"""
-spline_derivative(spline, n::Int=1) = BSplineKit.diff(spline, n)
-
-"""
-    spline_antiderivative(spline, n=1)
-
-Return the n-th antiderivative spline.
-"""
-spline_antiderivative(spline, n::Int=1) = BSplineKit.Splines.integral(spline, n)
-
-"""
     spline_definite_integral(spline, a, b)
 
 Compute ∫ₐᵇ spline(x) dx analytically.
