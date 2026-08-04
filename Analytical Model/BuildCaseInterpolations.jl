@@ -119,7 +119,7 @@ S = OceanBuoyancyTools.OceanScales(
     τ0 = 0.1
 )
 
-fields_nd = OceanBuoyancyTools.rebuild_nondimensional_case(fields, S)
+fields_nd = OceanBuoyancyTools.build_nondimensional_case(fields, S)
 # p = OceanBuoyancyTools.plot_vertical_profile_comparison_nd(
 #     0.0, 0.0, fields_nd.ẑ,
 #     fields_nd.B̂fill, fields_nd.B̂zsplines,

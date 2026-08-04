@@ -348,15 +348,15 @@ function redimensionalize_case(fieldŝ, S::OceanScales)
 end
 
 # ----------------------------------------------------------------------------
-# Rebuild nondimensional interpolants
+# Build nondimensional interpolants
 # ----------------------------------------------------------------------------
 
 """
-    rebuild_nondimensional_case(fields, S)
+    build_nondimensional_case(fields, S)
 
-Nondimensionalize a case and then rebuild spline objects in nondimensional space.
+Nondimensionalize a case and then build spline objects in nondimensional space.
 """
-function rebuild_nondimensional_case(fields, S::OceanScales)
+function build_nondimensional_case(fields, S::OceanScales)
     out = Dict{Symbol, Any}()
 
     # ---------------------------------------------------------------------
@@ -396,7 +396,7 @@ function rebuild_nondimensional_case(fields, S::OceanScales)
     end
 
     # ---------------------------------------------------------------------
-    # Rebuild 3D buoyancy spline columns in nondimensional space
+    # Build 3D buoyancy spline columns in nondimensional space
     # ---------------------------------------------------------------------
     if haskey(out, :x̂) && haskey(out, :ŷ) && haskey(out, :ẑ) && haskey(out, :B̂fill)
         x̂u, ŷu, ẑu, B̂u, B̂zsplines = build_uniform_bspline_3d_bsplinekit(
@@ -414,7 +414,7 @@ function rebuild_nondimensional_case(fields, S::OceanScales)
     end
 
     # ---------------------------------------------------------------------
-    # Rebuild 2D surface buoyancy spline rows in nondimensional space
+    # Build 2D surface buoyancy spline rows in nondimensional space
     # ---------------------------------------------------------------------
     if haskey(out, :x̂) && haskey(out, :ŷ) && haskey(out, :b̂sfill)
         bs_work = fill_nan_neighbors_2d!(copy(out[:b̂sfill]))
@@ -432,7 +432,7 @@ function rebuild_nondimensional_case(fields, S::OceanScales)
     end
 
     # ---------------------------------------------------------------------
-    # Rebuild 2D bathymetry spline if needed
+    # Build 2D bathymetry spline if needed
     # ---------------------------------------------------------------------
     if haskey(out, :x̂) && haskey(out, :ŷ) && haskey(out, :Ĥ)
         H_work = fill_nan_neighbors_2d!(copy(out[:Ĥ]))
