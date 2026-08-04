@@ -229,3 +229,128 @@ function vertical_integrated_field_from_splines(Bzsplines, ξgrid)
 
     return J
 end
+
+# ----------------------------------------------------------------------------
+# Extract coefficients of a cubic spline in shifted form
+# ----------------------------------------------------------------------------
+
+"""
+    spline_interval_power_coeffs(spl)
+
+Return:
+- knots::Vector{Float64}
+- coeffs::Vector{NTuple{4,Float64}}
+
+where coeffs[k] are the power-basis coefficients on [knots[k], knots[k+1]]:
+
+    B(ξ) = c0 + c1*ξ + c2*ξ^2 + c3*ξ^3
+"""
+function spline_interval_power_coeffs(spl)
+    s = spl.spline  # unwrap SplineInterpolation -> Spline
+
+    knots = s.basis.t
+    nint = length(knots) - 1
+
+    coeffs = Vector{NTuple{4,Float64}}(undef, nint)
+
+    d1 = BSplineKit.Derivative(1) * s
+    d2 = BSplineKit.Derivative(2) * s
+    d3 = BSplineKit.Derivative(3) * s
+
+    for k in 1:nint
+        a = knots[k]
+        b = knots[k+1]
+
+        # midpoint of interval
+        x0 = (a + b) / 2
+
+        # shifted Taylor coefficients around x0
+        a0 = s(x0)
+        a1 = d1(x0)
+        a2 = d2(x0) / 2
+        a3 = d3(x0) / 6
+
+        # convert shifted cubic to power basis in x
+        c3 = a3
+        c2 = a2 - 3a3*x0
+        c1 = a1 - 2a2*x0 + 3a3*x0^2
+        c0 = a0 - a1*x0 + a2*x0^2 - a3*x0^3
+
+        coeffs[k] = (c0, c1, c2, c3)
+    end
+
+    return knots, coeffs
+end
+
+# -----------------------------------------------------------------------------
+# Exact integral of spline against G_b
+# -----------------------------------------------------------------------------
+
+"""
+    Gb_times_piecewise_cubic_integral(knots, coeffs, z, H, ψ, κ)
+
+Compute exactly
+
+    ∫_{-H}^0 G_b(z; ξ) B(ξ) dξ
+
+where B(ξ) is piecewise cubic with interval coefficients `coeffs[k]`.
+"""
+function Gb_times_piecewise_cubic_integral(knots, coeffs, z, H, ψ, κ)
+    @assert length(knots) == length(coeffs) + 1
+    s = 0.0
+    @inbounds for k in 1:length(coeffs)
+        a = knots[k]
+        b = knots[k+1]
+        s += interval_contrib(coeffs[k], a, b, z, H, ψ, κ)
+    end
+    return s
+end
+
+"""
+    interval_contrib(c, a, b, z, H, ψ, κ)
+
+Exact contribution of one spline interval [a,b] to
+
+    ∫ G_b(z; ξ) B(ξ) dξ
+
+assuming B(ξ) = c0 + c1 ξ + c2 ξ² + c3 ξ³ on [a,b].
+"""
+function interval_contrib(c::NTuple{4,<:Real}, a::Real, b::Real,
+                          z::Real, H::Real, ψ::Real, κ::Real)
+    if b <= z
+        A, B = Gb_coeffs(z, H, ψ, κ, :lt)
+        return A * polyexp_int(c,  ψ, a, b) +
+               B * polyexp_int(c, -ψ, a, b)
+
+    elseif a >= z
+        A, B = Gb_coeffs(z, H, ψ, κ, :gt)
+        return A * polyexp_int(c,  ψ, a, b) +
+               B * polyexp_int(c, -ψ, a, b)
+
+    else
+        return interval_contrib(c, a, z, z, H, ψ, κ) +
+               interval_contrib(c, z, b, z, H, ψ, κ)
+    end
+end
+
+# -----------------------------------------------------------------------------
+# Final buoyancy profile function
+# -----------------------------------------------------------------------------
+
+"""
+    buoyancy_profile_from_spline(spl, z, H, ψ, Γ, κ, Ek, b_s)
+
+Compute the buoyancy profile
+
+    b(z) = -(Γ/Ek) * ∫ G_b(z; ξ) B(ξ) dξ + ∂_ξ G_b(z;0) * b_s
+
+where `B(ξ)` is given by BSplineKit spline `spl`.
+
+Returns the scalar buoyancy at depth `z`.
+"""
+function buoyancy_profile_from_spline(spl, z, H, ψ, Γ, κ, Ek, b_s)
+    knots, coeffs = spline_interval_power_coeffs(spl)
+    I = Gb_times_piecewise_cubic_integral(knots, coeffs, z, H, ψ, κ)
+    surf = dGb_dξ_at_zero(z, H, ψ, κ) * b_s
+    return -(Γ / Ek) * I + surf
+end

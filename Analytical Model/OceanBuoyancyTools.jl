@@ -24,6 +24,7 @@ export read_woa_climatology,
        OceanScales,
        nondimensionalize_case,
        redimensionalize_case,
+       build_case_fields,
        build_nondimensional_case,
        plot_ocean_depth_nd,
        plot_surface_buoyancy_nd,
@@ -31,7 +32,9 @@ export read_woa_climatology,
        run_nd_case_diagnostics,
        print_spline_diagnostic_table,
        vertical_integrated_field_from_splines,
-       build_complex_horizontal_gradient_slices
+       build_complex_horizontal_gradient_slices,
+       build_horizontal_tensor_splines,
+       interval_contrib
 
 const g  = 9.81
 const ρ0 = 1026.0
@@ -42,7 +45,7 @@ include("src/interp.jl")
 include("src/diagnostics.jl")
 include("src/cases.jl")
 include("src/NonDimensionalizationTools.jl")
-include("src/GreensFunction.jl")
 include("src/TensorSplines.jl")
+include("src/GreensFunction.jl")
 
 end # module

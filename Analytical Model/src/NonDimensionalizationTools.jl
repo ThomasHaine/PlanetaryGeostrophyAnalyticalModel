@@ -25,6 +25,11 @@ struct OceanScales
     Pr::Float64
     Γ::Float64
     δ::Float64
+    κ::Float64
+    ν::Float64
+    f::Float64
+    ψ::Float64
+    φ::ComplexF64
 end
 
 function OceanScales(; L, H0, f0, N0, ν0, κ0, γ, τ0, ρ0=1026.0)
@@ -46,8 +51,13 @@ function OceanScales(; L, H0, f0, N0, ν0, κ0, γ, τ0, ρ0=1026.0)
     Pr = ν0 / κ0
     Γ  = Pr * γ / f0
     δ  = H0 / L
+    κ  = 1.0
+    ν  = 1.0
+    f  = 1.0
+    ψ  = sqrt(Γ/(κ * Ek))
+    φ  = sqrt(im * f / (ν * Ek))
 
-    return OceanScales(L, H0, f0, N0, ν0, κ0, γ, τ0, ρ0, U0, p0, b0, Ek, Bu, Pr, Γ, δ)
+    return OceanScales(L, H0, f0, N0, ν0, κ0, γ, τ0, ρ0, U0, p0, b0, Ek, Bu, Pr, Γ, δ, κ, ν, f, ψ, φ)
 end
 
 # ----------------------------------------------------------------------------
