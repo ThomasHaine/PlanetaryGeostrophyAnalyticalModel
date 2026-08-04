@@ -16,29 +16,46 @@ function Gu(z, ξ, φ, H)
 end
 
 """
-    Gb_split(z, ξ, H, ψ)
+    Gb_coeffs(z, H, ψ, κ, branch)
 
-Return coefficients (a+, a-) such that:
+Return coefficients (A, B) such that
+    G_b(z; ξ) = A * exp(ψ ξ) + B * exp(-ψ ξ)
 
-- for ξ <= z:  G_b = a+ * exp(ψ ξ) + a- * exp(-ψ ξ)
-- for ξ >= z:  G_b = a+ * exp(ψ ξ) + a- * exp(-ψ ξ)
-
-The coefficients depend on z and on the branch.
+for the chosen branch:
+- branch = :lt  means ξ <= z
+- branch = :gt  means ξ >= z
 """
-function Gb_split_coeffs(z, H, ψ, branch::Symbol)
-    denom = 2 * ψ * (1 + exp(2ψ*H))
+function Gb_coeffs(z, H, ψ, κ, branch::Symbol)
+    denom = 2 * κ * ψ * (1 + exp(2 * ψ * H))
 
     if branch == :lt
         # ξ <= z
-        a_plus  = exp(ψ*z) * (1 - exp(-2ψ*z)) * exp(2ψ*H) / denom
-        a_minus = exp(ψ*z) * (1 - exp(-2ψ*z)) / denom
+        A = (1 + exp(2 * ψ * (z + H))) * exp(-ψ * z) / denom
+        B = -A
     elseif branch == :gt
         # ξ >= z
-        a_plus  = exp(ψ*z) * (exp(2ψ*H) + exp(-2ψ*z)) / denom
-        a_minus = exp(ψ*z) * (exp(2ψ*H) + exp(-2ψ*z)) / denom
+        A = (exp(2 * ψ * z) - 1) * exp(ψ * (2H - z)) / denom
+        B = (exp(ψ * z) - exp(-ψ * z)) / denom
     else
         error("branch must be :lt or :gt")
     end
 
-    return a_plus, a_minus
+    return A, B
+end
+
+function interval_contrib(c::NTuple{4,Real}, a::Real, b::Real, z::Real, H::Real, ψ::Real, κ::Real)
+    if b <= z
+        A, B = Gb_coeffs(z, H, ψ, κ, :lt)
+        return A * polyexp_int(c,  ψ, a, b) +
+               B * polyexp_int(c, -ψ, a, b)
+
+    elseif a >= z
+        A, B = Gb_coeffs(z, H, ψ, κ, :gt)
+        return A * polyexp_int(c,  ψ, a, b) +
+               B * polyexp_int(c, -ψ, a, b)
+
+    else
+        return interval_contrib(c, a, z, z, H, ψ, κ) +
+               interval_contrib(c, z, b, z, H, ψ, κ)
+    end
 end
