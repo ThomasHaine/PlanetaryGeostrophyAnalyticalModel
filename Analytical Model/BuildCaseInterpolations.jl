@@ -1,4 +1,5 @@
 using Revise
+using Plots
 include("OceanBuoyancyTools.jl")
 
 # --------------------------------------------------------------------------
@@ -113,8 +114,8 @@ S = OceanBuoyancyTools.OceanScales(
     H0 = 5.0e3,
     f0 = 1.0e-4,
     N0 = 1.0e-3,
-    ν0 = 1.0e-2,
-    κ0 = 1.0e-3,
+    ν0 = 1.0e-1,
+    κ0 = 1.0e-1,
     γ  = 1.0e-5,
     τ0 = 0.1
 )
@@ -141,21 +142,52 @@ buoyancy_fields_nd = OceanBuoyancyTools.build_nondimensional_case(buoyancy_field
 @time Q, coeffs, basis = OceanBuoyancyTools.build_complex_horizontal_gradient_slices(buoyancy_fields_nd.x̂, buoyancy_fields_nd.ŷ, J)
 
 
-i = 11; j= 7
+i = 30; j =  32
 zspl = buoyancy_fields_nd.B̂zsplines[i,j]
-this_b̂s  = buoyancy_fields_nd.b̂sfill[i,j]
-this_Ĥ = buoyancy_fields_nd.Ĥ[i,j]
-knots, coeffs = OceanBuoyancyTools.spline_interval_power_coeffs(zspl)
+this_bshat  = buoyancy_fields_nd.b̂sfill[i,j]
+this_Hhat = buoyancy_fields_nd.Ĥ[i,j]
+intervals, coeffs = OceanBuoyancyTools.spline_interval_power_coeffs(zspl)
 
-# Sanity check:
 function eval_power(c, x)
     c0, c1, c2, c3 = c
     return c0 + c1*x + c2*x^2 + c3*x^3
 end
 
 k = 1
-xmid = (knots[k] + knots[k+1]) / 2
+a, b = intervals[k]
+xmid = (a + b) / 2
 @assert abs(zspl(xmid) - eval_power(coeffs[k], xmid)) < 1e-10
-    
-z = -0.3
-b = OceanBuoyancyTools.buoyancy_profile_from_spline(zspl, z, this_Ĥ, S.ψ, S.Γ, S.κ, S.Ek, this_b̂s)
+
+bcol = OceanBuoyancyTools.buoyancy_column_from_spline(
+    zspl,
+    buoyancy_fields_nd.ẑ,
+    this_Hhat,
+    S.ψ,
+    S.Γ,
+    S.κ,
+    S.Ek,
+    this_bshat;
+    verbose=true
+)
+
+@show count(isfinite, bcol)
+@show extrema(bcol[isfinite.(bcol)])
+
+p = plot()
+plot!(bcol, buoyancy_fields_nd.ẑ, marker=:circle)
+display(p)
+
+
+STOP
+ 
+# z = -0.3
+# b = OceanBuoyancyTools.buoyancy_profile_from_spline(zspl, z, this_Hhat, S.ψ, S.Γ, S.κ, S.Ek, this_bshat)
+
+Πcol = OceanBuoyancyTools.pressure_integral_from_b_column(
+    buoyancy_fields_nd.ẑ,
+    bcol,
+    this_Ĥ
+)
+
+p2 = plot()
+plot!(Πcol, buoyancy_fields_nd.ẑ, marker=:circle)

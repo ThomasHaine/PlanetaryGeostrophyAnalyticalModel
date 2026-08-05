@@ -34,7 +34,9 @@ export read_woa_climatology,
        vertical_integrated_field_from_splines,
        build_complex_horizontal_gradient_slices,
        build_horizontal_tensor_splines,
-       interval_contrib
+       interval_contrib,
+       buoyancy_column_from_spline,
+       buoyancy_profile_from_spline
 
 const g  = 9.81
 const ρ0 = 1026.0

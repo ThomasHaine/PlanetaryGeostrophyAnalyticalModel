@@ -2,20 +2,6 @@ using BSplineKit
 using LinearAlgebra
 
 # ----------------------------------------------------------------------------
-# 1D cubic spline fit
-# ----------------------------------------------------------------------------
-
-function fit_cubic_spline_1d(x, f)
-    x = collect(x)
-    @assert length(x) == length(f)
-    @assert issorted(x)
-    @assert all(isfinite, x)
-    @assert all(isfinite, f)
-
-    return interpolate(x, f, BSplineOrder(4))
-end
-
-# ----------------------------------------------------------------------------
 # Cached 1D basis matrices built from the working interpolation path
 # ----------------------------------------------------------------------------
 
@@ -235,51 +221,65 @@ end
 # ----------------------------------------------------------------------------
 
 """
-    spline_interval_power_coeffs(spl)
+    spline_interval_power_coeffs(spl; domain=nothing)
 
 Return:
-- knots::Vector{Float64}
+- intervals::Vector{Tuple{Float64,Float64}}
 - coeffs::Vector{NTuple{4,Float64}}
 
-where coeffs[k] are the power-basis coefficients on [knots[k], knots[k+1]]:
+where on each interval `(a,b)`,
 
-    B(ξ) = c0 + c1*ξ + c2*ξ^2 + c3*ξ^3
+    spl(ξ) = c0 + c1*ξ + c2*ξ^2 + c3*ξ^3.
+
+If `domain=(lo,hi)` is supplied, intervals are clipped to that domain.
 """
-function spline_interval_power_coeffs(spl)
+function spline_interval_power_coeffs(spl; domain=nothing)
     s = spl.spline  # unwrap SplineInterpolation -> Spline
 
-    knots = s.basis.t
-    nint = length(knots) - 1
-
-    coeffs = Vector{NTuple{4,Float64}}(undef, nint)
+    rawknots = collect(s.basis.t)
 
     d1 = BSplineKit.Derivative(1) * s
     d2 = BSplineKit.Derivative(2) * s
     d3 = BSplineKit.Derivative(3) * s
 
-    for k in 1:nint
-        a = knots[k]
-        b = knots[k+1]
+    intervals = Tuple{Float64,Float64}[]
+    coeffs = NTuple{4,Float64}[]
 
-        # midpoint of interval
+    domlo, domhi = domain === nothing ? (-Inf, Inf) : domain
+
+    for k in 1:length(rawknots)-1
+        a0 = rawknots[k]
+        b0 = rawknots[k+1]
+
+        # Skip repeated knots.
+        b0 <= a0 && continue
+
+        # Clip to requested domain.
+        a = max(a0, domlo)
+        b = min(b0, domhi)
+
+        b <= a && continue
+
+        # midpoint of clipped interval
         x0 = (a + b) / 2
 
         # shifted Taylor coefficients around x0
-        a0 = s(x0)
-        a1 = d1(x0)
-        a2 = d2(x0) / 2
-        a3 = d3(x0) / 6
+        t0 = s(x0)
+        t1 = d1(x0)
+        t2 = d2(x0) / 2
+        t3 = d3(x0) / 6
 
-        # convert shifted cubic to power basis in x
-        c3 = a3
-        c2 = a2 - 3a3*x0
-        c1 = a1 - 2a2*x0 + 3a3*x0^2
-        c0 = a0 - a1*x0 + a2*x0^2 - a3*x0^3
+        # convert shifted cubic to ordinary power basis in ξ
+        c3 = t3
+        c2 = t2 - 3t3*x0
+        c1 = t1 - 2t2*x0 + 3t3*x0^2
+        c0 = t0 - t1*x0 + t2*x0^2 - t3*x0^3
 
-        coeffs[k] = (c0, c1, c2, c3)
+        push!(intervals, (a,b))
+        push!(coeffs, (c0,c1,c2,c3))
     end
 
-    return knots, coeffs
+    return intervals, coeffs
 end
 
 # -----------------------------------------------------------------------------
@@ -287,70 +287,141 @@ end
 # -----------------------------------------------------------------------------
 
 """
-    Gb_times_piecewise_cubic_integral(knots, coeffs, z, H, ψ, κ)
+    Gb_times_piecewise_cubic_integral(intervals, coeffs, z, H, ψ, κ)
 
-Compute exactly
+Compute
 
     ∫_{-H}^0 G_b(z; ξ) B(ξ) dξ
 
-where B(ξ) is piecewise cubic with interval coefficients `coeffs[k]`.
+where B is piecewise cubic on `intervals`.
+
+Assumes `z ∈ [-H,0]`.
 """
-function Gb_times_piecewise_cubic_integral(knots, coeffs, z, H, ψ, κ)
-    @assert length(knots) == length(coeffs) + 1
+function Gb_times_piecewise_cubic_integral(intervals, coeffs, z, H, ψ, κ)
+    @assert length(intervals) == length(coeffs)
+    @assert -H - 10eps() <= z <= 0 + 10eps()
+
+    lo = -H
+    hi = 0.0
+
     s = 0.0
-    @inbounds for k in 1:length(coeffs)
-        a = knots[k]
-        b = knots[k+1]
-        s += interval_contrib(coeffs[k], a, b, z, H, ψ, κ)
+
+    @inbounds for n in eachindex(coeffs)
+        a0, b0 = intervals[n]
+
+        # Clip interval to physical water column.
+        a = max(a0, lo)
+        b = min(b0, hi)
+
+        b <= a && continue
+
+        s += interval_contrib(coeffs[n], a, b, z, H, ψ, κ)
     end
+
     return s
 end
 
+# # -----------------------------------------------------------------------------
+# # Final buoyancy profile function
+# # -----------------------------------------------------------------------------
+
+# """
+#     buoyancy_profile_from_spline(spl, z, H, ψ, Γ, κ, Ek, b_s)
+
+# Compute the buoyancy profile
+
+#     b(z) = -(Γ/Ek) * ∫ G_b(z; ξ) B(ξ) dξ + ∂_ξ G_b(z;0) * b_s
+
+# where `B(ξ)` is given by BSplineKit spline `spl`.
+
+# Returns the scalar buoyancy at depth `z`.
+# """
+# function buoyancy_profile_from_spline(spl, z, H, ψ, Γ, κ, Ek, b_s)
+#     intervals, coeffs = spline_interval_power_coeffs(spl; domain=(-H, 0.0))
+#     I = Gb_times_piecewise_cubic_integral(intervals, coeffs, z, H, ψ, κ)
+#     surf = dGb_dξ_at_zero(z, H, ψ, κ) * b_s
+#     return -(Γ / Ek) * I + surf
+# end
+
 """
-    interval_contrib(c, a, b, z, H, ψ, κ)
+    buoyancy_column_from_spline(spl, zgrid, H, ψ, Γ, κ, Ek, b_s; verbose=false)
 
-Exact contribution of one spline interval [a,b] to
+Compute b(z) on `zgrid` for one column.
 
-    ∫ G_b(z; ξ) B(ξ) dξ
-
-assuming B(ξ) = c0 + c1 ξ + c2 ξ² + c3 ξ³ on [a,b].
+Uses overflow-safe G_b quadrature.
 """
-function interval_contrib(c::NTuple{4,<:Real}, a::Real, b::Real,
-                          z::Real, H::Real, ψ::Real, κ::Real)
-    if b <= z
-        A, B = Gb_coeffs(z, H, ψ, κ, :lt)
-        return A * polyexp_int(c,  ψ, a, b) +
-               B * polyexp_int(c, -ψ, a, b)
+function buoyancy_column_from_spline(spl, zgrid, H, ψ, Γ, κ, Ek, b_s; verbose=false)
+    b = fill(NaN, length(zgrid))
 
-    elseif a >= z
-        A, B = Gb_coeffs(z, H, ψ, κ, :gt)
-        return A * polyexp_int(c,  ψ, a, b) +
-               B * polyexp_int(c, -ψ, a, b)
-
-    else
-        return interval_contrib(c, a, z, z, H, ψ, κ) +
-               interval_contrib(c, z, b, z, H, ψ, κ)
+    if !isfinite(H)
+        verbose && @warn "H is not finite" H
+        return b
     end
+
+    if H <= 0
+        verbose && @warn "H must be positive ocean depth" H
+        return b
+    end
+
+    if !isfinite(b_s)
+        verbose && @warn "b_s is not finite" b_s
+        return b
+    end
+
+    valid = findall(k -> (-H <= zgrid[k] <= 0.0), eachindex(zgrid))
+
+    if isempty(valid)
+        verbose && @warn "No zgrid points lie inside water column" H bottom=-H zmin=minimum(zgrid) zmax=maximum(zgrid)
+        return b
+    end
+
+    if verbose
+        @info "Computing buoyancy column" H bottom=-H nvalid=length(valid) ψ Γ κ Ek b_s
+    end
+
+    @inbounds for k in valid
+        z = zgrid[k]
+
+        I = Gb_times_spline_integral_quadrature(spl, z, H, ψ, κ)
+        surf = dGb_dξ_at_zero_stable(z, H, ψ, κ) * b_s
+
+        b[k] = -(Γ / Ek) * I + surf
+    end
+
+    return b
 end
 
-# -----------------------------------------------------------------------------
-# Final buoyancy profile function
-# -----------------------------------------------------------------------------
-
 """
-    buoyancy_profile_from_spline(spl, z, H, ψ, Γ, κ, Ek, b_s)
+    pressure_integral_from_b_column(zgrid, bcol, H)
 
-Compute the buoyancy profile
+Compute
 
-    b(z) = -(Γ/Ek) * ∫ G_b(z; ξ) B(ξ) dξ + ∂_ξ G_b(z;0) * b_s
+    Π(z) = ∫_z^0 b(z') dz'
 
-where `B(ξ)` is given by BSplineKit spline `spl`.
+on `zgrid`.
 
-Returns the scalar buoyancy at depth `z`.
+Values outside [-H,0] are NaN.
 """
-function buoyancy_profile_from_spline(spl, z, H, ψ, Γ, κ, Ek, b_s)
-    knots, coeffs = spline_interval_power_coeffs(spl)
-    I = Gb_times_piecewise_cubic_integral(knots, coeffs, z, H, ψ, κ)
-    surf = dGb_dξ_at_zero(z, H, ψ, κ) * b_s
-    return -(Γ / Ek) * I + surf
+function pressure_integral_from_b_column(zgrid, bcol, H)
+    Π = fill(NaN, length(zgrid))
+
+    valid = findall(k -> isfinite(bcol[k]) && (-H <= zgrid[k] <= 0.0), eachindex(zgrid))
+
+    if length(valid) < 4
+        return Π
+    end
+
+    zvalid = collect(zgrid[valid])
+    bvalid = collect(bcol[valid])
+
+    spl = fit_cubic_spline_1d(zvalid, bvalid)
+    A = BSplineKit.integral(spl)
+    A0 = A(0.0)
+
+    @inbounds for k in valid
+        z = zgrid[k]
+        Π[k] = A0 - A(z)
+    end
+
+    return Π
 end
