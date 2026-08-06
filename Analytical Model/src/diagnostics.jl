@@ -20,74 +20,6 @@ function interp_error_stats(truevals, approxvals)
             mae    = mean(abs.(err)))
 end
 
-"""
-    check_3d_interpolation_accuracy(x, y, z, Fsp, Forig; nsamp=10000, seed=1234)
-
-Compare an interpolant `Fsp` against a reference field/interpolant `Forig`
-at random points in the domain.
-"""
-function check_3d_interpolation_accuracy(x, y, z, Fsp, Forig; nsamp=10_000, seed=1234)
-    println("Running 3D interpolation accuracy check ...")
-    rng = MersenneTwister(seed)
-
-    xmin, xmax = first(x), last(x)
-    ymin, ymax = first(y), last(y)
-    zmin, zmax = first(z), last(z)
-
-    truevals = Float64[]
-    approxvals = Float64[]
-
-    for _ in 1:nsamp
-        xr = xmin + rand(rng) * (xmax - xmin)
-        yr = ymin + rand(rng) * (ymax - ymin)
-        zr = zmin + rand(rng) * (zmax - zmin)
-
-        tv = Forig(xr, yr, zr)
-        av = Fsp(xr, yr, zr)
-
-        if isfinite(tv) && isfinite(av)
-            push!(truevals, tv)
-            push!(approxvals, av)
-        end
-    end
-
-    println("3D accuracy check complete.")
-    return interp_error_stats(truevals, approxvals), truevals, approxvals
-end
-
-"""
-    check_vertical_profile(x0, y0, z, F, xgrid, ygrid)
-
-Compare a vertical profile from field `F` at the nearest
-horizontal grid point.
-"""
-function check_vertical_profile(x0, y0, z, F, xgrid, ygrid)
-    ix = argmin(abs.(xgrid .- x0))
-    iy = argmin(abs.(ygrid .- y0))
-
-    trueprof = [F[ix, iy, k] for k in 1:length(z)]
-    return trueprof, ix, iy
-end
-
-"""
-    check_grid_reproduction_3d(xu, yu, zu, Fu, Fsp)
-
-Check whether the spline reproduces the resampled uniform-grid values.
-"""
-function check_grid_reproduction_3d(xu, yu, zu, Fu, Fsp)
-    nx, ny, nz = size(Fu)
-    err = Array{Float64}(undef, nx, ny, nz)
-
-    @inbounds for i in 1:nx, j in 1:ny, k in 1:nz
-        err[i, j, k] = Fsp(xu[i], yu[j], zu[k]) - Fu[i, j, k]
-    end
-
-    stats = (maxabs = maximum(abs.(err)),
-             rmse   = sqrt(mean(err.^2)),
-             mae    = mean(abs.(err)))
-    return stats, err
-end
-
 # ============================================================================
 # Plotting helpers
 # ============================================================================
@@ -169,7 +101,7 @@ function plot_ocean_depth_masked(depth2d, x, y; lonlim=nothing, latlim=nothing)
 end
 
 """
-    plot_north_atlantic_surface_masked(Fsp, xu, yu, zsurf, depth2d; lonlim=nothing, latlim=nothing)
+    plot_ocean_depth_masked(Fsp, xu, yu, zsurf, depth2d; lonlim=nothing, latlim=nothing)
 
 Plot a surface slice, masking land using `depth2d`.
 Axes are the model Cartesian coordinates x/y.
@@ -336,6 +268,89 @@ function plot_sample_vertical_profiles(fields, points; use_logz=false)
     return p
 end
 
+
+# ----------------------------------------------------------------------------
+# Nondimensional plotting helpers
+# ----------------------------------------------------------------------------
+
+"""
+    plot_ocean_depth_nd(deptĥ, x̂, ŷ; xlim=[-1, 1], ylim=[-1, 1])
+
+Plot nondimensional ocean depth.
+"""
+function plot_ocean_depth_nd(deptĥ, x̂, ŷ; xlim=[-1, 1], ylim=[-1, 1])
+    dep = copy(deptĥ)
+    dep[.!isfinite.(dep) .| (dep .<= 0)] .= NaN
+    vals = dep[isfinite.(dep)]
+    @assert !isempty(vals) "No finite nondimensional depth values to plot."
+
+    p = heatmap(
+        x̂, ŷ, dep',
+        xlim = xlim, ylim = ylim,
+        xlabel = "x̂",
+        ylabel = "ŷ",
+        title = "Nondimensional ocean depth",
+        color = :viridis,
+        colorbar_title = "Ĥ",
+        clims = (minimum(vals), maximum(vals))
+    )
+
+    return p
+end
+
+"""
+    plot_surface_buoyancy_nd(b̂s, x̂u, ŷu, deptĥ; xlim=[-1, 1], ylim=[-1, 1])
+
+Plot nondimensional surface buoyancy, masking land.
+"""
+function plot_surface_buoyancy_nd(b̂s, x̂u, ŷu, deptĥ;
+                                  xlim=[-1, 1], ylim=[-1, 1])
+    A = mask_land(b̂s, deptĥ)
+
+    vals = A[isfinite.(A)]
+    @assert !isempty(vals) "No finite nondimensional surface buoyancy values."
+
+    p = heatmap(
+        x̂u, ŷu, A',
+        xlim = xlim, ylim = ylim,
+        xlabel = "x̂",
+        ylabel = "ŷ",
+        title = "Nondimensional surface buoyancy",
+        color = :balance,
+        aspect_ratio = :equal,
+        colorbar_title = "b̂s",
+        clims = (minimum(vals), maximum(vals))
+    )
+    return p
+end
+
+"""
+    plot_vertical_profile_comparison_nd(x̂0, ŷ0, ẑ, B̂, B̂zsplines, x̂grid, ŷgrid)
+
+Plot a nondimensional buoyancy profile comparison.
+"""
+function plot_vertical_profile_comparison_nd(x̂0, ŷ0, ẑ, B̂, B̂zsplines, x̂grid, ŷgrid)
+    ix = argmin(abs.(x̂grid .- x̂0))
+    iy = argmin(abs.(ŷgrid .- ŷ0))
+
+    trueB   = [B̂[ix, iy, k] for k in 1:length(ẑ)]
+    approxB = [B̂zsplines[ix, iy](zk) for zk in ẑ]
+
+    ok = isfinite.(trueB) .& isfinite.(approxB)
+
+    p = plot(
+        trueB[ok], ẑ[ok],
+        label = "Original",
+        linewidth = 2,
+        xlabel = "b̂",
+        ylabel = "ẑ",
+        title = "Nondimensional buoyancy profile",
+        legend = :bottomright
+    )
+    plot!(p, approxB[ok], ẑ[ok], label = "Spline", linewidth = 2, linestyle = :dash)
+    return p
+end
+
 function run_case_diagnostics(fields; lonlim=nothing, latlim=nothing, sample_points=Tuple[])
     plots_out = Any[]
 
@@ -418,35 +433,6 @@ function trapz_1d(f, z)
         s += 0.5 * (f[k] + f[k+1]) * (z[k+1] - z[k])
     end
     return s
-end
-
-"""
-    spline_profile_stats(z, f, spl)
-
-Compare a sampled profile `f(z)` against spline `spl(z)`.
-
-Returns statistics for values, derivatives, and integrals.
-"""
-function spline_profile_stats(z, f, spl)
-    approx = eval_vertical_spline_column(spl, z)
-    valstats = interp_error_stats(f, approx)
-
-    # Derivative comparison
-    dfdz_fd = central_diff_1d(f, z)
-    dfdz_sp = [BSplineKit.diff(spl)(zk) for zk in z]
-    derivstats = interp_error_stats(dfdz_fd, dfdz_sp)
-
-    # Integral comparison
-    int_fd = trapz_1d(f, z)
-    int_sp = spline_definite_integral(spl, first(z), last(z))
-
-    return (
-        values = valstats,
-        derivative = derivstats,
-        integral_abs_error = abs(int_sp - int_fd),
-        integral_fd = int_fd,
-        integral_sp = int_sp
-    )
 end
 
 """
