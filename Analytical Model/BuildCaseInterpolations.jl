@@ -177,7 +177,6 @@ p = plot()
 plot!(bcol, buoyancy_fields_nd.ẑ, marker=:circle)
 display(p)
 
-
 STOP
  
 # z = -0.3
