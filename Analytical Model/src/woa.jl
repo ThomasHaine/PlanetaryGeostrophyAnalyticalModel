@@ -147,7 +147,8 @@ function compute_buoyancy_density_depth_TEOS10(lon, lat, z, T, S; surface_level=
     @inbounds for i in 1:nx, j in 1:ny, k in 1:nz
         if isfinite(T[i,j,k]) && isfinite(S[i,j,k])
             p = gsw_p_from_z(z[k], lat[j])
-            b, rhoval = teos10_buoyancy_density(S[i,j,k], T[i,j,k], p, lon[i], lat[j])
+            babs, rhoval = teos10_buoyancy_density(S[i,j,k], T[i,j,k], p, lon[i], lat[j])
+            b = babs + g        # Buoyancy relative to reference density ρ0
             B[i,j,k] = b
             ρ[i,j,k] = rhoval
         end
@@ -163,7 +164,8 @@ function compute_buoyancy_density_depth_TEOS10(lon, lat, z, T, S; surface_level=
             ksurf = surface_level === :shallowest ? kmax : kmin
 
             p = gsw_p_from_z(z[ksurf], lat[j])
-            bs[i,j], _ = teos10_buoyancy_density(S[i,j,ksurf], T[i,j,ksurf], p, lon[i], lat[j])
+            bsabs, _ = teos10_buoyancy_density(S[i,j,ksurf], T[i,j,ksurf], p, lon[i], lat[j])
+            bs[i,j] = bsabs + g        # Buoyancy relative to reference density ρ0
 
             # Bottom depth from deepest valid level
             depth2d[i,j] = -z[kmin]

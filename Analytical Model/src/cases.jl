@@ -67,19 +67,19 @@ function build_woa_case_fields(; tempfile,
     bsfill = fill_nan_neighbors_2d!(bsgeo; radius=2)
 
     # Build uniform-grid resampled fields
-    xu, yu, zu, Bu, _ = build_uniform_bspline_3d_bsplinekit(
+    xu, yu, zu, Bu = build_uniform_gridded_field_3D(
         x, y, z, Bfill; nx=nx, ny=ny, nz=nz
     )
-    _, _, _, Tu, _ = build_uniform_bspline_3d_bsplinekit(
+    _, _, _, Tu = build_uniform_gridded_field_3D(
         x, y, z, Tfill; nx=nx, ny=ny, nz=nz
     )
-    _, _, _, Su, _ = build_uniform_bspline_3d_bsplinekit(
+    _, _, _, Su = build_uniform_gridded_field_3D(
         x, y, z, Sfill; nx=nx, ny=ny, nz=nz
     )
-    _, _, _, ρu, _ = build_uniform_bspline_3d_bsplinekit(
+    _, _, _, ρu = build_uniform_gridded_field_3D(
         x, y, z, ρfill; nx=nx, ny=ny, nz=nz
     )
-    xu2, yu2, bsu, _ = build_uniform_bspline_2d_bsplinekit(
+    xu2, yu2, bsu = build_uniform_gridded_field_2D(
         x, y, bsfill; nx=nx, ny=ny
     )
 
@@ -164,7 +164,7 @@ function build_ideal_case_fields(kind::Symbol; x, y, z,
     end
 
     bs = buoyancy_bs === nothing ?
-        ideal_surface_buoyancy(x, y; b0=-g, amp=buoyancy_amp) :
+        ideal_surface_buoyancy(x, y; amp=buoyancy_amp) :
         buoyancy_bs
 
     B = ideal_buoyancy_field(x, y, z;
@@ -190,10 +190,10 @@ function build_ideal_case_fields(kind::Symbol; x, y, z,
     bsfill = fill_nan_neighbors_2d!(bs; radius=2)
 
     # Build uniform-grid resampled fields
-    xu, yu, zu, Bu, _ = build_uniform_bspline_3d_bsplinekit(
+    xu, yu, zu, Bu = build_uniform_gridded_field_3D(
         x, y, z, Bfill; nx=nx, ny=ny, nz=nz
     )
-    xu2, yu2, bsu, _ = build_uniform_bspline_2d_bsplinekit(
+    xu2, yu2, bsu = build_uniform_gridded_field_2D(
         x, y, bsfill; nx=nx, ny=ny
     )
 

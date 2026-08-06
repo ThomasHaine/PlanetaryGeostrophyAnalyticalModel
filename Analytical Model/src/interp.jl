@@ -221,14 +221,14 @@ end
 # ============================================================================
 
 """
-    build_vertical_splines_bsplinekit(x, y, z, F)
+    build_vertical_splines(x, y, z, F)
 
 Build a cubic spline in z for each (x,y) column of 3D field `F`.
 
 Returns:
 - `spline_cols[i,j]` : spline object for F[i,j,:]
 """
-function build_vertical_splines_bsplinekit(x, y, z, F)
+function build_vertical_splines(x, y, z, F)
     @assert size(F) == (length(x), length(y), length(z))
     @assert all(isfinite, F)
     @assert issorted(z)
@@ -242,14 +242,14 @@ function build_vertical_splines_bsplinekit(x, y, z, F)
 end
 
 """
-    build_surface_splines_bsplinekit(x, y, bs)
+    build_surface_splines(x, y, bs)
 
 Build a cubic spline in y for each x-row of `bs`.
 
 Returns:
 - `spline_rows[i]` : spline object for bs[i,:]
 """
-function build_surface_splines_bsplinekit(x, y, bs)
+function build_surface_splines(x, y, bs)
     @assert size(bs) == (length(x), length(y))
     @assert all(isfinite, bs)
 
@@ -265,7 +265,7 @@ end
 # High-level builders
 # ============================================================================
 
-function build_uniform_bspline_3d_bsplinekit(x, y, z, F;
+function build_uniform_gridded_field_3D(x, y, z, F;
                                              nx=length(x), ny=length(y), nz=length(z),
                                              xuniform=nothing, yuniform=nothing, zuniform=nothing)
     @assert size(F) == (length(x), length(y), length(z))
@@ -276,12 +276,10 @@ function build_uniform_bspline_3d_bsplinekit(x, y, z, F;
                                             nx=nx, ny=ny, nz=nz,
                                             xuniform=xuniform, yuniform=yuniform, zuniform=zuniform)
 
-    zsplines = build_vertical_splines_bsplinekit(xu, yu, zu, Fu)
-
-    return xu, yu, zu, Fu, zsplines
+    return xu, yu, zu, Fu
 end
 
-function build_uniform_bspline_2d_bsplinekit(x, y, F;
+function build_uniform_gridded_field_2D(x, y, F;
                                              nx=length(x), ny=length(y),
                                              xuniform=nothing, yuniform=nothing)
     @assert size(F) == (length(x), length(y))
@@ -292,9 +290,7 @@ function build_uniform_bspline_2d_bsplinekit(x, y, F;
                                         nx=nx, ny=ny,
                                         xuniform=xuniform, yuniform=yuniform)
 
-    ysplines = build_surface_splines_bsplinekit(xu, yu, Fu)
-
-    return xu, yu, Fu, ysplines
+    return xu, yu, Fu
 end
 
 # ============================================================================

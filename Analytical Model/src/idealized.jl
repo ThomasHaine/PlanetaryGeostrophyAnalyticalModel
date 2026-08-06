@@ -67,7 +67,7 @@ function ideal_basin_with_constriction(x, y; H0=4000.0, ax=1.0e6, ay=1.0e6,
 end
 
 """
-    ideal_surface_buoyancy(x, y; b0=-9.83, amp=2e-3, x0=0.0, y0=0.0, ax=1.0e6, ay=1.0e6)
+    ideal_surface_buoyancy(x, y; b0=0, amp=2e-3, x0=0.0, y0=0.0, ax=1.0e6, ay=1.0e6)
 
 Gaussian surface buoyancy anomaly added to a background buoyancy `b0`.
 
@@ -78,7 +78,7 @@ fields in the same sign convention as the model:
 - buoyancy near `-g` in units of m/s²
 - small horizontal variations about that background
 """
-function ideal_surface_buoyancy(x, y; b0=-9.83, amp=2e-3, x0=0.0, y0=0.0,
+function ideal_surface_buoyancy(x, y; b0=0, amp=2e-3, x0=0.0, y0=0.0,
                                 ax=1.0e6, ay=1.0e6)
     bs = Array{Float64}(undef, length(x), length(y))
 

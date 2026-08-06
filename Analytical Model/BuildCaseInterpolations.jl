@@ -5,7 +5,7 @@ include("OceanBuoyancyTools.jl")
 # --------------------------------------------------------------------------
 # User choice
 # --------------------------------------------------------------------------
-case = :ideal_elliptical
+case = :woa
 # case = :ideal_elliptical
 # case = :ideal_ridge
 # case = :ideal_constriction

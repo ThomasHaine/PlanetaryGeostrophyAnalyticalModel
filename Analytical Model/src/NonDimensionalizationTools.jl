@@ -409,12 +409,14 @@ function build_nondimensional_case(fields, S::OceanScales)
     # Build 3D buoyancy spline columns in nondimensional space
     # ---------------------------------------------------------------------
     if haskey(out, :x̂) && haskey(out, :ŷ) && haskey(out, :ẑ) && haskey(out, :B̂fill)
-        x̂u, ŷu, ẑu, B̂u, B̂zsplines = build_uniform_bspline_3d_bsplinekit(
+        x̂u, ŷu, ẑu, B̂u = build_uniform_gridded_field_3D(
             out[:x̂], out[:ŷ], out[:ẑ], out[:B̂fill];
             nx = length(out[:x̂]),
             ny = length(out[:ŷ]),
             nz = length(out[:ẑ])
         )
+
+        B̂zsplines = build_vertical_splines(x̂u, ŷu, ẑu, B̂u)
 
         out[:x̂u] = x̂u
         out[:ŷu] = ŷu
@@ -429,11 +431,13 @@ function build_nondimensional_case(fields, S::OceanScales)
     if haskey(out, :x̂) && haskey(out, :ŷ) && haskey(out, :b̂sfill)
         bs_work = fill_nan_neighbors_2d!(copy(out[:b̂sfill]))
 
-        x̂u2, ŷu2, b̂su, b̂ssplines = build_uniform_bspline_2d_bsplinekit(
+        x̂u2, ŷu2, b̂su = build_uniform_gridded_field_2D(
             out[:x̂], out[:ŷ], bs_work;
             nx = length(out[:x̂]),
             ny = length(out[:ŷ])
         )
+
+        b̂ssplines = build_surface_splines(x̂u2, ŷu2, b̂su)
 
         out[:x̂u2] = x̂u2
         out[:ŷu2] = ŷu2
@@ -447,11 +451,13 @@ function build_nondimensional_case(fields, S::OceanScales)
     if haskey(out, :x̂) && haskey(out, :ŷ) && haskey(out, :Ĥ)
         H_work = fill_nan_neighbors_2d!(copy(out[:Ĥ]))
 
-        x̂h, ŷh, Ĥf, Ĥsplines = build_uniform_bspline_2d_bsplinekit(
+        x̂h, ŷh, Ĥf = build_uniform_gridded_field_2D(
             out[:x̂], out[:ŷ], H_work;
             nx = length(out[:x̂]),
             ny = length(out[:ŷ])
         )
+
+        Ĥsplines = build_surface_splines(x̂h, ŷh, Ĥf)
 
         out[:x̂h] = x̂h
         out[:ŷh] = ŷh
