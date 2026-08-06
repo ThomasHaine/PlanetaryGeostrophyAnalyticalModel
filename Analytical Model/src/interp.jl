@@ -62,9 +62,6 @@ end
 # BSplineKit utilities
 # ============================================================================
 
-using BSplineKit
-using Statistics
-
 """
     fit_cubic_spline_1d(x, f)
 
@@ -97,25 +94,6 @@ end
 # ============================================================================
 # Manual interpolation helpers (no Interpolations.jl)
 # ============================================================================
-
-function lininterp1(x::AbstractVector, f::AbstractVector, xq::Real)
-    @assert issorted(x)
-    n = length(x)
-
-    if xq <= x[1]
-        return f[1]
-    elseif xq >= x[end]
-        return f[end]
-    end
-
-    i = searchsortedlast(x, xq)
-    i = clamp(i, 1, n-1)
-
-    x1, x2 = x[i], x[i+1]
-    f1, f2 = f[i], f[i+1]
-    t = (xq - x1) / (x2 - x1)
-    return (1 - t)*f1 + t*f2
-end
 
 function bilinterp2(x::AbstractVector, y::AbstractVector, F::AbstractMatrix,
                     xq::Real, yq::Real)

@@ -1,5 +1,30 @@
-using BSplineKit
-using LinearAlgebra
+# ----------------------------------------------------------------------------
+# Vertical integration from BSplineKit z-splines
+# ----------------------------------------------------------------------------
+
+"""
+    vertical_integrated_field_from_splines(Bzsplines, ξgrid)
+
+Compute J[i,j,k] = ∫_{ξ_k}^0 B(i,j,z') dz' using spline integrals.
+"""
+function vertical_integrated_field_from_splines(Bzsplines, ξgrid)
+    nx, ny = size(Bzsplines)
+    nξ = length(ξgrid)
+
+    J = Array{Float64}(undef, nx, ny, nξ)
+
+    @inbounds for i in 1:nx, j in 1:ny
+        spl = Bzsplines[i, j]
+        A = BSplineKit.integral(spl)
+        A0 = A(0.0)
+        for k in 1:nξ
+            ξ = ξgrid[k]
+            J[i, j, k] = A0 - A(ξ)
+        end
+    end
+
+    return J
+end
 
 # ----------------------------------------------------------------------------
 # Cached 1D basis matrices built from the working interpolation path
@@ -189,34 +214,6 @@ function build_complex_horizontal_gradient_slices(xgrid, ygrid, J)
 end
 
 # ----------------------------------------------------------------------------
-# Vertical integration from BSplineKit z-splines
-# ----------------------------------------------------------------------------
-
-"""
-    vertical_integrated_field_from_splines(Bzsplines, ξgrid)
-
-Compute J[i,j,k] = ∫_{ξ_k}^0 B(i,j,z') dz' using spline integrals.
-"""
-function vertical_integrated_field_from_splines(Bzsplines, ξgrid)
-    nx, ny = size(Bzsplines)
-    nξ = length(ξgrid)
-
-    J = Array{Float64}(undef, nx, ny, nξ)
-
-    @inbounds for i in 1:nx, j in 1:ny
-        spl = Bzsplines[i, j]
-        A = BSplineKit.integral(spl)
-        A0 = A(0.0)
-        for k in 1:nξ
-            ξ = ξgrid[k]
-            J[i, j, k] = A0 - A(ξ)
-        end
-    end
-
-    return J
-end
-
-# ----------------------------------------------------------------------------
 # Extract coefficients of a cubic spline in shifted form
 # ----------------------------------------------------------------------------
 
@@ -321,27 +318,9 @@ function Gb_times_piecewise_cubic_integral(intervals, coeffs, z, H, ψ, κ)
     return s
 end
 
-# # -----------------------------------------------------------------------------
-# # Final buoyancy profile function
-# # -----------------------------------------------------------------------------
-
-# """
-#     buoyancy_profile_from_spline(spl, z, H, ψ, Γ, κ, Ek, b_s)
-
-# Compute the buoyancy profile
-
-#     b(z) = -(Γ/Ek) * ∫ G_b(z; ξ) B(ξ) dξ + ∂_ξ G_b(z;0) * b_s
-
-# where `B(ξ)` is given by BSplineKit spline `spl`.
-
-# Returns the scalar buoyancy at depth `z`.
-# """
-# function buoyancy_profile_from_spline(spl, z, H, ψ, Γ, κ, Ek, b_s)
-#     intervals, coeffs = spline_interval_power_coeffs(spl; domain=(-H, 0.0))
-#     I = Gb_times_piecewise_cubic_integral(intervals, coeffs, z, H, ψ, κ)
-#     surf = dGb_dξ_at_zero(z, H, ψ, κ) * b_s
-#     return -(Γ / Ek) * I + surf
-# end
+# -----------------------------------------------------------------------------
+# Final buoyancy profile function
+# -----------------------------------------------------------------------------
 
 """
     buoyancy_column_from_spline(spl, zgrid, H, ψ, Γ, κ, Ek, b_s; verbose=false)

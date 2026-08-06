@@ -6,19 +6,10 @@ using BSplineKit
 using Statistics
 using Random
 using Plots
+using LinearAlgebra
 using Infiltrator
 
-export read_woa_climatology,
-       #lonlat_to_cartesian_xy,
-    #    teos10_buoyancy_density,
-    #    ideal_elliptical_basin,
-    #    ideal_basin_with_ridge,
-    #    ideal_basin_with_constriction,
-    #    ideal_exponential_buoyancy,
-    #    ideal_surface_buoyancy,
-    #    ideal_buoyancy_field,
-    #    ideal_basin_mask,
-       build_case_fields,
+export build_case_fields,
        build_all_woa_fields,
        run_case_diagnostics,
        OceanScales,
@@ -33,8 +24,6 @@ export read_woa_climatology,
        print_spline_diagnostic_table,
        vertical_integrated_field_from_splines,
        build_complex_horizontal_gradient_slices,
-    #    build_horizontal_tensor_splines,
-    #    interval_contrib,
        buoyancy_column_from_spline,
        buoyancy_profile_from_spline
 
