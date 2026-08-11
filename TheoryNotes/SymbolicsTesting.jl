@@ -1,3 +1,6 @@
+# Script to test the output of the ComputeQuadratures.ipynb notebook. The Symbolics.jl form of the double integral is loaded and then compared to numerical estimates of the quadrature for several parameters.
+# TWNH Aug '26
+
 using Symbolics
 using JLD2
 using Latexify
@@ -97,8 +100,7 @@ println("numeric  = ", num_val)
 @printf("abs err  = %.16e\n", abs_err)
 @printf("rel err  = %.16e\n", rel_err)
 
-# More comprehensive tests:
-
+# More comprehensive tests for several parameters:
 Ek_vals = [1e-1, 1e-2, 1e-3, 1e-4]
 z_vals = collect(range(-Hval*(0.999), -0.001; length=8))
 
@@ -113,8 +115,6 @@ end
 function benchmark_one(Ekval, Hval, zval; νval=1.0, κval=1.0)
     φval = varphi_from_Ek(Ekval; ν = νval)
     ψval = psi_from_Ek(Ekval; κ = κval)
-
-    # println("Ek = ", Ekval, ", z = ", zval, ", φ = ", φval, ", ψ = ", ψval)
 
     t_sym = @elapsed sym_val = f(Hval, zval, φval, ψval)
 
