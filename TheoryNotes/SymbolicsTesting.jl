@@ -8,7 +8,7 @@ using QuadGK
 using Printf
 using Statistics
 
-@variables x y z ξ
+@variables x y z ξ ξp
 @variables H
 @variables Ek κ ν ψ φ
 
@@ -30,7 +30,7 @@ println()
 # Build function from tmp
 f_expr = build_function(tmp, vars; expression = Val(false))
 f2 = eval(f_expr)
-f(H, z, φ, ψ) = f2([H, z, φ, ψ])
+f(H, z, ξp, φ, ψ) = f2([H, φ, ψ, z, ξp])        # Order of variables must match `vars`
 
 println("Finished generating symbolic function.")
 println()
@@ -58,23 +58,23 @@ function Gb_num(z, ξ, H, κ, ψ)
     end
 end
 
-function inner_b(ξ, H, κ, ψ)
-    quadgk(zp -> Gb_num(zp, ξ, H, κ, ψ), ξ, 0.0; rtol=1e-10, atol=1e-12)[1]
+function inner_b(ξ, ξp, H, κ, ψ)
+    quadgk(zp -> Gb_num(zp, ξp, H, κ, ψ), ξ, 0.0; rtol=1e-10, atol=1e-12)[1]
 end
 
-function double_integral_num(z, H, ν, κ, ψ, φ)
-    quadgk(ξ -> Gu_num(z, ξ, H, ν, φ) * inner_b(ξ, H, κ, ψ),
+function double_integral_num(z, ξp, H, ν, κ, ψ, φ)
+    quadgk(ξ -> Gu_num(z, ξ, H, ν, φ) * inner_b(ξ, ξp, H, κ, ψ),
            -H, 0.0; rtol=1e-10, atol=1e-12)[1]
 end
 
-function compare_symbolic_vs_numeric(f, H, z, φ, ψ, κ, ν)
+function compare_symbolic_vs_numeric(f, H, z, ξp, φ, ψ, κ, ν)
     @time begin
         println("Computing double integral with Symbolics expression")
-        sym_val = f(H, z, φ, ψ)
+        sym_val = f(H, z, ξp, φ, ψ)
     end
     @time begin
         println("Computing double integral with quadgk")
-        num_val = double_integral_num(z, H, ν, κ, ψ, φ)
+        num_val = double_integral_num(z, ξp, H, ν, κ, ψ, φ)
     end
 
     abs_err = abs(sym_val - num_val)
@@ -86,13 +86,14 @@ end
 # Example values
 Hval  = 1.0
 zval  = -0.6
-φval  = 0.05 * sqrt(im)
-ψval  = 0.05
+ξpval = -0.5
+φval  = 1.5 * sqrt(im)
+ψval  = 2.5
 νval  = 1.0
 κval  = 1.0
 
 sym_val, num_val, abs_err, rel_err = compare_symbolic_vs_numeric(
-    f, Hval, zval, φval, ψval, κval, νval
+    f, Hval, zval, ξpval, φval, ψval, κval, νval
 )
 
 println("symbolic = ", sym_val)
@@ -100,9 +101,15 @@ println("numeric  = ", num_val)
 @printf("abs err  = %.16e\n", abs_err)
 @printf("rel err  = %.16e\n", rel_err)
 
+# RESUME HERE!  NEED TO GET THESE TWO QUADRATURE VALUES TO AGREE!
+
+STOP
+
+
 # More comprehensive tests for several parameters:
 Ek_vals = [1e-1, 1e-2, 1e-3, 1e-4]
-z_vals = collect(range(-Hval*(0.999), -0.001; length=8))
+z_vals = collect(range(-Hval*(0.999), -0.001; length=4))
+ξp_vals = z_vals
 
 function varphi_from_Ek(Ek; f = 1.0, ν = 1.0)
     return sqrt(complex(0,1) * f / (ν * Ek))
@@ -112,17 +119,17 @@ function psi_from_Ek(Ek; Γ = 1.0, κ = 1.0)
     return sqrt(Γ / (κ * Ek))
 end
 
-function benchmark_one(Ekval, Hval, zval; νval=1.0, κval=1.0)
+function benchmark_one(Ekval, Hval, zval, ξpval; νval=1.0, κval=1.0)
     φval = varphi_from_Ek(Ekval; ν = νval)
     ψval = psi_from_Ek(Ekval; κ = κval)
 
-    t_sym = @elapsed sym_val = f(Hval, zval, φval, ψval)
+    t_sym = @elapsed sym_val = f(Hval, zval, ξpval, φval, ψval)
 
     t_num = NaN
     num_val = NaN + NaN*im
     ok = true
     try
-        t_num = @elapsed num_val = double_integral_num(zval, Hval, νval, κval, ψval, φval)
+        t_num = @elapsed num_val = double_integral_num(zval, ξpval, Hval, νval, κval, ψval, φval)
     catch err
         ok = false
         @warn "quadgk failed" Ekval zval err
@@ -136,7 +143,7 @@ function benchmark_one(Ekval, Hval, zval; νval=1.0, κval=1.0)
         rel_err = NaN
     end
 
-    return (Ek=Ekval, z=zval, φ=φval, ψ=ψval,
+    return (Ek=Ekval, z=zval, ξp=ξpval , φ=φval, ψ=ψval,
             sym=sym_val, num=num_val, abs_err=abs_err, rel_err=rel_err,
             t_sym=t_sym, t_num=t_num, ok=ok)
 end
@@ -167,7 +174,9 @@ results = Vector{Any}()
 
 for Ekval in Ek_vals
     for zval in z_vals
-        push!(results, benchmark_one(Ekval, Hval, zval; νval=νval, κval=κval))
+        for ξpval in ξp_vals
+            push!(results, benchmark_one(Ekval, Hval, zval, ξpval; νval=νval, κval=κval))
+        end
     end
 end
 
@@ -175,6 +184,6 @@ summarize_results(results)
 
 println("\nPer-case summary:")
 for r in results
-    @printf("Ek=%-8.1e z=%-8.4f  ok=%-5s  relerr=%-10.3e  t_sym=%-9.3e  t_num=%-9.3e\n",
-            r.Ek, r.z, string(r.ok), r.rel_err, r.t_sym, r.t_num)
+    @printf("Ek=%-8.1e z=%-8.4f ξp=%-8.4f ok=%-5s  relerr=%-10.3e  t_sym=%-9.3e  t_num=%-9.3e\n",
+            r.Ek, r.z, r.ξp, string(r.ok), r.rel_err, r.t_sym, r.t_num)
 end
