@@ -5,9 +5,9 @@ manifest_format = "2.0"
 project_hash = "ea0b7371ae33930688cc04713bf991799d2b3b44"
 
 [[deps.ADTypes]]
-git-tree-sha1 = "9b38b82a9fe131f3d331a53b7203d9d1a2a4602c"
+git-tree-sha1 = "5970c86505ae9c07bf5bc521ef2bbbb3849e8b7b"
 uuid = "47edcb42-4c32-4615-8424-f2b9edc5f35b"
-version = "1.22.4"
+version = "1.23.0"
 
     [deps.ADTypes.extensions]
     ADTypesChainRulesCoreExt = "ChainRulesCore"
@@ -659,9 +659,10 @@ uuid = "781609d7-10c4-51f6-84f2-b8444358ff6d"
 version = "6.3.0+2"
 
 [[deps.Gamma]]
-git-tree-sha1 = "86f86b6168a016ed88e4ae4e64577b98c3b59e8e"
+deps = ["LogExpFunctions"]
+git-tree-sha1 = "becc397f7cfb06e343496ae6ffb04818a851da51"
 uuid = "a0844989-3bd2-4988-8bea-c9407ab0941b"
-version = "1.1.0"
+version = "1.2.0"
 
 [[deps.GeometryBasics]]
 deps = ["EarCut_jll", "LinearAlgebra", "PrecompileTools", "Random", "StaticArrays"]
@@ -941,9 +942,9 @@ version = "0.1.6"
 
 [[deps.JpegTurbo_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl"]
-git-tree-sha1 = "1dae3057da6f2b9c857afef03177bbdc7c4afe92"
+git-tree-sha1 = "037babc10853eeb8e585418922246cb97b8e5b74"
 uuid = "aacddb02-875f-59d6-b918-886e6ef4fbf8"
-version = "3.2.0+0"
+version = "3.2.0+1"
 
 [[deps.JuliaSyntaxHighlighting]]
 deps = ["StyledStrings"]
@@ -1766,9 +1767,9 @@ weakdeps = ["SymbolicUtils"]
 
 [[deps.SymbolicIndexingInterface]]
 deps = ["Accessors", "ArrayInterface", "RuntimeGeneratedFunctions", "StaticArraysCore"]
-git-tree-sha1 = "ae6fd46b22508c2dfcd0fabf144ce5e9d9d2e719"
+git-tree-sha1 = "2167b9913f3013a1485bdc9bb249123eb8b53cb0"
 uuid = "2efcf032-c050-4f8e-a9bb-153293bab1f5"
-version = "0.3.53"
+version = "0.3.54"
 
     [deps.SymbolicIndexingInterface.extensions]
     SymbolicIndexingInterfacePrettyTablesExt = "PrettyTables"
@@ -2035,9 +2036,9 @@ version = "0.2.3+0"
 
 [[deps.libaom_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl"]
-git-tree-sha1 = "850b06095ee71f0135d644ffd8a52850699581ed"
+git-tree-sha1 = "ef17c47d22224aaecc76e597ab21a072e025cf7b"
 uuid = "a4ae2306-e953-59d6-aa16-d00cac43593b"
-version = "3.13.3+0"
+version = "3.14.1+0"
 
 [[deps.libass_jll]]
 deps = ["Artifacts", "Bzip2_jll", "FreeType2_jll", "FriBidi_jll", "HarfBuzz_jll", "JLLWrappers", "Libdl", "Zlib_jll"]
