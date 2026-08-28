@@ -7,21 +7,29 @@ using Latexify
 using QuadGK
 using Printf
 using Statistics
+using RuntimeGeneratedFunctions
+RuntimeGeneratedFunctions.init(@__MODULE__)
 
 @variables x y z ξ ξp
 @variables H
 @variables Ek κ ν ψ φ
 
-@load "symexpr.jld2" symbolics_expr
-vars = [H, ψ, ξp, φ, z, κ, ν]
-println("These should match!")
-println(vars)
-println(collect(Symbolics.get_variables(symbolics_expr)))
-f_expr = build_function(symbolics_expr, vars; expression = Val(false))
-f2 = eval(f_expr)
-Guvb(H, z, ξp, φ, ψ, κ, ν) = f2([H, ψ, ξp, φ, z, κ, ν])
+@load "symexpr.jld2" symbolics_expr symbolics_Gb symbolics_Guv symbolics_inner_Gb_integral
 
-println("Finished generating symbolic function.")
+println("These should match!")
+println([H, ψ, ξp, φ, z, κ, ν])
+println(collect(Symbolics.get_variables(symbolics_expr)))
+Guvb_expr_fun = eval(build_function(symbolics_expr, H, ψ, ξp, φ, z, κ, ν; expression = Val(false)))
+Guvb(H, z, ξp, φ, ψ, κ, ν) = Guvb_expr_fun(H, ψ, ξp, φ, z, κ, ν)
+Guv_expr_fun = eval(build_function(symbolics_Guv, H, z, ξ, φ, ν; expression = Val(true)))
+Gu_sym(z, ξ, H, ν, φ) = Guv_expr_fun(H, z, ξ, φ, ν)
+Gb_expr_fun  = eval(build_function(symbolics_Gb,  H, z, ξ, ψ, κ; expression = Val(true)))
+Gb_sym(z, ξ, H, κ, ψ) = Gb_expr_fun(H, z, ξ, ψ, κ)
+inner_Gb_integral_expr_fun  = eval(build_function(symbolics_inner_Gb_integral, H, ξ, ξp, ψ, κ; expression = Val(true)))
+inner_Gb_integral_sym(ξ, ξp, H, κ, ψ) = inner_Gb_integral_expr_fun(H, ξ, ξp, ψ, κ)
+
+
+println("Finished generating symbolic functions.")
 println()
 
 # -------------------------------------------------------------------
@@ -47,15 +55,56 @@ function Gb_num(z, ξ, H, κ, ψ)
     end
 end
 
-function inner_b(ξ, ξp, H, κ, ψ)
+function inner_Gb_integral_num(ξ, ξp, H, κ, ψ)
     quadgk(zp -> Gb_num(zp, ξp, H, κ, ψ), ξ, 0.0; rtol=1e-10, atol=1e-12)[1]
 end
 
+function integrand_num(ξ, H, z, ξp, φ, ψ, κ, ν)
+    Gu_num(z, ξ, H, ν, φ) * inner_Gb_integral_num(ξ, ξp, H, κ, ψ)
+end
+
 function double_integral_num(H, z, ξp, φ, ψ, κ, ν)
-    quadgk(ξ -> Gu_num(z, ξ, H, ν, φ) * inner_b(ξ, ξp, H, κ, ψ),
+    quadgk(ξ -> integrand_num(ξ, H, z, ξp, φ, ψ, κ, ν),
            -H, 0.0; rtol=1e-10, atol=1e-12)[1]
 end
 
+function double_integral_num_split(H, z, ξp, φ, ψ, κ, ν)
+    f(ξ) = integrand_num(ξ, H, z, ξp, φ, ψ, κ, ν)
+
+    # Candidate breakpoints
+    pts = [-H, z, ξp, 0.0]
+
+    # Keep only unique points strictly inside the interval
+    pts = sort(unique(filter(t -> (-H < t < 0.0), pts)))
+
+    # Build subinterval endpoints
+    edges = vcat(-H, pts, 0.0)
+
+    # Integrate each subinterval separately
+    total = zero(complex(float(1.0)))  # ComplexF64 accumulator
+    for i in 1:length(edges)-1
+        a = edges[i]
+        b = edges[i+1]
+        if a != b
+            total += quadgk(f, a, b; rtol=1e-12, atol=1e-14)[1]
+        end
+    end
+
+    return total
+end
+
+function double_integral_sym_from_Green(H, z, ξp, φ, ψ, κ, ν)
+    f(ξ) = Gu_sym(z, ξ, H, ν, φ) * inner_b_sym(ξ, ξp, H, κ, ψ)
+
+    pts = sort(unique(filter(t -> (-H < t < 0.0), [z, ξp])))
+    edges = vcat(-H, pts, 0.0)
+
+    total = zero(complex(float(1.0)))
+    for i in 1:length(edges)-1
+        total += quadgk(f, edges[i], edges[i+1]; rtol=1e-12, atol=1e-14)[1]
+    end
+    return total
+end
 
 function compare_symbolic_vs_numeric(Guvb, Hval, zval, ξpval, φval, ψval, κval, νval)
     @time begin
@@ -80,17 +129,100 @@ zval  = -0.6
 φval  = 0.05 * sqrt(im)
 # φval  = 0.05 
 ψval  = 0.05
-νval  = 1.0
-κval  = 1.0
+νval  = 1.2
+κval  = 1.1
 
-sym_val, num_val, abs_err, rel_err = compare_symbolic_vs_numeric(
-    Guvb, Hval, zval, ξpval, φval, ψval, κval, νval
-)
+zvals = [-0.99, -0.75, -0.50, -0.25, -0.01]
+ξvals = [-0.99, -0.75, -0.50, -0.25, -0.01]
 
-println("symbolic = ", sym_val)
-println("numeric  = ", num_val)
-@printf("abs err  = %.16e\n", abs_err)
-@printf("rel err  = %.16e\n", rel_err)
+# First test the integrand values:
+function compare_Gu(z, ξ, H, ν, φ)
+    sym = Gu_sym(z, ξ, H, ν, φ)
+    num = Gu_num(z, ξ, H, ν, φ)
+    abs_err = abs(sym - num)
+    rel_err = abs_err / max(abs(num), eps(real(num)))
+    return sym, num, abs_err, rel_err
+end
+
+function compare_Gb(z, ξ, H, κ, ψ)
+    sym = Gb_sym(z, ξ, H, κ, ψ)
+    num = Gb_num(z, ξ, H, κ, ψ)
+    abs_err = abs(sym - num)
+    rel_err = abs_err / max(abs(num), eps(real(num)))
+    return sym, num, abs_err, rel_err
+end
+
+println("Testing Gu from ComputeQuadratures.ipynb and numerical Gu defined here:")
+for z in zvals, ξ in ξvals
+    sym, num, ae, re = compare_Gu(z, ξ, Hval, νval, φval)
+    @printf("z=%7.3f ξ=%7.3f  sym=% .6e%+ .6ei  num=% .6e%+ .6ei  abs=% .3e  rel=% .3e\n",
+            z, ξ, real(sym), imag(sym), real(num), imag(num), ae, re)
+end
+println()
+println("Testing Gb from ComputeQuadratures.ipynb and numerical Gu defined here:")
+for z in zvals, ξ in ξvals
+    sym, num, ae, re = compare_Gb(z, ξ, Hval, κval, ψval)
+    @printf("z=%7.3f ξ=%7.3f  sym=% .6e%+ .6ei  num=% .6e%+ .6ei  abs=% .3e  rel=% .3e\n",
+            z, ξ, real(sym), imag(sym), real(num), imag(num), ae, re)
+end
+
+# Second test inner_b integral:
+function inner_b_sym(ξ, ξp, H, κ, ψ)
+    quadgk(zp -> Gb_sym(zp, ξp, H, κ, ψ), ξ, 0.0; rtol=1e-10, atol=1e-12)[1]
+end
+
+function compare_inner_b(ξ, ξp, H, κ, ψ)
+    sym = inner_b_sym(ξ, ξp, H, κ, ψ)
+    num = inner_Gb_integral_num(ξ, ξp, H, κ, ψ)
+    sym2 = inner_Gb_integral_sym(ξ, ξp, H, κ, ψ)
+    return sym, num, sym2
+end
+
+ξpvals = ξvals
+
+println()
+println("Testing inner_b:")
+for ξ in ξvals, ξp in ξpvals
+    sym, num, sym2 = compare_inner_b(ξ, ξp, Hval, κval, ψval)
+    @printf("ξ=%7.3f ξp=%7.3f  sym=% .6e%+ .6ei sym2=% .6e%+ .6ei  num=% .6e%+ .6ei\n",
+            ξ, ξp, real(sym), imag(sym), real(sym2), imag(sym2), real(num), imag(num))
+end
+
+# Third test the integral
+function integrand_sym(ξ, H, z, ξp, φ, ψ, κ, ν)
+    Gu_sym(z, ξ, H, ν, φ) * inner_b_sym(ξ, ξp, H, κ, ψ)
+end
+function compare_outer_integrand(ξ, H, z, ξp, φ, ψ, κ, ν)
+    sym = integrand_sym(ξ, H, z, ξp, φ, ψ, κ, ν)
+    num = integrand_num(ξ, H, z, ξp, φ, ψ, κ, ν)
+    abs_err = abs(sym - num)
+    rel_err = abs_err / max(abs(num), eps(real(num)))
+    return sym, num, abs_err, rel_err
+end
+
+println()
+println("Testing outer integrand:")
+for ξtest in [-0.9, -0.75, -0.5, -0.25, -0.1]
+    sym, num, ae, re = compare_outer_integrand(ξtest, Hval, zval, ξpval, φval, ψval, κval, νval)
+    @printf("ξ=%7.3f  sym=% .6e%+ .6ei  num=% .6e%+ .6ei  abs=% .3e  rel=% .3e\n",
+            ξtest, real(sym), imag(sym), real(num), imag(num), ae, re)
+end
+
+# Fourth test the double integral:
+num_val = double_integral_num(Hval, zval, ξpval, φval, ψval, κval, νval)
+num_val_split = double_integral_num_split(Hval, zval, ξpval, φval, ψval, κval, νval)
+sym_val = Guvb(Hval, zval, ξpval, φval, ψval, κval, νval)
+sym_quad   = double_integral_sym_from_Green(Hval, zval, ξpval, φval, ψval, κval, νval)
+
+println()
+println("Testing final double integral")
+println("           sym = ", sym_val)
+println(" quad from sym = ", sym_quad)
+println("           num = ", num_val)
+println("     split num = ", num_val_split)
+
+STOP
+
 
 # More comprehensive tests for several parameters:
 Ek_vals = [1e-1, 1e-2, 1e-3, 1e-4]
