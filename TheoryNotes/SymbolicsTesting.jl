@@ -14,15 +14,15 @@ RuntimeGeneratedFunctions.init(@__MODULE__)
 @variables H
 @variables Ek κ ν ψ φ
 
-@load "symexpr.jld2" symbolics_expr symbolics_Gb symbolics_Guv symbolics_inner_Gb_integral
+@load "symexpr.jld2" symbolics_Guvb symbolics_Gb symbolics_Guv symbolics_inner_Gb_integral
 
 println("These should match!")
 println([H, ψ, ξp, φ, z, κ, ν])
-println(collect(Symbolics.get_variables(symbolics_expr)))
-Guvb_expr_fun = eval(build_function(symbolics_expr, H, ψ, ξp, φ, z, κ, ν; expression = Val(false)))
+println(collect(Symbolics.get_variables(symbolics_Guvb)))
+Guvb_expr_fun = eval(build_function(symbolics_Guvb, H, ψ, ξp, φ, z, κ, ν; expression = Val(false)))
 Guvb(H, z, ξp, φ, ψ, κ, ν) = Guvb_expr_fun(H, ψ, ξp, φ, z, κ, ν)
 Guv_expr_fun = eval(build_function(symbolics_Guv, H, z, ξ, φ, ν; expression = Val(true)))
-Gu_sym(z, ξ, H, ν, φ) = Guv_expr_fun(H, z, ξ, φ, ν)
+Guv_sym(z, ξ, H, ν, φ) = Guv_expr_fun(H, z, ξ, φ, ν)
 Gb_expr_fun  = eval(build_function(symbolics_Gb,  H, z, ξ, ψ, κ; expression = Val(true)))
 Gb_sym(z, ξ, H, κ, ψ) = Gb_expr_fun(H, z, ξ, ψ, κ)
 inner_Gb_integral_expr_fun  = eval(build_function(symbolics_inner_Gb_integral, H, ξ, ξp, ψ, κ; expression = Val(true)))
@@ -35,7 +35,7 @@ println()
 # -------------------------------------------------------------------
 # Numerical kernels from screenshots
 # -------------------------------------------------------------------
-function Gu_num(z, ξ, H, ν, φ)
+function Guv_num(z, ξ, H, ν, φ)
     pref = exp(-φ*(z + ξ)) / (2 * ν * φ * (1 + exp(2 * φ * H)))
 
     if z <= ξ
@@ -60,7 +60,7 @@ function inner_Gb_integral_num(ξ, ξp, H, κ, ψ)
 end
 
 function integrand_num(ξ, H, z, ξp, φ, ψ, κ, ν)
-    Gu_num(z, ξ, H, ν, φ) * inner_Gb_integral_num(ξ, ξp, H, κ, ψ)
+    Guv_num(z, ξ, H, ν, φ) * inner_Gb_integral_num(ξ, ξp, H, κ, ψ)
 end
 
 function double_integral_num(H, z, ξp, φ, ψ, κ, ν)
@@ -94,7 +94,7 @@ function double_integral_num_split(H, z, ξp, φ, ψ, κ, ν)
 end
 
 function double_integral_sym_from_Green(H, z, ξp, φ, ψ, κ, ν)
-    f(ξ) = Gu_sym(z, ξ, H, ν, φ) * inner_b_sym(ξ, ξp, H, κ, ψ)
+    f(ξ) = Guv_sym(z, ξ, H, ν, φ) * inner_b_sym(ξ, ξp, H, κ, ψ)
 
     pts = sort(unique(filter(t -> (-H < t < 0.0), [z, ξp])))
     edges = vcat(-H, pts, 0.0)
@@ -137,8 +137,8 @@ zvals = [-0.99, -0.75, -0.50, -0.25, -0.01]
 
 # First test the integrand values:
 function compare_Gu(z, ξ, H, ν, φ)
-    sym = Gu_sym(z, ξ, H, ν, φ)
-    num = Gu_num(z, ξ, H, ν, φ)
+    sym = Guv_sym(z, ξ, H, ν, φ)
+    num = Guv_num(z, ξ, H, ν, φ)
     abs_err = abs(sym - num)
     rel_err = abs_err / max(abs(num), eps(real(num)))
     return sym, num, abs_err, rel_err
@@ -190,7 +190,7 @@ end
 
 # Third test the integral
 function integrand_sym(ξ, H, z, ξp, φ, ψ, κ, ν)
-    Gu_sym(z, ξ, H, ν, φ) * inner_b_sym(ξ, ξp, H, κ, ψ)
+    Guv_sym(z, ξ, H, ν, φ) * inner_b_sym(ξ, ξp, H, κ, ψ)
 end
 function compare_outer_integrand(ξ, H, z, ξp, φ, ψ, κ, ν)
     sym = integrand_sym(ξ, H, z, ξp, φ, ψ, κ, ν)
@@ -209,21 +209,20 @@ for ξtest in [-0.9, -0.75, -0.5, -0.25, -0.1]
 end
 
 # Fourth test the double integral:
+println()
+println("Testing final double integral")
 num_val = double_integral_num(Hval, zval, ξpval, φval, ψval, κval, νval)
 num_val_split = double_integral_num_split(Hval, zval, ξpval, φval, ψval, κval, νval)
 sym_val = Guvb(Hval, zval, ξpval, φval, ψval, κval, νval)
 sym_quad   = double_integral_sym_from_Green(Hval, zval, ξpval, φval, ψval, κval, νval)
 
-println()
-println("Testing final double integral")
 println("           sym = ", sym_val)
 println(" quad from sym = ", sym_quad)
 println("           num = ", num_val)
 println("     split num = ", num_val_split)
 
+
 STOP
-
-
 # More comprehensive tests for several parameters:
 Ek_vals = [1e-1, 1e-2, 1e-3, 1e-4]
 z_vals = collect(range(-Hval*(0.999), -0.001; length=4))
