@@ -69,8 +69,6 @@ println()
     min_obj = sympy.Min(0, max_obj)
     inner_Gb_integral = inner_Gb_integral.subs(min_obj,max_obj)
     # Create two explicit branches
-    # expr_if_xi_ge_xip = sympy.expand(inner_Gb_integral.subs(sympy.Max(ξ, ξp), ξ))
-    # expr_if_xi_lt_xip = sympy.expand(inner_Gb_integral.subs(sympy.Max(ξ, ξp),ξp))
     expr_if_xi_ge_xip = inner_Gb_integral.subs(sympy.Max(ξ, ξp), ξ)
     expr_if_xi_lt_xip = inner_Gb_integral.subs(sympy.Max(ξ, ξp),ξp)
 
@@ -86,57 +84,71 @@ display(inner_Gb_integral)
 @time begin
     # ------------------------------------------------------------------
     # Extract branch expressions
-    # Guv branches:
-    #   branch 1: for z ≤ ξ
-    #   branch 2: for z ≥ ξ
-    # inner_Gb_integral branches:
-    #   branch 1: for ξ ≥ ξp
-    #   branch 2: for ξ < ξp
+    #
+    # Guv:
+    #   Gu_branch1: z ≤ ξ  ⇔ ξ ≥ z
+    #   Gu_branch2: z ≥ ξ  ⇔ ξ ≤ z
+    #
+    # inner_Gb_integral:
+    #   Gbint_branch1: ξ ≥ ξp
+    #   Gbint_branch2: ξ <  ξp
     # ------------------------------------------------------------------
     Gu_branch1 = Guv.args[1].args[1]                    # z ≤ ξ
     Gu_branch2 = Guv.args[2].args[1]                    # z ≥ ξ
 
     Gbint_branch1 = inner_Gb_integral.args[1].args[1]   # ξ ≥ ξp
-    Gbint_branch2 = inner_Gb_integral.args[2].args[1]   # ξ < ξp
+    Gbint_branch2 = inner_Gb_integral.args[2].args[1]   # ξ <  ξp
 
     # ------------------------------------------------------------------
-    # Build the four branch products
+    # Products
     # ------------------------------------------------------------------
-    f11 = sympy.simplify(Gu_branch1 * Gbint_branch1)  # z ≤ ξ, ξ ≥ ξp
-    f12 = sympy.simplify(Gu_branch1 * Gbint_branch2)  # z ≤ ξ, ξ <  ξp
-    f21 = sympy.simplify(Gu_branch2 * Gbint_branch1)  # z ≥ ξ, ξ ≥ ξp
-    f22 = sympy.simplify(Gu_branch2 * Gbint_branch2)  # z ≥ ξ, ξ <  ξp
+    f11 = sympy.simplify(Gu_branch1 * Gbint_branch1)  # ξ ≥ z, ξ ≥ ξp
+    f12 = sympy.simplify(Gu_branch1 * Gbint_branch2)  # ξ ≥ z, ξ <  ξp
+    f21 = sympy.simplify(Gu_branch2 * Gbint_branch1)  # ξ ≤ z, ξ ≥ ξp
+    f22 = sympy.simplify(Gu_branch2 * Gbint_branch2)  # ξ ≤ z, ξ <  ξp
 
     # ------------------------------------------------------------------
     # Case A: z ≤ ξp
     #
-    # Interval split:
-    #   ξ ∈ [-H, z]     -> Gu branch 1, inner branch 1
-    #   ξ ∈ [z, ξp]     -> Gu branch 2, inner branch 1
-    #   ξ ∈ [ξp, 0]     -> Gu branch 2, inner branch 2
+    # Ordering:
+    #
+    #   -H ≤ ... ≤ z ≤ ξp ≤ ... ≤ 0
+    #
+    # Therefore:
+    #
+    #   ξ ∈ [-H, z]     → ξ ≤ z and ξ < ξp   → f22
+    #   ξ ∈ [z, ξp]     → ξ ≥ z and ξ < ξp   → f12
+    #   ξ ∈ [ξp, 0]     → ξ ≥ z and ξ ≥ ξp   → f11
     # ------------------------------------------------------------------
-    I_A_11 = sympy.integrate(f11, (ξ,-H,  z))
-    I_A_21 = sympy.integrate(f21, (ξ, z, ξp))
-    I_A_22 = sympy.integrate(f22, (ξ,ξp,  0))
-    I_A = sympy.simplify(I_A_11 + I_A_21 + I_A_22)
+    I_A_22 = sympy.integrate(f22, (ξ, -H, z))
+    I_A_12 = sympy.integrate(f12, (ξ,  z, ξp))
+    I_A_11 = sympy.integrate(f11, (ξ, ξp, 0))
+
+    I_A = sympy.simplify(I_A_22 + I_A_12 + I_A_11)
 
     # ------------------------------------------------------------------
     # Case B: ξp < z
     #
-    # Interval split:
-    #   ξ ∈ [-H, ξp]    -> Gu branch 1, inner branch 1
-    #   ξ ∈ [ξp, z]     -> Gu branch 1, inner branch 2
-    #   ξ ∈ [z, 0]      -> Gu branch 2, inner branch 2
+    # Ordering:
+    #
+    #   -H ≤ ... ≤ ξp < z ≤ ... ≤ 0
+    #
+    # Therefore:
+    #
+    #   ξ ∈ [-H, ξp]    → ξ < ξp and ξ ≤ z   → f22
+    #   ξ ∈ [ξp, z]     → ξ ≥ ξp and ξ ≤ z   → f21
+    #   ξ ∈ [z, 0]      → ξ ≥ ξp and ξ ≥ z   → f11
     # ------------------------------------------------------------------
-    I_B_11 = sympy.integrate(f11, (ξ,-H, ξp))
-    I_B_12 = sympy.integrate(f12, (ξ, ξp, z)) 
-    I_B_22 = sympy.integrate(f22, (ξ,  z, 0))
-    I_B = sympy.simplify(I_B_11 + I_B_12 + I_B_22)
+    I_B_22 = sympy.integrate(f22, (ξ, -H, ξp))
+    I_B_21 = sympy.integrate(f21, (ξ, ξp, z))
+    I_B_11 = sympy.integrate(f11, (ξ,  z, 0))
+
+    I_B = sympy.simplify(I_B_22 + I_B_21 + I_B_11)
 
     # ------------------------------------------------------------------
     # Final piecewise outer integral
     # ------------------------------------------------------------------
-   Guvb = sympy.Piecewise(
+    Guvb = sympy.Piecewise(
         (I_A, sympy.Le(z, ξp)),
         (I_B, sympy.Gt(z, ξp))
     )

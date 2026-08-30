@@ -59,8 +59,66 @@ function inner_Gb_integral_num(ξ, ξp, H, κ, ψ)
     quadgk(zp -> Gb_num(zp, ξp, H, κ, ψ), ξ, 0.0; rtol=1e-10, atol=1e-12)[1]
 end
 
+function inner_Gb_integral_num_split(ξ, ξp, H, κ, ψ; rtol=1e-11, atol=1e-13)
+    f(zp) = Gb_num(zp, ξp, H, κ, ψ)
+
+    # Integration interval is [ξ, 0].
+    pts = [ξ, 0.0]
+
+    # Split at zp = ξp if it lies strictly inside [ξ, 0].
+    if ξ < ξp < 0.0
+        push!(pts, ξp)
+    end
+
+    pts = sort(unique(pts))
+
+    total = zero(complex(float(1.0)))
+    for i in 1:length(pts)-1
+        a = pts[i]
+        b = pts[i+1]
+        if a != b
+            total += quadgk(f, a, b; rtol=rtol, atol=atol)[1]
+        end
+    end
+
+    return total
+end
+
+
 function integrand_num(ξ, H, z, ξp, φ, ψ, κ, ν)
     Guv_num(z, ξ, H, ν, φ) * inner_Gb_integral_num(ξ, ξp, H, κ, ψ)
+end
+
+function integrand_num_split_inner(ξ, H, z, ξp, φ, ψ, κ, ν)
+    Guv_num(z, ξ, H, ν, φ) *
+    inner_Gb_integral_num_split(ξ, ξp, H, κ, ψ)
+end
+
+function double_integral_num_split_robust(H, z, ξp, φ, ψ, κ, ν; rtol=1e-11, atol=1e-13)
+    f(ξ) = integrand_num_split_inner(ξ, H, z, ξp, φ, ψ, κ, ν)
+
+    pts = [-H, 0.0]
+
+    if -H < z < 0.0
+        push!(pts, z)
+    end
+
+    if -H < ξp < 0.0
+        push!(pts, ξp)
+    end
+
+    pts = sort(unique(pts))
+
+    total = zero(complex(float(1.0)))
+    for i in 1:length(pts)-1
+        a = pts[i]
+        b = pts[i+1]
+        if a != b
+            total += quadgk(f, a, b; rtol=rtol, atol=atol)[1]
+        end
+    end
+
+    return total
 end
 
 function double_integral_num(H, z, ξp, φ, ψ, κ, ν)
@@ -94,7 +152,7 @@ function double_integral_num_split(H, z, ξp, φ, ψ, κ, ν)
 end
 
 function double_integral_sym_from_Green(H, z, ξp, φ, ψ, κ, ν)
-    f(ξ) = Guv_sym(z, ξ, H, ν, φ) * inner_b_sym(ξ, ξp, H, κ, ψ)
+    f(ξ) = Guv_sym(z, ξ, H, ν, φ) * inner_Gb_integral_sym(ξ, ξp, H, κ, ψ)
 
     pts = sort(unique(filter(t -> (-H < t < 0.0), [z, ξp])))
     edges = vcat(-H, pts, 0.0)
@@ -221,8 +279,6 @@ println(" quad from sym = ", sym_quad)
 println("           num = ", num_val)
 println("     split num = ", num_val_split)
 
-
-STOP
 # More comprehensive tests for several parameters:
 Ek_vals = [1e-1, 1e-2, 1e-3, 1e-4]
 z_vals = collect(range(-Hval*(0.999), -0.001; length=4))
@@ -246,7 +302,11 @@ function benchmark_one(Ekval, Hval, zval, ξpval; νval=1.0, κval=1.0)
     num_val = NaN + NaN*im
     ok = true
     try
-        t_num = @elapsed num_val = double_integral_num(Hval, zval, ξpval, φval, ψval, κval, νval)
+        # t_num = @elapsed num_val = double_integral_num(Hval, zval, ξpval, φval, ψval, κval, νval)
+        t_num = @elapsed num_val = double_integral_num_split_robust(
+            Hval, zval, ξpval, φval, ψval, κval, νval
+        )
+
     catch err
         ok = false
         @warn "quadgk failed" Ekval zval err
@@ -301,6 +361,10 @@ summarize_results(results)
 
 println("\nPer-case summary:")
 for r in results
-    @printf("Ek=%-8.1e z=%-8.4f ξp=%-8.4f ok=%-5s  relerr=%-10.3e  t_sym=%-9.3e  t_num=%-9.3e\n",
-            r.Ek, r.z, r.ξp, string(r.ok), r.rel_err, r.t_sym, r.t_num)
+    # @printf("Ek=%-8.1e z=%-8.4f ξp=%-8.4f ok=%-5s  relerr=%-10.3e  t_sym=%-9.3e  t_num=%-9.3e\n",
+    #         r.Ek, r.z, r.ξp, string(r.ok), r.rel_err, r.t_sym, r.t_num)
+
+    @printf("Ek=%-8.1e z=%-8.4f ξp=%-8.4f ok=%-5s  abserr=%-10.3e  relerr=%-10.3e  |num|=%-10.3e  t_sym=%-9.3e  t_num=%-9.3e\n",
+        r.Ek, r.z, r.ξp, string(r.ok),
+        r.abs_err, r.rel_err, abs(r.num), r.t_sym, r.t_num)
 end
