@@ -15,10 +15,6 @@ RuntimeGeneratedFunctions.init(@__MODULE__)
 @variables Ek κ ν ψ φ
 
 @load "symexpr.jld2" symbolics_Guvb symbolics_Gb symbolics_Guv symbolics_inner_Gb_integral
-
-println("These should match!")
-println([H, ψ, ξp, φ, z, κ, ν])
-println(collect(Symbolics.get_variables(symbolics_Guvb)))
 Guvb_expr_fun = eval(build_function(symbolics_Guvb, H, ψ, ξp, φ, z, κ, ν; expression = Val(false)))
 Guvb(H, z, ξp, φ, ψ, κ, ν) = Guvb_expr_fun(H, ψ, ξp, φ, z, κ, ν)
 Guv_expr_fun = eval(build_function(symbolics_Guv, H, z, ξ, φ, ν; expression = Val(true)))
@@ -27,7 +23,6 @@ Gb_expr_fun  = eval(build_function(symbolics_Gb,  H, z, ξ, ψ, κ; expression =
 Gb_sym(z, ξ, H, κ, ψ) = Gb_expr_fun(H, z, ξ, ψ, κ)
 inner_Gb_integral_expr_fun  = eval(build_function(symbolics_inner_Gb_integral, H, ξ, ξp, ψ, κ; expression = Val(true)))
 inner_Gb_integral_sym(ξ, ξp, H, κ, ψ) = inner_Gb_integral_expr_fun(H, ξ, ξp, ψ, κ)
-
 
 println("Finished generating symbolic functions.")
 println()
@@ -83,7 +78,6 @@ function inner_Gb_integral_num_split(ξ, ξp, H, κ, ψ; rtol=1e-11, atol=1e-13)
 
     return total
 end
-
 
 function integrand_num(ξ, H, z, ξp, φ, ψ, κ, ν)
     Guv_num(z, ξ, H, ν, φ) * inner_Gb_integral_num(ξ, ξp, H, κ, ψ)
@@ -185,13 +179,13 @@ Hval  = 1.0
 zval  = -0.6
 ξpval = -0.5
 φval  = 0.05 * sqrt(im)
-# φval  = 0.05 
 ψval  = 0.05
 νval  = 1.2
 κval  = 1.1
 
-zvals = [-0.99, -0.75, -0.50, -0.25, -0.01]
-ξvals = [-0.99, -0.75, -0.50, -0.25, -0.01]
+zvals = [-0.99, -0.66, -0.33, -0.01]
+ξvals = zvals
+ξpvals = ξvals
 
 # First test the integrand values:
 function compare_Gu(z, ξ, H, ν, φ)
@@ -236,8 +230,6 @@ function compare_inner_b(ξ, ξp, H, κ, ψ)
     return sym, num, sym2
 end
 
-ξpvals = ξvals
-
 println()
 println("Testing inner_b:")
 for ξ in ξvals, ξp in ξpvals
@@ -281,8 +273,6 @@ println("     split num = ", num_val_split)
 
 # More comprehensive tests for several parameters:
 Ek_vals = [1e-1, 1e-2, 1e-3, 1e-4]
-z_vals = collect(range(-Hval*(0.999), -0.001; length=4))
-ξp_vals = z_vals
 
 function varphi_from_Ek(Ek; f = 1.0, ν = 1.0)
     return sqrt(complex(0,1) * f / (ν * Ek))
@@ -302,7 +292,6 @@ function benchmark_one(Ekval, Hval, zval, ξpval; νval=1.0, κval=1.0)
     num_val = NaN + NaN*im
     ok = true
     try
-        # t_num = @elapsed num_val = double_integral_num(Hval, zval, ξpval, φval, ψval, κval, νval)
         t_num = @elapsed num_val = double_integral_num_split_robust(
             Hval, zval, ξpval, φval, ψval, κval, νval
         )
@@ -361,9 +350,6 @@ summarize_results(results)
 
 println("\nPer-case summary:")
 for r in results
-    # @printf("Ek=%-8.1e z=%-8.4f ξp=%-8.4f ok=%-5s  relerr=%-10.3e  t_sym=%-9.3e  t_num=%-9.3e\n",
-    #         r.Ek, r.z, r.ξp, string(r.ok), r.rel_err, r.t_sym, r.t_num)
-
     @printf("Ek=%-8.1e z=%-8.4f ξp=%-8.4f ok=%-5s  abserr=%-10.3e  relerr=%-10.3e  |num|=%-10.3e  t_sym=%-9.3e  t_num=%-9.3e\n",
         r.Ek, r.z, r.ξp, string(r.ok),
         r.abs_err, r.rel_err, abs(r.num), r.t_sym, r.t_num)
