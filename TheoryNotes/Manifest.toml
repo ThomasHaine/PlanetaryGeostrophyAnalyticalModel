@@ -483,9 +483,9 @@ version = "1.7.0"
 
 [[deps.DynamicPolynomials]]
 deps = ["LinearAlgebra", "MultivariatePolynomials", "MutableArithmetics", "Reexport", "StarAlgebras"]
-git-tree-sha1 = "52d08670b4630523d027b84c2b888fe958ac82e7"
+git-tree-sha1 = "b95c4325301d86a6a1b59790b71f7269a8702dd5"
 uuid = "7c1d4256-1411-5781-91ec-d7bc3513ac07"
-version = "0.6.7"
+version = "0.6.8"
 
 [[deps.EarCut_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
@@ -1669,9 +1669,9 @@ version = "0.3.0"
 
 [[deps.StaticArrays]]
 deps = ["LinearAlgebra", "PrecompileTools", "Random", "StaticArraysCore"]
-git-tree-sha1 = "fac51faf3bb96e8bc0bf6f9f39ca4955652776bb"
+git-tree-sha1 = "e206cf4850fd7ac4255ffd2b98922f563e18ac53"
 uuid = "90137ffa-7385-5640-81b9-e52037218182"
-version = "1.9.19"
+version = "1.9.20"
 weakdeps = ["ChainRulesCore", "Statistics"]
 
     [deps.StaticArrays.extensions]
