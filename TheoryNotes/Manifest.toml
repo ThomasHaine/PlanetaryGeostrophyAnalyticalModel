@@ -326,9 +326,9 @@ version = "0.2.14"
 
 [[deps.CommonWorldInvalidations]]
 deps = ["PrecompileTools"]
-git-tree-sha1 = "bc209b1a67dd03551fe305d72e88128764b89cf5"
+git-tree-sha1 = "6600cd2b039cd07dd8043fd05b0ff2899d9da73b"
 uuid = "f70d9fcc-98c5-4d4a-abd7-e4cdeebd8ca8"
-version = "1.2.0"
+version = "1.2.1"
 
 [[deps.Compat]]
 deps = ["TOML", "UUIDs"]
