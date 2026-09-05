@@ -192,6 +192,35 @@ function compare_symbolic_vs_numeric(Guvb, Hval, zval, ξpval, φval, ψval, κv
     return sym_val, num_val, abs_err, rel_err
 end
 
+# ------------------------------------------------------------
+# Comparison helpers
+# ------------------------------------------------------------
+
+"""
+    match_ok(sym, num; rtol=1e-8, atol=1e-10)
+
+Return true if `sym` and `num` agree within absolute/relative tolerances.
+"""
+function match_ok(sym, num; rtol=1e-8, atol=1e-10)
+    return isapprox(sym, num; rtol=rtol, atol=atol)
+end
+
+"""
+    report_match(name, sym, num; rtol=1e-8, atol=1e-10)
+
+Print a one-line PASS/FAIL report for a symbolic vs numerical comparison.
+"""
+function report_match(name, sym, num; rtol=1e-8, atol=1e-10)
+    ok = match_ok(sym, num; rtol=rtol, atol=atol)
+    abs_err = abs(sym - num)
+    rel_err = abs_err / max(abs(num), eps(real(num)))
+
+    status = ok ? "PASS" : "FAIL"
+    @printf("%-24s %-4s  abs=% .3e  rel=% .3e\n", name, status, abs_err, rel_err)
+
+    return ok, abs_err, rel_err
+end
+
 # Example values
 Hval  = 1.0
 zval  = -0.6
@@ -226,15 +255,14 @@ println("=======================================================================
 println("Testing Gu from ComputeQuadratures.ipynb and numerical Gu defined here:")
 for z in zvals, ξ in ξvals
     sym, num, ae, re = compare_Gu(z, ξ, Hval, νval, φval)
-    @printf("z=%7.3f ξ=%7.3f  sym=% .6e%+ .6ei  num=% .6e%+ .6ei  abs=% .3e  rel=% .3e\n",
-            z, ξ, real(sym), imag(sym), real(num), imag(num), ae, re)
+    report_match("Guv(z=$z, ξ=$ξ)", sym, num; rtol=1e-10, atol=1e-12)
 end
+
 println()
-println("Testing Gb from ComputeQuadratures.ipynb and numerical Gu defined here:")
+println("Testing Gb from ComputeQuadratures.ipynb and numerical Gb defined here:")
 for z in zvals, ξ in ξvals
     sym, num, ae, re = compare_Gb(z, ξ, Hval, κval, ψval)
-    @printf("z=%7.3f ξ=%7.3f  sym=% .6e%+ .6ei  num=% .6e%+ .6ei  abs=% .3e  rel=% .3e\n",
-            z, ξ, real(sym), imag(sym), real(num), imag(num), ae, re)
+    report_match("Gb(z=$z, ξ=$ξ)", sym, num; rtol=1e-10, atol=1e-12)
 end
 
 # Second test inner_b integral:
@@ -253,8 +281,7 @@ println()
 println("Testing inner_b:")
 for ξ in ξvals, ξp in ξpvals
     sym, num, sym2 = compare_inner_b(ξ, ξp, Hval, κval, ψval)
-    @printf("ξ=%7.3f ξp=%7.3f  sym=% .6e%+ .6ei sym2=% .6e%+ .6ei  num=% .6e%+ .6ei\n",
-            ξ, ξp, real(sym), imag(sym), real(sym2), imag(sym2), real(num), imag(num))
+    report_match("inner_b(ξ=$ξ, ξp=$ξp)", sym, num; rtol=1e-10, atol=1e-12)
 end
 
 # Third test the integral
@@ -273,8 +300,7 @@ println()
 println("Testing outer integrand:")
 for ξtest in [-0.9, -0.75, -0.5, -0.25, -0.1]
     sym, num, ae, re = compare_outer_integrand(ξtest, Hval, zval, ξpval, φval, ψval, κval, νval)
-    @printf("ξ=%7.3f  sym=% .6e%+ .6ei  num=% .6e%+ .6ei  abs=% .3e  rel=% .3e\n",
-            ξtest, real(sym), imag(sym), real(num), imag(num), ae, re)
+    report_match("outer_integrand(ξ=$ξtest)", sym, num; rtol=1e-10, atol=1e-12)
 end
 
 # Fourth test the double integral:
