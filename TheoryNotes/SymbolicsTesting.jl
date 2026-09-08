@@ -14,8 +14,7 @@ RuntimeGeneratedFunctions.init(@__MODULE__)
 @variables H
 @variables Ek κ ν ψ φ f β
 
-@load "symexpr.jld2" symbolics_Guvb symbolics_Gb symbolics_Guv symbolics_inner_Gb_integral symbolics_Guvb_xi symbolics_inner_Gb2_integral symbolics_Guv_y 
-# symbolics_Guv_y_b_xi
+@load "symexpr.jld2" symbolics_Guvb symbolics_Gb symbolics_Guv symbolics_inner_Gb_integral symbolics_Guvb_xi symbolics_inner_Gb2_integral symbolics_Guv_y symbolics_Guv_y_b_xi symbolics_Guv_y_b 
 
 Guvb_expr_fun = eval(build_function(symbolics_Guvb, H, ψ, ξp, φ, z, κ, ν; expression = Val(false)))
 Guvb(H, z, ξp, φ, ψ, κ, ν) = Guvb_expr_fun(H, ψ, ξp, φ, z, κ, ν)
@@ -38,8 +37,11 @@ Guvb_xi(H, z, φ, ψ, κ, ν) = Guvb_xi_expr_fun(H, z, φ, ψ, κ, ν)
 Guv_y_expr_fun = eval(build_function(symbolics_Guv_y, H, z, ξ, φ, ν, β, f; expression = Val(false)))
 Guv_y(H, z, ξ, φ, ν, β, f) = Guv_y_expr_fun(H, z, ξ, φ, ν, β, f) 
 
-# Guv_y_b_xi_expr_fun = eval(build_function(symbolics_Guv_y_b_xi, H, z, φ, ψ, κ, ν, β, f; expression = Val(false)))
-# Guv_y_b_xi(H, z, φ, ψ, κ, ν, β, f) = Guv_y_b_xi_expr_fun(H, z, φ, ψ, κ, ν, β, f) 
+Guv_y_b_xi_expr_fun = eval(build_function(symbolics_Guv_y_b_xi, H, z, φ, ψ, κ, ν, β, f; expression = Val(false)))
+Guv_y_b_xi(H, z, φ, ψ, κ, ν, β, f) = Guv_y_b_xi_expr_fun(H, z, φ, ψ, κ, ν, β, f) 
+
+Guv_y_b_expr_fun = eval(build_function(symbolics_Guv_y_b, H, z, ξp, φ, ψ, κ, ν, β, f; expression = Val(false)))
+Guv_y_b(H, z, ξp, φ, ψ, κ, ν, β, f) = Guv_y_b_expr_fun(H, z, ξp, φ, ψ, κ, ν, β, f) 
 
 println("Finished generating symbolic functions.")
 println()
@@ -111,9 +113,13 @@ end
 function integrand2_num(ξ, H, z, φ, ψ, κ, ν)
     Guv_num(z, ξ, H, ν, φ) * inner_Gb2_integral_sym(ξ, H, κ, ψ)
 end
-
+   
 function integrand3_num(ξ, H, z, φ, ψ, κ, ν, βval, fval)
     Guv_y_num(H, z, ξ, φ, ν, βval, fval) * inner_Gb2_integral_sym(ξ, H, κ, ψ)
+end
+
+function integrand4_num(ξ, H, z, ξp, φ, ψ, κ, ν, βval, fval)
+    Guv_y_num(H, z, ξ, φ, ν, βval, fval) * inner_Gb_integral_num(ξ, ξp, H, κ, ψ)
 end
 
 function integrand_num_split_inner(ξ, H, z, ξp, φ, ψ, κ, ν)
@@ -161,6 +167,11 @@ function double_integral3_num(H, z, φ, ψ, κ, ν, βval, fval)
     quadgk(ξ -> integrand3_num(ξ, H, z, φ, ψ, κ, ν, βval, fval),
            -H, 0.0; rtol=1e-10, atol=1e-12)[1]
 end
+
+function double_integral4_num(H, z, ξp, φ, ψ, κ, ν, βval, fval)
+    quadgk(ξ -> integrand4_num(ξ, H, z, ξp, φ, ψ, κ, ν, βval, fval),
+           -H, 0.0; rtol=1e-10, atol=1e-12)[1]
+end 
 
 function double_integral_num_split(H, z, ξp, φ, ψ, κ, ν)
     f(ξ) = integrand_num(ξ, H, z, ξp, φ, ψ, κ, ν)
@@ -323,6 +334,7 @@ function compare_outer_integrand(ξ, H, z, ξp, φ, ψ, κ, ν)
 end
 
 println()
+println("========================================================================================================================")
 println("1.4 Testing outer integrand:")
 for ξtest in [-0.9, -0.75, -0.5, -0.25, -0.1]
     sym, num, ae, re = compare_outer_integrand(ξtest, Hval, zval, ξpval, φval, ψval, κval, νval)
@@ -443,19 +455,28 @@ println()
 println("========================================================================================================================")
 println("1.7 Testing Guvb_xi double integral")
 num3_val = double_integral2_num(Hval, zval, φval, ψval, κval, νval)
-sym3_val = Guvb_xi(Hval, zval, φval, ψval, κval, νval)
+sym3_val = Guvb_xi(             Hval, zval, φval, ψval, κval, νval)
 
 println("           sym = ", sym3_val)
 println("           num = ", num3_val)
 
+println()
+println("========================================================================================================================")
+println("1.8 Testing Guv_y_b_xi double integral")
 
-# println()
-# println("========================================================================================================================")
-# println("1.7 Testing Guv_y_b_xi double integral")
 
+num4_val = double_integral3_num(Hval, zval, φval, ψval, κval, νval, βval, fval)
+sym4_val = Guv_y_b_xi(          Hval, zval, φval, ψval, κval, νval, βval, fval)
 
-# num4_val = double_integral3_num(Hval, zval, φval, ψval, κval, νval, βval, fval)
-# sym4_val = Guv_y_b_xi(Hval, zval, φval, ψval, κval, νval, βval, fval)
+println("           sym = ", sym4_val)
+println("           num = ", num4_val)
 
-# println("           sym = ", sym4_val)
-# println("           num = ", num4_val)
+println()
+println("========================================================================================================================")
+println("1.9 Testing Guv_y_b double integral")
+
+num5_val = double_integral4_num(Hval, zval, ξpval, φval, ψval, κval, νval, βval, fval)
+sym5_val = Guv_y_b(             Hval, zval, ξpval, φval, ψval, κval, νval, βval, fval)  
+
+println("           sym = ", sym5_val)  
+println("           num = ", num5_val)
