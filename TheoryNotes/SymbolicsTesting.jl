@@ -14,7 +14,7 @@ RuntimeGeneratedFunctions.init(@__MODULE__)
 @variables H
 @variables Ek κ ν ψ φ f β
 
-@load "symexpr.jld2" symbolics_Guvb symbolics_Gb symbolics_Guv symbolics_inner_Gb_integral symbolics_Guvb_xi symbolics_inner_Gb2_integral symbolics_Guv_y symbolics_Guv_y_b_xi
+@load "symexpr.jld2" symbolics_Guvb symbolics_Gb symbolics_Guv symbolics_inner_Gb_integral symbolics_Guvb_xi symbolics_inner_Gb2_integral symbolics_Guv_y symbolics_Guv_y_b_xi symbolics_Guv_y_b 
 
 Guvb_expr_fun = eval(build_function(symbolics_Guvb, H, ψ, ξp, φ, z, κ, ν; expression = Val(false)))
 Guvb(H, z, ξp, φ, ψ, κ, ν) = Guvb_expr_fun(H, ψ, ξp, φ, z, κ, ν)
@@ -40,6 +40,8 @@ Guv_y(H, z, ξ, φ, ν, β, f) = Guv_y_expr_fun(H, z, ξ, φ, ν, β, f)
 Guv_y_b_xi_expr_fun = eval(build_function(symbolics_Guv_y_b_xi, H, z, φ, ψ, κ, ν, β, f; expression = Val(false)))
 Guv_y_b_xi(H, z, φ, ψ, κ, ν, β, f) = Guv_y_b_xi_expr_fun(H, z, φ, ψ, κ, ν, β, f) 
 
+Guv_y_b_expr_fun = eval(build_function(symbolics_Guv_y_b, H, z, ξp, φ, ψ, κ, ν, β, f; expression = Val(false)))
+Guv_y_b(H, z, ξp, φ, ψ, κ, ν, β, f) = Guv_y_b_expr_fun(H, z, ξp, φ, ψ, κ, ν, β, f) 
 
 println("Finished generating symbolic functions.")
 println()
@@ -157,8 +159,8 @@ function double_integral2_num(H, z, φ, ψ, κ, ν)
            -H, 0.0; rtol=1e-10, atol=1e-12)[1]
 end
 
-function double_integral3_num(H, z, φ, ψ, κ, ν, βval, fval)
-    quadgk(ξ -> integrand3_num(ξ, H, z, φ, ψ, κ, ν, βval, fval),
+function double_integral3_num(H, z, ξp, φ, ψ, κ, ν, βval, fval)
+    quadgk(ξ -> integrand3_num(ξp, H, z, φ, ψ, κ, ν, βval, fval),
            -H, 0.0; rtol=1e-10, atol=1e-12)[1]
 end
 
@@ -459,3 +461,13 @@ sym4_val = Guv_y_b_xi(          Hval, zval, φval, ψval, κval, νval, βval, f
 
 println("           sym = ", sym4_val)
 println("           num = ", num4_val)
+
+println()
+println("========================================================================================================================")
+println("1.9 Testing Guv_y_b double integral")
+
+num5_val = double_integral3_num(Hval, zval, ξpval, φval, ψval, κval, νval, βval, fval)
+sym5_val = Guv_y_b(             Hval, zval, ξpval, φval, ψval, κval, νval, βval, fval)  
+
+println("           sym = ", sym5_val)  
+println("           num = ", num5_val)
