@@ -113,9 +113,13 @@ end
 function integrand2_num(ξ, H, z, φ, ψ, κ, ν)
     Guv_num(z, ξ, H, ν, φ) * inner_Gb2_integral_sym(ξ, H, κ, ψ)
 end
-
+   
 function integrand3_num(ξ, H, z, φ, ψ, κ, ν, βval, fval)
     Guv_y_num(H, z, ξ, φ, ν, βval, fval) * inner_Gb2_integral_sym(ξ, H, κ, ψ)
+end
+
+function integrand4_num(ξ, H, z, ξp, φ, ψ, κ, ν, βval, fval)
+    Guv_y_num(H, z, ξ, φ, ν, βval, fval) * inner_Gb_integral_num(ξ, ξp, H, κ, ψ)
 end
 
 function integrand_num_split_inner(ξ, H, z, ξp, φ, ψ, κ, ν)
@@ -159,10 +163,15 @@ function double_integral2_num(H, z, φ, ψ, κ, ν)
            -H, 0.0; rtol=1e-10, atol=1e-12)[1]
 end
 
-function double_integral3_num(H, z, ξp, φ, ψ, κ, ν, βval, fval)
-    quadgk(ξ -> integrand3_num(ξp, H, z, φ, ψ, κ, ν, βval, fval),
+function double_integral3_num(H, z, φ, ψ, κ, ν, βval, fval)
+    quadgk(ξ -> integrand3_num(ξ, H, z, φ, ψ, κ, ν, βval, fval),
            -H, 0.0; rtol=1e-10, atol=1e-12)[1]
 end
+
+function double_integral4_num(H, z, ξp, φ, ψ, κ, ν, βval, fval)
+    quadgk(ξ -> integrand4_num(ξ, H, z, ξp, φ, ψ, κ, ν, βval, fval),
+           -H, 0.0; rtol=1e-10, atol=1e-12)[1]
+end 
 
 function double_integral_num_split(H, z, ξp, φ, ψ, κ, ν)
     f(ξ) = integrand_num(ξ, H, z, ξp, φ, ψ, κ, ν)
@@ -466,7 +475,7 @@ println()
 println("========================================================================================================================")
 println("1.9 Testing Guv_y_b double integral")
 
-num5_val = double_integral3_num(Hval, zval, ξpval, φval, ψval, κval, νval, βval, fval)
+num5_val = double_integral4_num(Hval, zval, ξpval, φval, ψval, κval, νval, βval, fval)
 sym5_val = Guv_y_b(             Hval, zval, ξpval, φval, ψval, κval, νval, βval, fval)  
 
 println("           sym = ", sym5_val)  
