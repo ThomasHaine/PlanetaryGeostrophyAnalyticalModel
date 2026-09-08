@@ -668,16 +668,4 @@ end
     @save "Guv_y_b_xi_symbolics.jld2" symbolics_Guv_y_b_xi
 end
 
-# println("Building Symbolics function...")
-
-# @variables zS HS ψS φS κS νS fS βS
-
-# @time begin
-#     Guv_y_b_xi_symbolics_fun = Symbolics.build_function(
-#         symbolics_Guv_y_b_xi,
-#         zS, HS, ψS, φS, κS, νS, fS, βS;
-#         expression = Val(false),
-#     )
-# end
-
 println("1.9 Done.")
