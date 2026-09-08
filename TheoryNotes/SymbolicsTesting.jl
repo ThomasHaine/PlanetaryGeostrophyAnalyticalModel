@@ -323,6 +323,7 @@ function compare_outer_integrand(ξ, H, z, ξp, φ, ψ, κ, ν)
 end
 
 println()
+println("========================================================================================================================")
 println("1.4 Testing outer integrand:")
 for ξtest in [-0.9, -0.75, -0.5, -0.25, -0.1]
     sym, num, ae, re = compare_outer_integrand(ξtest, Hval, zval, ξpval, φval, ψval, κval, νval)
