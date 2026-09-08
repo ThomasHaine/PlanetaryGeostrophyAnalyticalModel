@@ -14,8 +14,7 @@ RuntimeGeneratedFunctions.init(@__MODULE__)
 @variables H
 @variables Ek κ ν ψ φ f β
 
-@load "symexpr.jld2" symbolics_Guvb symbolics_Gb symbolics_Guv symbolics_inner_Gb_integral symbolics_Guvb_xi symbolics_inner_Gb2_integral symbolics_Guv_y
-@load "Guv_y_b_xi_symbolics.jld2" symbolics_Guv_y_b_xi
+@load "symexpr.jld2" symbolics_Guvb symbolics_Gb symbolics_Guv symbolics_inner_Gb_integral symbolics_Guvb_xi symbolics_inner_Gb2_integral symbolics_Guv_y symbolics_Guv_y_b_xi
 
 Guvb_expr_fun = eval(build_function(symbolics_Guvb, H, ψ, ξp, φ, z, κ, ν; expression = Val(false)))
 Guvb(H, z, ξp, φ, ψ, κ, ν) = Guvb_expr_fun(H, ψ, ξp, φ, z, κ, ν)
