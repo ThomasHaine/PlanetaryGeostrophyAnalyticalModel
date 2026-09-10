@@ -422,9 +422,9 @@ version = "1.11.0"
 
 [[deps.DelaunayTriangulation]]
 deps = ["AdaptivePredicates", "EnumX", "ExactPredicates", "Random"]
-git-tree-sha1 = "c55f5a9fd67bdbc8e089b5a3111fe4292986a8e8"
+git-tree-sha1 = "4ac548adcad90c1d5d677af13568a748af4c952b"
 uuid = "927a84f5-c5f4-47a5-9785-b46e178433df"
-version = "1.6.6"
+version = "1.6.7"
 
 [[deps.DiffRules]]
 deps = ["IrrationalConstants", "LogExpFunctions", "NaNMath", "Random", "SpecialFunctions"]
@@ -842,9 +842,9 @@ version = "0.16.3"
 
 [[deps.IntervalArithmetic]]
 deps = ["CRlibm", "CoreMath", "MacroTools", "OpenBLASConsistentFPCSR_jll", "Printf", "Random", "RoundingEmulator"]
-git-tree-sha1 = "ff294afb9a15d31d8d7422da138844641a73135f"
+git-tree-sha1 = "1c531bf0f8a5c60a340926e058fd3f209b5eef5d"
 uuid = "d1acc4aa-44c8-5952-acd4-ba5d80a2a253"
-version = "1.0.11"
+version = "1.0.12"
 
     [deps.IntervalArithmetic.extensions]
     IntervalArithmeticArblibExt = "Arblib"
@@ -853,6 +853,7 @@ version = "1.0.11"
     IntervalArithmeticIntervalSetsExt = "IntervalSets"
     IntervalArithmeticIrrationalConstantsExt = "IrrationalConstants"
     IntervalArithmeticLinearAlgebraExt = "LinearAlgebra"
+    IntervalArithmeticMakieExt = "Makie"
     IntervalArithmeticRecipesBaseExt = "RecipesBase"
     IntervalArithmeticSparseArraysExt = "SparseArrays"
 
@@ -863,6 +864,7 @@ version = "1.0.11"
     IntervalSets = "8197267c-284f-5f27-9208-e0e47529a953"
     IrrationalConstants = "92d709cd-6900-40b7-9082-c6be49f344b6"
     LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
+    Makie = "ee78f7c6-11fb-53f2-987a-cfe4a2b5a57a"
     RecipesBase = "3cdcf5f2-1ef4-517c-9805-6587b60abb01"
     SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
 
@@ -1808,9 +1810,9 @@ version = "1.2.1"
 
 [[deps.SymbolicUtils]]
 deps = ["AbstractTrees", "ArrayInterface", "Combinatorics", "ConstructionBase", "DataStructures", "DocStringExtensions", "DynamicPolynomials", "EnumX", "ExproniconLite", "Graphs", "LinearAlgebra", "MacroTools", "Moshi", "MultivariatePolynomials", "MutableArithmetics", "NaNMath", "OrderedCollections", "PrecompileTools", "ReadOnlyArrays", "SciMLPublic", "Setfield", "SparseArrays", "SpecialFunctions", "StaticArraysCore", "SymbolicIndexingInterface", "TaskLocalValues", "TermInterface", "WeakCacheSets"]
-git-tree-sha1 = "43da8ab44fc8bc2bb42d07a8c3d3eab78edcf549"
+git-tree-sha1 = "8e1a5840b8e1d47793bd63be1b5ceffbe94028a8"
 uuid = "d1185830-fcd6-423d-90d6-eec64667417b"
-version = "4.46.3"
+version = "4.46.4"
 
     [deps.SymbolicUtils.extensions]
     SymbolicUtilsChainRulesCoreExt = "ChainRulesCore"
@@ -1826,9 +1828,9 @@ version = "4.46.3"
 
 [[deps.Symbolics]]
 deps = ["ADTypes", "AbstractPlutoDingetjes", "ArrayInterface", "Bijections", "CommonWorldInvalidations", "ConstructionBase", "DataStructures", "DiffRules", "DocStringExtensions", "DomainSets", "DynamicPolynomials", "IntervalSets", "Libdl", "LinearAlgebra", "LogExpFunctions", "MacroTools", "Markdown", "Moshi", "MultivariatePolynomials", "MutableArithmetics", "NaNMath", "PrecompileTools", "Preferences", "Primes", "RecipesBase", "RuntimeGeneratedFunctions", "SciMLPublic", "Setfield", "SparseArrays", "SpecialFunctions", "StaticArraysCore", "SymbolicIndexingInterface", "SymbolicLimits", "SymbolicUtils", "TermInterface"]
-git-tree-sha1 = "0eea73fa3bb1b579e25211cf4e1aefeeb78097c1"
+git-tree-sha1 = "5541e29d374404512fa677dcbad9792228a54f25"
 uuid = "0c5d862f-8b57-4792-8d23-62f2024744c7"
-version = "7.39.0"
+version = "7.39.2"
 
     [deps.Symbolics.extensions]
     SymbolicsD3TreesExt = "D3Trees"
