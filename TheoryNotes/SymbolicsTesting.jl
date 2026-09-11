@@ -446,7 +446,7 @@ println("=======================================================================
 println("1.6 Testing Guv_y derivative")
 fval  = 1.0
 βval  = 0.1
-H_yval = -0.0
+H_yval = -0.5
 num2_val = Guv_y_num(Hval, zval, ξpval, φval, νval, βval, fval, H_yval)
 sym2_val = Guv_y(    Hval, zval, ξpval, φval, νval, βval, fval, H_yval)
 
