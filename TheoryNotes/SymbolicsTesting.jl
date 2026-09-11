@@ -11,7 +11,7 @@ using RuntimeGeneratedFunctions
 RuntimeGeneratedFunctions.init(@__MODULE__)
 
 @variables x y z ξ ξp
-@variables H
+@variables H H_y
 @variables Ek κ ν ψ φ f β
 
 @load "symexpr.jld2" symbolics_Guvb symbolics_Gb symbolics_Guv symbolics_inner_Gb_integral symbolics_Guvb_xi symbolics_inner_Gb2_integral symbolics_Guv_y symbolics_Guv_y_b_xi symbolics_Guv_y_b 
@@ -34,14 +34,14 @@ inner_Gb2_integral_sym(ξ, H, κ, ψ) = inner_Gb2_integral_expr_fun(H, ξ, ψ, �
 Guvb_xi_expr_fun = eval(build_function(symbolics_Guvb_xi, H, z, φ, ψ, κ, ν; expression = Val(false)))
 Guvb_xi(H, z, φ, ψ, κ, ν) = Guvb_xi_expr_fun(H, z, φ, ψ, κ, ν) 
 
-Guv_y_expr_fun = eval(build_function(symbolics_Guv_y, H, z, ξ, φ, ν, β, f; expression = Val(false)))
-Guv_y(H, z, ξ, φ, ν, β, f) = Guv_y_expr_fun(H, z, ξ, φ, ν, β, f) 
+Guv_y_expr_fun = eval(build_function(symbolics_Guv_y, H, z, ξ, φ, ν, β, f, H_y; expression = Val(false)))
+Guv_y(H, z, ξ, φ, ν, β, f, H_y) = Guv_y_expr_fun(H, z, ξ, φ, ν, β, f, H_y) 
 
-Guv_y_b_xi_expr_fun = eval(build_function(symbolics_Guv_y_b_xi, H, z, φ, ψ, κ, ν, β, f; expression = Val(false)))
-Guv_y_b_xi(H, z, φ, ψ, κ, ν, β, f) = Guv_y_b_xi_expr_fun(H, z, φ, ψ, κ, ν, β, f) 
+Guv_y_b_xi_expr_fun = eval(build_function(symbolics_Guv_y_b_xi, H, z, φ, ψ, κ, ν, β, f, H_y; expression = Val(false)))
+Guv_y_b_xi(H, z, φ, ψ, κ, ν, β, f, H_y) = Guv_y_b_xi_expr_fun(H, z, φ, ψ, κ, ν, β, f, H_y) 
 
-Guv_y_b_expr_fun = eval(build_function(symbolics_Guv_y_b, H, z, ξp, φ, ψ, κ, ν, β, f; expression = Val(false)))
-Guv_y_b(H, z, ξp, φ, ψ, κ, ν, β, f) = Guv_y_b_expr_fun(H, z, ξp, φ, ψ, κ, ν, β, f) 
+Guv_y_b_expr_fun = eval(build_function(symbolics_Guv_y_b, H, z, ξp, φ, ψ, κ, ν, β, f, H_y; expression = Val(false)))
+Guv_y_b(H, z, ξp, φ, ψ, κ, ν, β, f, H_y) = Guv_y_b_expr_fun(H, z, ξp, φ, ψ, κ, ν, β, f, H_y) 
 
 println("Finished generating symbolic functions.")
 println()
@@ -102,8 +102,10 @@ function inner_Gb_integral_num_split(ξ, ξp, H, κ, ψ; rtol=1e-11, atol=1e-13)
     return total
 end
 
-function Guv_y_num(H, z, ξ, φ, ν, β, f; h=1e-7 * im)
-    return ((β*φ)/(2 * f) * (Guv_num(z, ξ, H, ν, φ + h) - Guv_num(z, ξ, H, ν, φ - h)) / (2h))
+function Guv_y_num(H, z, ξ, φ, ν, β, f, H_y; h=1e-7 * im, δH=1e-6)
+    term1 = (β*φ)/(2 * f) * (Guv_num(z, ξ, H, ν, φ + h) - Guv_num(z, ξ, H, ν, φ - h)) / (2h)
+    term2 = H_y * ((Guv_num(z, ξ, H + δH, ν, φ) - Guv_num(z, ξ, H - δH, ν, φ))) / (2δH)
+    return term1 + term2
 end
 
 function integrand_num(ξ, H, z, ξp, φ, ψ, κ, ν)
@@ -114,12 +116,12 @@ function integrand2_num(ξ, H, z, φ, ψ, κ, ν)
     Guv_num(z, ξ, H, ν, φ) * inner_Gb2_integral_sym(ξ, H, κ, ψ)
 end
    
-function integrand3_num(ξ, H, z, φ, ψ, κ, ν, βval, fval)
-    Guv_y_num(H, z, ξ, φ, ν, βval, fval) * inner_Gb2_integral_sym(ξ, H, κ, ψ)
+function integrand3_num(ξ, H, z, φ, ψ, κ, ν, βval, fval, H_yval)
+    Guv_y_num(H, z, ξ, φ, ν, βval, fval, H_yval) * inner_Gb2_integral_sym(ξ, H, κ, ψ)
 end
 
-function integrand4_num(ξ, H, z, ξp, φ, ψ, κ, ν, βval, fval)
-    Guv_y_num(H, z, ξ, φ, ν, βval, fval) * inner_Gb_integral_num(ξ, ξp, H, κ, ψ)
+function integrand4_num(ξ, H, z, ξp, φ, ψ, κ, ν, βval, fval, H_yval)
+    Guv_y_num(H, z, ξ, φ, ν, βval, fval, H_yval) * inner_Gb_integral_num(ξ, ξp, H, κ, ψ)
 end
 
 function integrand_num_split_inner(ξ, H, z, ξp, φ, ψ, κ, ν)
@@ -163,13 +165,13 @@ function double_integral2_num(H, z, φ, ψ, κ, ν)
            -H, 0.0; rtol=1e-10, atol=1e-12)[1]
 end
 
-function double_integral3_num(H, z, φ, ψ, κ, ν, βval, fval)
-    quadgk(ξ -> integrand3_num(ξ, H, z, φ, ψ, κ, ν, βval, fval),
+function double_integral3_num(H, z, φ, ψ, κ, ν, βval, fval, H_yval)
+    quadgk(ξ -> integrand3_num(ξ, H, z, φ, ψ, κ, ν, βval, fval, H_yval),
            -H, 0.0; rtol=1e-10, atol=1e-12)[1]
 end
 
-function double_integral4_num(H, z, ξp, φ, ψ, κ, ν, βval, fval)
-    quadgk(ξ -> integrand4_num(ξ, H, z, ξp, φ, ψ, κ, ν, βval, fval),
+function double_integral4_num(H, z, ξp, φ, ψ, κ, ν, βval, fval, H_yval)
+    quadgk(ξ -> integrand4_num(ξ, H, z, ξp, φ, ψ, κ, ν, βval, fval, H_yval),
            -H, 0.0; rtol=1e-10, atol=1e-12)[1]
 end 
 
@@ -444,8 +446,9 @@ println("=======================================================================
 println("1.6 Testing Guv_y derivative")
 fval  = 1.0
 βval  = 0.1
-num2_val = Guv_y_num(Hval, zval, ξpval, φval, νval, βval, fval)
-sym2_val = Guv_y(    Hval, zval, ξpval, φval, νval, βval, fval)
+H_yval = -0.5
+num2_val = Guv_y_num(Hval, zval, ξpval, φval, νval, βval, fval, H_yval)
+sym2_val = Guv_y(    Hval, zval, ξpval, φval, νval, βval, fval, H_yval)
 
 println("           sym = ", sym2_val)
 println("           num = ", num2_val)
@@ -465,8 +468,8 @@ println("=======================================================================
 println("1.8 Testing Guv_y_b_xi double integral")
 
 
-num4_val = double_integral3_num(Hval, zval, φval, ψval, κval, νval, βval, fval)
-sym4_val = Guv_y_b_xi(          Hval, zval, φval, ψval, κval, νval, βval, fval)
+num4_val = double_integral3_num(Hval, zval, φval, ψval, κval, νval, βval, fval, H_yval)
+sym4_val = Guv_y_b_xi(          Hval, zval, φval, ψval, κval, νval, βval, fval, H_yval)
 
 println("           sym = ", sym4_val)
 println("           num = ", num4_val)
@@ -475,8 +478,8 @@ println()
 println("========================================================================================================================")
 println("1.9 Testing Guv_y_b double integral")
 
-num5_val = double_integral4_num(Hval, zval, ξpval, φval, ψval, κval, νval, βval, fval)
-sym5_val = Guv_y_b(             Hval, zval, ξpval, φval, ψval, κval, νval, βval, fval)  
+num5_val = double_integral4_num(Hval, zval, ξpval, φval, ψval, κval, νval, βval, fval, H_yval)
+sym5_val = Guv_y_b(             Hval, zval, ξpval, φval, ψval, κval, νval, βval, fval, H_yval)
 
 println("           sym = ", sym5_val)  
 println("           num = ", num5_val)
