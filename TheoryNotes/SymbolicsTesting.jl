@@ -445,8 +445,8 @@ println()
 println("========================================================================================================================")
 println("1.6 Testing Guv_y derivative")
 fval  = 1.0
-βval  = 0.0
-H_yval = -0.4
+βval  = 0.1
+H_yval = -0.0
 num2_val = Guv_y_num(Hval, zval, ξpval, φval, νval, βval, fval, H_yval)
 sym2_val = Guv_y(    Hval, zval, ξpval, φval, νval, βval, fval, H_yval)
 
@@ -479,7 +479,7 @@ println("=======================================================================
 println("1.9 Testing Guv_y_b double integral")
 
 num5_val = double_integral4_num(Hval, zval, ξpval, φval, ψval, κval, νval, βval, fval, H_yval)
-sym5_val = Guv_y_b(             Hval, zval, ξpval, φval, ψval, κval, νval, βval, fval, H_yval)  
+sym5_val = Guv_y_b(             Hval, zval, ξpval, φval, ψval, κval, νval, βval, fval, H_yval)
 
 println("           sym = ", sym5_val)  
 println("           num = ", num5_val)
