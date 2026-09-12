@@ -8,6 +8,18 @@ cd TheoryNotes
 julia --project=. RunVelocityFieldPrototype.jl
 ```
 
+It can also be run from a normal Julia REPL without first activating the
+project:
+
+```julia
+include("RunVelocityFieldPrototype.jl")
+```
+
+The runner activates `TheoryNotes/Project.toml` before loading `Symbolics`.
+That is required because `symexpr.jld2` contains serialized Symbolics
+expressions and must be rebuilt with the package versions recorded in the
+repository's `Manifest.toml`.
+
 The script uses the smooth manufactured fields in `run_manufactured_test` and
 fails if the relative difference exceeds `2e-5`. It reports both velocity
 values, their relative difference, median timings, and the measured speedup.
