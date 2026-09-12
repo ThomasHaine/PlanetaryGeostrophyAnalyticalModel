@@ -8,18 +8,15 @@ field in equations (B10) and (B23).
 """
 module VelocityFieldPrototype
 
-using JLD2
 using Printf
 using QuadGK
-using RuntimeGeneratedFunctions
 using Statistics
-using Symbolics
-
-RuntimeGeneratedFunctions.init(@__MODULE__)
 
 const HERE = @__DIR__
 const RTOL = 1e-9
 const ATOL = 1e-11
+
+include("VelocitySymbolicKernels.jl")
 
 """
     VelocityParameters(Ek, Γ, ν, κ, f0, β)
@@ -159,39 +156,18 @@ end
     load_symbolic_kernels()
 
 Load the analytical kernels exported by `ComputeQuadratures.ipynb`. Run that
-notebook first if `symexpr.jld2` needs to be regenerated.
+notebook first if the generated kernel source needs to be regenerated.
 """
 function load_symbolic_kernels()
-    expression_file = joinpath(HERE, "symexpr.jld2")
-    isfile(expression_file) || error(
-        "Missing $expression_file. Run ComputeQuadratures.ipynb to generate it."
-    )
-
-    @variables H z ξ ξp φ ψ κ ν β f H_y
-    @load expression_file symbolics_Guvb symbolics_Guvb_xi symbolics_Guv_y_b symbolics_Guv_y_b_xi symbolics_inner_Gb_integral symbolics_inner_Gb2_integral
-
-    guvb_raw = eval(build_function(symbolics_Guvb, H, ψ, ξp, φ, z, κ, ν;
-                                   expression=Val(false)))
-    guvb_xi_raw = eval(build_function(symbolics_Guvb_xi, H, z, φ, ψ, κ, ν;
-                                      expression=Val(false)))
-    guv_y_b_raw = eval(build_function(symbolics_Guv_y_b, H, z, ξp, φ, ψ, κ, ν,
-                                      β, f, H_y; expression=Val(false)))
-    guv_y_b_xi_raw = eval(build_function(symbolics_Guv_y_b_xi, H, z, φ, ψ, κ, ν,
-                                         β, f, H_y; expression=Val(false)))
-    inner_gb_raw = eval(build_function(symbolics_inner_Gb_integral, H, ξ, ξp, ψ, κ;
-                                       expression=Val(false)))
-    inner_gb_xi_raw = eval(build_function(symbolics_inner_Gb2_integral, H, ξ, ψ, κ;
-                                          expression=Val(false)))
-
     return SymbolicKernels(
-        (H, z, ξp, φ, ψ, κ, ν) -> guvb_raw(H, ψ, ξp, φ, z, κ, ν),
-        (H, z, φ, ψ, κ, ν) -> guvb_xi_raw(H, z, φ, ψ, κ, ν),
+        (H, z, ξp, φ, ψ, κ, ν) -> generated_guvb(H, ψ, ξp, φ, z, κ, ν),
+        (H, z, φ, ψ, κ, ν) -> generated_guvb_xi(H, z, φ, ψ, κ, ν),
         (H, z, ξp, φ, ψ, κ, ν, β, f, H_y) ->
-            guv_y_b_raw(H, z, ξp, φ, ψ, κ, ν, β, f, H_y),
+            generated_guv_y_b(H, z, ξp, φ, ψ, κ, ν, β, f, H_y),
         (H, z, φ, ψ, κ, ν, β, f, H_y) ->
-            guv_y_b_xi_raw(H, z, φ, ψ, κ, ν, β, f, H_y),
-        (ξ, ξp, H, ψ, κ) -> inner_gb_raw(H, ξ, ξp, ψ, κ),
-        (ξ, H, ψ, κ) -> inner_gb_xi_raw(H, ξ, ψ, κ),
+            generated_guv_y_b_xi(H, z, φ, ψ, κ, ν, β, f, H_y),
+        (ξ, ξp, H, ψ, κ) -> generated_inner_gb(H, ξ, ξp, ψ, κ),
+        (ξ, H, ψ, κ) -> generated_inner_gb_xi(H, ξ, ψ, κ),
     )
 end
 
