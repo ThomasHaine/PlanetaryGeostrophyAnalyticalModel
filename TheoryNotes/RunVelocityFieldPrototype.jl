@@ -1,3 +1,6 @@
+import Pkg
+Pkg.activate(@__DIR__)
+
 include("VelocityFieldPrototype.jl")
 using .VelocityFieldPrototype
 
