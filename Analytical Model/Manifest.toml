@@ -2,7 +2,7 @@
 
 julia_version = "1.13.0"
 manifest_format = "2.1"
-project_hash = "92e91ebb3dcb0d30e069836c7da8cabe7ae0d82c"
+project_hash = "c3a7b4fdd90f43a5da1fffcd64f2e0af55947006"
 
 [[deps.ADTypes]]
 deps = ["PrecompileTools"]
@@ -711,6 +711,13 @@ registries = "General"
 uuid = "a8cc5b0e-0ffa-5ad4-8c14-923d3ee1735f"
 version = "4.2.0"
 
+[[deps.CubedSphere]]
+deps = ["Distances", "LinearAlgebra", "Printf", "Random", "Statistics", "TaylorSeries"]
+git-tree-sha1 = "6ffea589cf350b1582722e57a8de787907d59454"
+registries = "General"
+uuid = "7445602f-e544-4518-8976-18f8e8ae6cdb"
+version = "0.3.4"
+
 [[deps.DataAPI]]
 git-tree-sha1 = "abe83f3a2f1b857aac70ef8b269080af17764bbe"
 registries = "General"
@@ -1054,6 +1061,12 @@ git-tree-sha1 = "d2e49e7efd29719d6f28b891b0e0e159daa9d2b4"
 registries = "General"
 uuid = "e2ba6199-217a-4e67-a87a-7c52f15ade04"
 version = "0.1.11"
+
+[[deps.ExpressionExplorer]]
+git-tree-sha1 = "678f8b7cd246ed441d29ca42a99f5f138be2ecac"
+registries = "General"
+uuid = "21656369-7473-754a-2065-74616d696c43"
+version = "1.1.5"
 
 [[deps.ExproniconLite]]
 git-tree-sha1 = "c13f0b150373771b0fdc1713c97860f8df12e6c2"
@@ -1530,6 +1543,12 @@ git-tree-sha1 = "090526e65de8f69648ac156daae153de8b56df62"
 registries = "General"
 uuid = "7746bdde-850d-59dc-9ae8-88ece973131d"
 version = "2.88.3+0"
+
+[[deps.Glob]]
+git-tree-sha1 = "246c628cec062230b7d183aab88841fa94fcabe9"
+registries = "General"
+uuid = "c27321d9-0574-5035-807b-f59d2c89b15c"
+version = "1.5.0"
 
 [[deps.Gmsh]]
 deps = ["gmsh_jll"]
@@ -2780,6 +2799,42 @@ registries = "General"
 uuid = "510215fc-4207-5dde-b226-833fc4488ee2"
 version = "0.5.5"
 
+[[deps.Oceananigans]]
+deps = ["Adapt", "BFloat16s", "Crayons", "CubedSphere", "Dates", "Distances", "DocStringExtensions", "FFTW", "GPUArraysCore", "Glob", "InteractiveUtils", "JLD2", "KernelAbstractions", "Krylov", "LinearAlgebra", "Logging", "MPI", "MuladdMacro", "OffsetArrays", "OrderedCollections", "Pkg", "Printf", "ReactantCore", "Rotations", "SeawaterPolynomials", "SparseArrays", "StaticArrays", "Statistics", "StructArrays"]
+git-tree-sha1 = "a2503a799ba18c32468216b7ad527cd91767540c"
+registries = "General"
+uuid = "9e8cae18-63c1-5223-a75c-80ca9d6e9a09"
+version = "0.112.0"
+
+    [deps.Oceananigans.extensions]
+    OceananigansAMDGPUExt = ["AMDGPU", "AbstractFFTs"]
+    OceananigansCUDAExt = ["CUDA", "GPUArrays", "GPUArraysCore"]
+    OceananigansConservativeRegriddingExt = "ConservativeRegridding"
+    OceananigansEnzymeExt = "Enzyme"
+    OceananigansMakieExt = "Makie"
+    OceananigansMetalExt = ["Metal", "AbstractFFTs"]
+    OceananigansNCCLExt = ["NCCL", "CUDA"]
+    OceananigansNCDatasetsExt = "NCDatasets"
+    OceananigansOneAPIExt = "oneAPI"
+    OceananigansReactantExt = ["Reactant", "KernelAbstractions", "ConstructionBase", "AbstractFFTs"]
+    OceananigansZarrExt = "Zarr"
+
+    [deps.Oceananigans.weakdeps]
+    AMDGPU = "21141c5a-9bdb-4563-92ae-f87d6854732e"
+    AbstractFFTs = "621f4979-c628-5d54-868e-fcf4e3e8185c"
+    CUDA = "052768ef-5323-5732-b1bb-66c8b64840ba"
+    ConservativeRegridding = "8e50ac2c-eb48-49bc-a402-07c87b949343"
+    ConstructionBase = "187b0558-2788-49d3-abe0-74a17ed4e7c9"
+    Enzyme = "7da242da-08ed-463a-9acd-ee780be4f1d9"
+    GPUArrays = "0c68f7d7-f131-5f86-a1c3-88cf8149b2d7"
+    Makie = "ee78f7c6-11fb-53f2-987a-cfe4a2b5a57a"
+    Metal = "dde4c033-4e86-420c-a63e-0dd931031962"
+    NCCL = "3fe64909-d7a1-4096-9b7d-7a0f12cf0f6b"
+    NCDatasets = "85f8d34a-cbdd-5861-8df4-14fed0d494ab"
+    Reactant = "3c362404-f566-11ee-1572-e11a4b42c853"
+    Zarr = "0a941bbe-ad1d-11e8-39d9-ab76183a1d99"
+    oneAPI = "8f75cd03-7ff8-4ecb-9b8f-daf728133b1b"
+
 [[deps.OffsetArrays]]
 git-tree-sha1 = "117432e406b5c023f665fa73dc26e79ec3630151"
 registries = "General"
@@ -3244,6 +3299,13 @@ weakdeps = ["Distributions"]
     [deps.QuasiMonteCarlo.extensions]
     QuasiMonteCarloDistributionsExt = "Distributions"
 
+[[deps.Quaternions]]
+deps = ["LinearAlgebra", "Random", "RealDot"]
+git-tree-sha1 = "4d8c1b7c3329c1885b857abb50d08fa3f4d9e3c8"
+registries = "General"
+uuid = "94ee1d12-ae83-5a48-8b1c-48b8ff168ae0"
+version = "0.7.7"
+
 [[deps.REPL]]
 deps = ["Base64", "Dates", "FileWatching", "InteractiveUtils", "JuliaSyntaxHighlighting", "Markdown", "Sockets", "StyledStrings", "Unicode"]
 uuid = "3fa0cd96-eef1-5676-8a61-b3b8758bbffb"
@@ -3277,6 +3339,13 @@ weakdeps = ["FixedPointNumbers"]
 
     [deps.Ratios.extensions]
     RatiosFixedPointNumbersExt = "FixedPointNumbers"
+
+[[deps.ReactantCore]]
+deps = ["ExpressionExplorer", "MacroTools"]
+git-tree-sha1 = "7ff99a4f1d30a9bca5ad786aab68458a9c46ca86"
+registries = "General"
+uuid = "a3311ec8-5e00-46d5-b541-4f83e724a433"
+version = "0.1.22"
 
 [[deps.ReadOnlyArrays]]
 git-tree-sha1 = "e6f7ddf48cf141cb312b078ca21cb2d29d0dc11d"
@@ -3412,6 +3481,17 @@ version = "3.0.8"
     SymPy = "24249f21-da20-56a4-8eb1-6a02cf4ae2e6"
     SymPyPythonCall = "bc8888f7-b21e-4b7c-a06a-5d9c9496438c"
     Unitful = "1986cc42-f94f-5a68-af5c-568840ba703d"
+
+[[deps.Rotations]]
+deps = ["LinearAlgebra", "Quaternions", "Random", "StaticArrays"]
+git-tree-sha1 = "5680a9276685d392c87407df00d57c9924d9f11e"
+registries = "General"
+uuid = "6038ab10-8711-5258-84ad-4b1120ba62dc"
+version = "1.7.1"
+weakdeps = ["RecipesBase"]
+
+    [deps.Rotations.extensions]
+    RotationsRecipesBaseExt = "RecipesBase"
 
 [[deps.RoundingEmulator]]
 git-tree-sha1 = "40b9edad2e5287e05bd413a38f61a8ff55b9557b"
@@ -3575,6 +3655,12 @@ git-tree-sha1 = "9b81b8393e50b7d4e6d0a9f14e192294d3b7c109"
 registries = "General"
 uuid = "6c6a2e73-6563-6170-7368-637461726353"
 version = "1.3.0"
+
+[[deps.SeawaterPolynomials]]
+git-tree-sha1 = "e2671e9abe2a2faa51dcecd9d911522931c16012"
+registries = "General"
+uuid = "d496a93d-167e-4197-9f49-d3af4ff8fe40"
+version = "0.3.10"
 
 [[deps.Serialization]]
 uuid = "9e88b42a-f829-5b0c-bbe9-9e923198166b"
@@ -4069,6 +4155,20 @@ git-tree-sha1 = "67e469338d9ce74fc578f7db1736a74d93a49eb8"
 registries = "General"
 uuid = "ed4db957-447d-4319-bfb6-7fa9ae7ecf34"
 version = "0.1.3"
+
+[[deps.TaylorSeries]]
+deps = ["LinearAlgebra", "Markdown", "SparseArrays"]
+git-tree-sha1 = "4a5ddc4036946d3a7900b5776b0872e36d848a29"
+registries = "General"
+uuid = "6aa5eb33-94cf-58f4-a9d0-e4b2c4fc25ea"
+version = "0.20.10"
+weakdeps = ["IntervalArithmetic", "JLD2", "RecursiveArrayTools", "StaticArrays"]
+
+    [deps.TaylorSeries.extensions]
+    TaylorSeriesIAExt = "IntervalArithmetic"
+    TaylorSeriesJLD2Ext = "JLD2"
+    TaylorSeriesRATExt = "RecursiveArrayTools"
+    TaylorSeriesSAExt = "StaticArrays"
 
 [[deps.TensorCore]]
 deps = ["LinearAlgebra"]
