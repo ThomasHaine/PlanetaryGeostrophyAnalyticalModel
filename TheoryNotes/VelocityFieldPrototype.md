@@ -38,5 +38,5 @@ kernel derivation changes.
 The implementation uses the \((\partial_x+i\partial_y)\) convention. Supply
 analytic `H_x`, `H_y`, `f_x`, and `f_y` functions for production calculations.
 The directional B23 kernel receives the corresponding derivatives of both
-depth and Coriolis parameter, so it supports a positive generalized
-`f(x, y)` as well as the beta-plane `f(y)` case.
+depth and Coriolis parameter, so it supports a sign-definite, nonzero
+generalized `f(x, y)` as well as the beta-plane `f(y)` case.

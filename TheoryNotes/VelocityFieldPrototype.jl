@@ -31,7 +31,8 @@ include("VelocitySymbolicKernels.jl")
 
 Parameters for the nondimensional, uniform-viscosity/diffusivity kernels.
 The `f0` and `β` fields retain the beta-plane parameters used by the B10
-reference implementation. B23 accepts an arbitrary positive `f(x,y)` and its
+Reference implementation. B23 accepts an arbitrary sign-definite, nonzero
+`f(x,y)` and its
 horizontal derivatives directly.
 """
 struct VelocityParameters{T<:Real}
@@ -55,7 +56,7 @@ end
 
 function checked_state(p::VelocityParameters, H, y, z)
     checked_depth(H, z)
-    fcor(p, y) > 0 || throw(ArgumentError("f(y) must be positive; got $(fcor(p, y))"))
+    fcor(p, y) != 0 || throw(ArgumentError("f(y) must be nonzero; got $(fcor(p, y))"))
 end
 
 function split_quadgk(f, a, b, breaks=(); rtol=RTOL, atol=ATOL)
@@ -165,7 +166,7 @@ function velocity_b10(p, Hfun, ffun, ps, τ, B, bs, x, y, z; gradient_step=1e-5)
     H = Hfun(x, y)
     checked_depth(H, z)
     fvalue = ffun(x, y)
-    fvalue > 0 || throw(ArgumentError("f(x, y) must be positive; got $fvalue"))
+    fvalue != 0 || throw(ArgumentError("f(x, y) must be nonzero; got $fvalue"))
     φvalue = φ_from_f(p, fvalue)
 
     pressure = Gu_integral(z, H, p.ν, φvalue) *
@@ -263,7 +264,7 @@ function velocity_b23_from_gradps(kernels, p, Hfun, ffun, f_x, f_y, gradps, τ, 
     H = Hfun(x, y)
     fvalue = ffun(x, y)
     checked_depth(H, z)
-    fvalue > 0 || throw(ArgumentError("f(x, y) must be positive; got $fvalue"))
+    fvalue != 0 || throw(ArgumentError("f(x, y) must be nonzero; got $fvalue"))
     φvalue, ψvalue = φ_from_f(p, fvalue), ψ(p)
 
     pressure = Gu_integral(z, H, p.ν, φvalue) * gradps(x, y)
