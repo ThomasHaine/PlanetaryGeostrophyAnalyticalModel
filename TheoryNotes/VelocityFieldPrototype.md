@@ -35,8 +35,8 @@ avoid repeated evaluations. Before a production calculation, regenerate
 `VelocitySymbolicKernels.jl` from `ComputeQuadratures.ipynb` whenever its
 kernel derivation changes.
 
-The implementation uses the \((\partial_x+i\partial_y)\) convention. For
-general \(H(x,y)\), it obtains the missing \(x\)-kernel from the
-\(H_y\)-dependent part of the generated \(G_{\mathfrak u,y}\) kernel by
-evaluating it with \(\beta=0\) and \(H_y=1\). Supply analytic `H_x` and `H_y`
-functions for production calculations.
+The implementation uses the \((\partial_x+i\partial_y)\) convention. Supply
+analytic `H_x`, `H_y`, `f_x`, and `f_y` functions for production calculations.
+The directional B23 kernel receives the corresponding derivatives of both
+depth and Coriolis parameter, so it supports a positive generalized
+`f(x, y)` as well as the beta-plane `f(y)` case.
