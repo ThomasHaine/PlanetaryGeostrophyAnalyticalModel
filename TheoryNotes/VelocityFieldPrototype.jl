@@ -12,6 +12,14 @@ using Printf
 using QuadGK
 using Statistics
 
+export VelocityParameters,
+       buoyancy_from_forcing,
+       load_symbolic_kernels,
+       velocity_b10,
+       velocity_b23,
+       velocity_b23_from_gradps,
+       run_manufactured_test
+
 const HERE = @__DIR__
 const RTOL = 1e-9
 const ATOL = 1e-11
