@@ -88,6 +88,24 @@ function dGb_dξ_at_surface(z, H, κ, ψ)
            (κ * (1 + exp(-2 * ψ * H)))
 end
 
+"""
+    buoyancy_from_forcing(p, H, B, bs, x, y, z)
+
+Evaluate the buoyancy solution driven by the interior restoring field `B` and
+surface buoyancy `bs` for one water-column point.
+"""
+function buoyancy_from_forcing(p, Hfun, B, bs, x, y, z)
+    H = Hfun(x, y)
+    checked_state(p, H, y, z)
+    ψvalue = ψ(p)
+    interior = split_quadgk(
+        ξp -> Gb(z, ξp, H, p.κ, ψvalue) * B(x, y, ξp),
+        -H, 0.0, (z,),
+    )
+    return -p.Γ / p.Ek * interior +
+           dGb_dξ_at_surface(z, H, p.κ, ψvalue) * bs(x, y)
+end
+
 function Gu_integral(z, H, ν, φ)
     return (
         -1 - exp(2 * φ * H) + exp(φ * (z + H)) + exp(φ * (H - z))
@@ -190,19 +208,36 @@ function bottom_pressure(kernels, p, Hfun, B, bs, x, y)
 end
 
 """
-    velocity_b23(kernels, p, H, ps, τ, B, bs, H_y, x, y, z; gradient_step=1e-5)
+    velocity_b23(kernels, p, H, ps, τ, B, bs, H_x, H_y, x, y, z;
+                 gradient_step=1e-5)
 
 Production-oriented evaluation of (B23): three single vertical quadratures
-plus closed-form symbolic kernels. `H_y` is the analytic bathymetric slope.
+plus closed-form symbolic kernels. `H_x` and `H_y` are analytic bathymetric
+slopes. The x-derivative kernel is obtained from the H_y component of the
+generated G_u,y kernel by setting beta=0 and H_y=1.
 """
-function velocity_b23(kernels, p, Hfun, ps, τ, B, bs, H_y, x, y, z;
+function velocity_b23(kernels, p, Hfun, ps, τ, B, bs, H_x, H_y, x, y, z;
                       gradient_step=1e-5)
+    ps_gradient(xx, yy) = finite_complex_gradient(ps, xx, yy; step=gradient_step)
+    return velocity_b23_from_gradps(kernels, p, Hfun, ps_gradient, τ, B, bs,
+                                    H_x, H_y, x, y, z; gradient_step)
+end
+
+"""
+    velocity_b23_from_gradps(kernels, p, H, gradps, τ, B, bs, H_x, H_y, x, y, z;
+                             gradient_step=1e-5)
+
+Evaluate (B23) when `gradps(x,y)` already provides `(d/dx + i*d/dy) p_s`.
+Use this form with a finite-element pressure solve to avoid finite
+differences of the pressure interpolant.
+"""
+function velocity_b23_from_gradps(kernels, p, Hfun, gradps, τ, B, bs, H_x, H_y,
+                                  x, y, z; gradient_step=1e-5)
     H = Hfun(x, y)
     checked_state(p, H, y, z)
     φvalue, ψvalue = φ(p, y), ψ(p)
 
-    pressure = Gu_integral(z, H, p.ν, φvalue) *
-               finite_complex_gradient(ps, x, y; step=gradient_step)
+    pressure = Gu_integral(z, H, p.ν, φvalue) * gradps(x, y)
     stress = -p.Ek * Gu(z, 0.0, H, p.ν, φvalue) * τ(x, y)
     integrated = finite_complex_gradient(
         (xx, yy) -> integrated_pressure_b23(kernels, p, Hfun, B, bs, xx, yy, z),
@@ -211,13 +246,21 @@ function velocity_b23(kernels, p, Hfun, ps, τ, B, bs, H_y, x, y, z;
     bottom = finite_complex_gradient(Hfun, x, y; step=gradient_step) *
              Gu(z, -H, H, p.ν, φvalue) *
              bottom_pressure(kernels, p, Hfun, B, bs, x, y)
+    kernel_x = H_x(x, y) * (
+        -p.Γ / p.Ek * split_quadgk(
+            ξp -> kernels.Guv_y_b(H, z, ξp, φvalue, ψvalue, p.κ, p.ν,
+                                   0.0, 1.0, 1.0) * B(x, y, ξp),
+            -H, 0.0, (z,),
+        ) + kernels.Guv_y_b_xi(H, z, φvalue, ψvalue, p.κ, p.ν,
+                                0.0, 1.0, 1.0) * bs(x, y)
+    )
     kernel_y = -p.Γ / p.Ek * split_quadgk(
         ξp -> kernels.Guv_y_b(H, z, ξp, φvalue, ψvalue, p.κ, p.ν,
                                p.β, fcor(p, y), H_y(x, y)) * B(x, y, ξp),
         -H, 0.0, (z,),
     ) + kernels.Guv_y_b_xi(H, z, φvalue, ψvalue, p.κ, p.ν,
                             p.β, fcor(p, y), H_y(x, y)) * bs(x, y)
-    return (pressure + stress + integrated - bottom - im * kernel_y) / p.Ek
+    return (pressure + stress + integrated - bottom - kernel_x - im * kernel_y) / p.Ek
 end
 
 function benchmark(f; samples=5)
@@ -235,7 +278,8 @@ notebook or a production-driver test.
 """
 function run_manufactured_test(; samples=5, rtol=2e-5)
     p = VelocityParameters(1e-2, 1.0, 1.0, 1.0, 1.0, 0.15)
-    H(x, y) = 1.0 + 0.08 * y
+    H(x, y) = 1.0 + 0.04 * x + 0.08 * y
+    H_x(x, y) = 0.04
     H_y(x, y) = 0.08
     ps(x, y) = sin(0.7 * x) * cos(0.4 * y)
     τ(x, y) = 0.03 * (1 + 0.2im) * cos(0.3 * x - 0.5 * y)
@@ -245,7 +289,7 @@ function run_manufactured_test(; samples=5, rtol=2e-5)
 
     kernels = load_symbolic_kernels()
     b10() = velocity_b10(p, H, ps, τ, B, bs, x, y, z)
-    b23() = velocity_b23(kernels, p, H, ps, τ, B, bs, H_y, x, y, z)
+    b23() = velocity_b23(kernels, p, H, ps, τ, B, bs, H_x, H_y, x, y, z)
     u_b10, u_b23 = b10(), b23()
     relative_error = abs(u_b10 - u_b23) / max(abs(u_b10), eps())
     relative_error <= rtol || throw(ErrorException(

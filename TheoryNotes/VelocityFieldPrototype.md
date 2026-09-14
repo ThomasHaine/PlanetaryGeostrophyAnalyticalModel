@@ -35,8 +35,8 @@ avoid repeated evaluations. Before a production calculation, regenerate
 `VelocitySymbolicKernels.jl` from `ComputeQuadratures.ipynb` whenever its
 kernel derivation changes.
 
-The current derivation uses the \((\partial_x+i\partial_y)\) convention and
-the \(G_{\mathfrak u,y}\) kernels in (B23); consequently, the prototype's
-comparison state has `H = H(y)`. Supply the same geometry assumption, or add
-the corresponding \(x\)-derivative kernel before applying (B23) to
-two-dimensionally varying bathymetry.
+The implementation uses the \((\partial_x+i\partial_y)\) convention. For
+general \(H(x,y)\), it obtains the missing \(x\)-kernel from the
+\(H_y\)-dependent part of the generated \(G_{\mathfrak u,y}\) kernel by
+evaluating it with \(\beta=0\) and \(H_y=1\). Supply analytic `H_x` and `H_y`
+functions for production calculations.
