@@ -14,6 +14,8 @@ using Statistics
 
 export VelocityParameters,
        buoyancy_from_forcing,
+       buoyancy_bottom_stress_b23,
+       buoyancy_transport_b23,
        load_symbolic_kernels,
        velocity_b10,
        velocity_b23,
@@ -228,6 +230,54 @@ function bottom_pressure(kernels, p, Hfun, B, bs, x, y)
         ξp -> kernels.inner_Gb(-H, ξp, H, ψvalue, p.κ) * B(x, y, ξp),
         -H, 0.0, (),
     ) + kernels.inner_Gb_xi(-H, H, ψvalue, p.κ) * bs(x, y)
+end
+
+"""
+    buoyancy_transport_b23(kernels, p, H, f, f_x, f_y, B, bs, H_x, H_y, x, y)
+
+Evaluate the buoyancy-driven depth-integrated transport in equation (68).
+This is a general numerical B23 implementation that is suitable for checking
+new forcing fields before specialized vertically integrated kernels are added.
+"""
+function buoyancy_transport_b23(kernels, p, Hfun, ffun, f_x, f_y, B, bs, H_x, H_y, x, y)
+    H = Hfun(x, y)
+    checked_depth(H, -H)
+    zero_gradient(_, _) = 0.0 + 0.0im
+    zero_stress(_, _) = 0.0 + 0.0im
+    return split_quadgk(
+        z -> velocity_b23_from_gradps(
+            kernels, p, Hfun, ffun, f_x, f_y, zero_gradient, zero_stress,
+            B, bs, H_x, H_y, x, y, z,
+        ),
+        -H, 0.0,
+    )
+end
+
+"""
+    buoyancy_bottom_stress_b23(kernels, p, H, f, f_x, f_y, B, bs, H_x, H_y, x, y;
+                                vertical_step=1e-4)
+
+Evaluate the buoyancy-driven bottom stress in equation (64), using the
+one-sided second-order approximation `-ν ∂u/∂z` at `z = -H`. It intentionally
+uses B23 velocity evaluations so variable bathymetry and general `f(x,y)` are
+treated consistently with the production velocity calculation.
+"""
+function buoyancy_bottom_stress_b23(
+    kernels, p, Hfun, ffun, f_x, f_y, B, bs, H_x, H_y, x, y;
+    vertical_step=1e-4,
+)
+    H = Hfun(x, y)
+    checked_depth(H, -H)
+    h = min(vertical_step, H / 4)
+    h > 0 || throw(ArgumentError("vertical_step must be positive; got $vertical_step"))
+    zero_gradient(_, _) = 0.0 + 0.0im
+    zero_stress(_, _) = 0.0 + 0.0im
+    velocity(z) = velocity_b23_from_gradps(
+        kernels, p, Hfun, ffun, f_x, f_y, zero_gradient, zero_stress,
+        B, bs, H_x, H_y, x, y, z,
+    )
+    return -p.ν * (-3 * velocity(-H) + 4 * velocity(-H + h) -
+                   velocity(-H + 2h)) / (2h)
 end
 
 """
