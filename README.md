@@ -10,16 +10,19 @@ See also: [this archived repo](https://github.com/ThomasHaine/ArcticOceanDynamic
 
 ## Non-dimensional PG API
 
-The reusable Julia API is in `Analytical Model/src/PlanetaryGeostrophy.jl`.
+The reusable Julia API is a standalone package in the root-level
+`PlanetaryGeostrophy/` directory. Its project contains only the
+analytical solver dependencies; Oceananigans remains confined to the separate
+validation environment.
 It packages the B23 Green-function velocity and buoyancy kernels used by
 `PG_Solution_v0.1.ipynb` with the Gridap surface-pressure solve used by
 `Oceananigans_Variable_Basin_Validation.ipynb`.
 
-Start Julia in the `Analytical Model` environment:
+From the repository root, activate the standalone API environment:
 
 ```julia
 using Pkg
-Pkg.activate("Analytical Model")
+Pkg.activate("PlanetaryGeostrophy")
 Pkg.instantiate()
 using PlanetaryGeostrophy
 ```
