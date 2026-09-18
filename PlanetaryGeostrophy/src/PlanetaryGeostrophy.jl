@@ -7,7 +7,7 @@ using WriteVTK
 
 include(joinpath(@__DIR__, "..", "..", "TheoryNotes", "VelocityFieldPrototype.jl"))
 using .VelocityFieldPrototype
-include(joinpath(@__DIR__, "..", "SurfacePressureTools.jl"))
+include(joinpath(@__DIR__, "..", "..", "Analytical Model", "SurfacePressureTools.jl"))
 
 export PGParameters,
        PGProblem,
@@ -322,24 +322,24 @@ end
 """
     write_solution(fields, prefix)
 
-Write `<prefix>_3D_solution.vti` containing `u`, `v`, `w`, and `b`, and
-`<prefix>_surface_solution.vti` containing surface pressure and depth.
+Write `<prefix>_3D_solution.vtr` containing `u`, `v`, `w`, and `b`, and
+`<prefix>_surface_solution.vtr` containing surface pressure and depth.
 """
 function write_solution(fields::PGFields, prefix)
     file_prefix = string(prefix)
-    volume_path = file_prefix * "_3D_solution.vti"
-    surface_path = file_prefix * "_surface_solution.vti"
-    vtk_grid(volume_path, fields.x, fields.y, fields.z) do vtk
+    volume_base = file_prefix * "_3D_solution"
+    surface_base = file_prefix * "_surface_solution"
+    vtk_grid(volume_base, fields.x, fields.y, fields.z) do vtk
         vtk["u"] = fields.u
         vtk["v"] = fields.v
         vtk["w"] = fields.w
         vtk["b"] = fields.b
     end
-    vtk_grid(surface_path, fields.x, fields.y) do vtk
+    vtk_grid(surface_base, fields.x, fields.y) do vtk
         vtk["surface_pressure"] = fields.surface_pressure
         vtk["depth"] = fields.depth
     end
-    return (volume=volume_path, surface=surface_path)
+    return (volume=volume_base * ".vtr", surface=surface_base * ".vtr")
 end
 
 function field_plot(fields, values, title, z_index)
