@@ -7,3 +7,53 @@ PlanetaryGeostrophyAnalyticalModel
 See also: [this archived repo](https://github.com/ThomasHaine/ArcticOceanDynamicsWorkshop25), on which this one is based.
 
   Questions/comments welcome.
+
+## Non-dimensional PG API
+
+The reusable Julia API is in `Analytical Model/src/PlanetaryGeostrophy.jl`.
+It packages the B23 Green-function velocity and buoyancy kernels used by
+`PG_Solution_v0.1.ipynb` with the Gridap surface-pressure solve used by
+`Oceananigans_Variable_Basin_Validation.ipynb`.
+
+Start Julia in the `Analytical Model` environment:
+
+```julia
+using Pkg
+Pkg.activate("Analytical Model")
+Pkg.instantiate()
+using PlanetaryGeostrophy
+```
+
+A problem is specified entirely with non-dimensional parameters and functions:
+
+```julia
+parameters = PGParameters(0.02, 0.2)
+boundary = rectangle_boundary(2.0, 1.5)
+
+problem = PGProblem(
+    parameters=parameters,
+    depth=(x, y) -> 1.0,
+    coriolis=(x, y) -> 1.0 + 0.15y,
+    wind_stress=(x, y) -> 1e-3 * cos(pi * y / 1.5) + 0im,
+    restoring_buoyancy=(x, y, z) -> 1e-2z,
+    surface_buoyancy=(x, y) -> 0.0,
+    boundary=boundary,
+)
+
+solution = solve_pg(problem; mesh_file="sample_pressure.msh")
+fields = sample_solution(
+    solution,
+    range(-0.9, 0.9; length=9),
+    range(-0.65, 0.65; length=7),
+    range(-1.0, 0.0; length=9),
+)
+write_solution(fields, "sample_pg")
+plot_solution(fields; z_index=5, output="sample_pg.png")
+```
+
+`wind_stress` uses the complex convention `τx + im * τy`. Custom analytic
+derivatives can be passed as `depth_x`, `depth_y`, `coriolis_x`, and
+`coriolis_y`; centered derivatives are generated otherwise. The sampled
+solution contains `u`, `v`, `w`, and `b` on the 3D grid plus surface pressure
+and depth. Vertical velocity is reconstructed from discrete horizontal
+divergence with no-normal-flow conditions at the bottom and rigid lid.
