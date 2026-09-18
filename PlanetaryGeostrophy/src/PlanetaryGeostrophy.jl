@@ -5,6 +5,20 @@ using Gridap
 using Plots
 using WriteVTK
 
+stage_metrics(measurement) = (
+    seconds=measurement.time,
+    allocated_mib=measurement.bytes / 2.0^20,
+    gc_seconds=measurement.gctime,
+)
+
+function timed_stage(f, label)
+    @info "Starting $label"
+    measurement = @timed f()
+    metrics = stage_metrics(measurement)
+    @info "Completed $label" seconds=round(metrics.seconds; digits=3) allocated_mib=round(metrics.allocated_mib; digits=2) gc_seconds=round(metrics.gc_seconds; digits=3)
+    return measurement.value, metrics
+end
+
 include(joinpath(@__DIR__, "..", "..", "TheoryNotes", "VelocityFieldPrototype.jl"))
 using .VelocityFieldPrototype
 include(joinpath(@__DIR__, "..", "..", "Analytical Model", "SurfacePressureTools.jl"))
@@ -22,7 +36,8 @@ export PGParameters,
        sample_solution,
        write_solution,
        plot_solution,
-       plot_surface_pressure
+       plot_surface_pressure,
+       performance_summary
 
 """
     PGParameters(Ek, Γ; viscosity=1, diffusivity=1)
@@ -125,13 +140,14 @@ function PGProblem(;
     )
 end
 
-struct PGSolution{P,K,S,B,V}
+struct PGSolution{P,K,S,B,V,T}
     problem::P
     kernels::K
     pressure::S
     buoyancy_function::B
     horizontal_velocity_function::V
     mesh_file::String
+    timings::T
 end
 
 internal_parameters(p::PGParameters) =
@@ -154,11 +170,20 @@ function solve_pg(
 )
     mesh_resolution > 0 || throw(ArgumentError("mesh_resolution must be positive"))
     pressure_order > 0 || throw(ArgumentError("pressure_order must be positive"))
-    generate_pressure_mesh(
-        mesh_file, problem.boundary;
-        resolution=mesh_resolution, overwrite=overwrite_mesh,
-    )
-    kernels = load_symbolic_kernels()
+    solve_started = time()
+    reusing_mesh = isfile(mesh_file) && !overwrite_mesh
+    @info "PG solve started" Ek=problem.parameters.Ek Γ=problem.parameters.Γ viscosity=problem.parameters.viscosity diffusivity=problem.parameters.diffusivity pressure_order mesh_resolution mesh_file=string(mesh_file)
+    mesh, mesh_timing = timed_stage(
+        reusing_mesh ? "reusing surface mesh" : "generating surface mesh",
+    ) do
+        generate_pressure_mesh(
+            mesh_file, problem.boundary;
+            resolution=mesh_resolution, overwrite=overwrite_mesh,
+        )
+    end
+    kernels, kernel_timing = timed_stage("loading analytical Green-function kernels") do
+        load_symbolic_kernels()
+    end
     p = internal_parameters(problem.parameters)
     pressure = solve_surface_pressure(
         mesh_file, kernels, p, problem.depth, problem.coriolis,
@@ -178,7 +203,15 @@ function solve_pg(
         problem.surface_buoyancy, problem.depth_x, problem.depth_y,
         x, y, z; gradient_step=problem.derivative_step,
     )
-    return PGSolution(problem, kernels, pressure, b, uv, string(mesh_file))
+    total_seconds = time() - solve_started
+    timings = (
+        mesh=mesh_timing,
+        kernels=kernel_timing,
+        surface_pressure=pressure.timings,
+        total_seconds,
+    )
+    @info "PG solve completed" seconds=round(total_seconds; digits=3) mesh_reused=reusing_mesh
+    return PGSolution(problem, kernels, pressure, b, uv, string(mesh), timings)
 end
 
 function require_water(solution::PGSolution, x, y, z=nothing)
@@ -208,7 +241,7 @@ function buoyancy(solution::PGSolution, x, y, z)
     return solution.buoyancy_function(x, y, z)
 end
 
-struct PGFields{TX<:AbstractVector,TY<:AbstractVector,TZ<:AbstractVector}
+struct PGFields{TX<:AbstractVector,TY<:AbstractVector,TZ<:AbstractVector,T}
     x::TX
     y::TY
     z::TZ
@@ -219,7 +252,11 @@ struct PGFields{TX<:AbstractVector,TY<:AbstractVector,TZ<:AbstractVector}
     surface_pressure::Matrix{Float64}
     depth::Matrix{Float64}
     wet::BitArray{3}
+    timings::T
 end
+
+PGFields(x, y, z, u, v, w, b, ps, depth, wet) =
+    PGFields(x, y, z, u, v, w, b, ps, depth, wet, (;))
 
 function horizontal_derivative(values, wet, coordinates, i, j, k, axis)
     n = axis == 1 ? size(values, 1) : size(values, 2)
@@ -280,6 +317,7 @@ Sample `u`, `v`, and `b` on an increasing rectilinear grid and reconstruct
 The vertical grid must end at the rigid lid, `z = 0`.
 """
 function sample_solution(solution::PGSolution, x_values, y_values, z_values)
+    sample_started = time()
     x, y, z = collect(float.(x_values)), collect(float.(y_values)), collect(float.(z_values))
     length(x) >= 2 && length(y) >= 2 && length(z) >= 2 ||
         throw(ArgumentError("x, y, and z must each contain at least two points"))
@@ -295,28 +333,59 @@ function sample_solution(solution::PGSolution, x_values, y_values, z_values)
     wet = falses(shape)
     step = solution.problem.derivative_step
 
-    for j in eachindex(y), i in eachindex(x)
-        xx, yy = x[i], y[j]
-        solution.problem.inside(xx, yy) || continue
-        H = solution.problem.depth(xx, yy)
-        H > 0 || continue
-        depth[i, j] = H
-        ps[i, j] = float(surface_pressure(solution, xx, yy))
-        stencil_is_inside = all(solution.problem.inside(xq, yq) for (xq, yq) in (
-            (xx - step, yy), (xx + step, yy), (xx, yy - step), (xx, yy + step),
-        ))
-        stencil_is_inside || continue
-        for k in eachindex(z)
-            -H <= z[k] <= 0 || continue
-            uv = solution.horizontal_velocity_function(xx, yy, z[k])
-            u[i, j, k], v[i, j, k] = float(real(uv)), float(imag(uv))
-            b[i, j, k] = float(solution.buoyancy_function(xx, yy, z[k]))
-            wet[i, j, k] = true
+    @info "Solution sampling started" Nx=length(x) Ny=length(y) Nz=length(z) grid_points=prod(shape)
+    _, pressure_timing = timed_stage("sampling surface pressure and bathymetry") do
+        for j in eachindex(y), i in eachindex(x)
+            xx, yy = x[i], y[j]
+            solution.problem.inside(xx, yy) || continue
+            H = solution.problem.depth(xx, yy)
+            H > 0 || continue
+            depth[i, j] = H
+            ps[i, j] = float(surface_pressure(solution, xx, yy))
         end
     end
 
-    w = reconstruct_vertical_velocity(u, v, wet, depth, x, y, z)
-    return PGFields(x, y, z, u, v, w, b, ps, depth, wet)
+    progress_stride = max(1, cld(length(y), 10))
+    _, fields_timing = timed_stage("sampling 3D horizontal velocity and buoyancy") do
+        for j in eachindex(y)
+            for i in eachindex(x)
+                xx, yy = x[i], y[j]
+                H = depth[i, j]
+                isfinite(H) || continue
+                stencil_is_inside = all(solution.problem.inside(xq, yq) for (xq, yq) in (
+                    (xx - step, yy), (xx + step, yy), (xx, yy - step), (xx, yy + step),
+                ))
+                stencil_is_inside || continue
+                for k in eachindex(z)
+                    -H <= z[k] <= 0 || continue
+                    uv = solution.horizontal_velocity_function(xx, yy, z[k])
+                    u[i, j, k], v[i, j, k] = float(real(uv)), float(imag(uv))
+                    b[i, j, k] = float(solution.buoyancy_function(xx, yy, z[k]))
+                    wet[i, j, k] = true
+                end
+            end
+            if j == 1 || j == length(y) || j % progress_stride == 0
+                @info "3D field sampling progress" rows_completed=j rows_total=length(y) percent=round(100j / length(y); digits=1) wet_points=count(wet)
+            end
+        end
+    end
+
+    w, vertical_velocity_timing =
+        timed_stage("reconstructing vertical velocity from incompressibility") do
+            reconstruct_vertical_velocity(u, v, wet, depth, x, y, z)
+        end
+    total_seconds = time() - sample_started
+    wet_points = count(wet)
+    timings = (
+        surface_fields=pressure_timing,
+        horizontal_velocity_and_buoyancy=fields_timing,
+        vertical_velocity=vertical_velocity_timing,
+        total_seconds,
+        wet_points,
+        wet_points_per_second=wet_points / max(fields_timing.seconds, eps()),
+    )
+    @info "Solution sampling completed" seconds=round(total_seconds; digits=3) wet_points wet_fraction=round(wet_points / prod(shape); digits=3) field_points_per_second=round(timings.wet_points_per_second; digits=1)
+    return PGFields(x, y, z, u, v, w, b, ps, depth, wet, timings)
 end
 
 """
@@ -326,20 +395,32 @@ Write `<prefix>_3D_solution.vtr` containing `u`, `v`, `w`, and `b`, and
 `<prefix>_surface_solution.vtr` containing surface pressure and depth.
 """
 function write_solution(fields::PGFields, prefix)
+    write_started = time()
     file_prefix = string(prefix)
     volume_base = file_prefix * "_3D_solution"
     surface_base = file_prefix * "_surface_solution"
-    vtk_grid(volume_base, fields.x, fields.y, fields.z) do vtk
-        vtk["u"] = fields.u
-        vtk["v"] = fields.v
-        vtk["w"] = fields.w
-        vtk["b"] = fields.b
+    @info "Writing sampled PG solution" prefix=file_prefix
+    _, volume_timing = timed_stage("writing 3D VTK fields") do
+        vtk_grid(volume_base, fields.x, fields.y, fields.z) do vtk
+            vtk["u"] = fields.u
+            vtk["v"] = fields.v
+            vtk["w"] = fields.w
+            vtk["b"] = fields.b
+        end
     end
-    vtk_grid(surface_base, fields.x, fields.y) do vtk
-        vtk["surface_pressure"] = fields.surface_pressure
-        vtk["depth"] = fields.depth
+    _, surface_timing = timed_stage("writing surface VTK fields") do
+        vtk_grid(surface_base, fields.x, fields.y) do vtk
+            vtk["surface_pressure"] = fields.surface_pressure
+            vtk["depth"] = fields.depth
+        end
     end
-    return (volume=volume_base * ".vtr", surface=surface_base * ".vtr")
+    total_seconds = time() - write_started
+    @info "Solution output completed" seconds=round(total_seconds; digits=3)
+    return (
+        volume=volume_base * ".vtr",
+        surface=surface_base * ".vtr",
+        timings=(volume=volume_timing, surface=surface_timing, total_seconds),
+    )
 end
 
 function field_plot(fields, values, title, z_index)
@@ -358,28 +439,47 @@ pressure and depth. Pass `output="figure.png"` to save the figure.
 """
 function plot_solution(fields::PGFields; z_index=length(fields.z), output=nothing)
     checkbounds(fields.z, z_index)
-    panels = [
-        field_plot(fields, fields.u, "u", z_index),
-        field_plot(fields, fields.v, "v", z_index),
-        field_plot(fields, fields.w, "w", z_index),
-        field_plot(fields, fields.b, "buoyancy", z_index),
-        heatmap(fields.x, fields.y, fields.surface_pressure';
-                xlabel="x", ylabel="y", title="surface pressure", aspect_ratio=:equal),
-        heatmap(fields.x, fields.y, fields.depth';
-                xlabel="x", ylabel="y", title="depth", aspect_ratio=:equal),
-    ]
-    figure = plot(panels...; layout=(2, 3), size=(1200, 750))
-    isnothing(output) || savefig(figure, output)
+    @info "Plotting PG solution" z_index z=fields.z[z_index] output
+    figure, timing = timed_stage("rendering solution plot") do
+        panels = [
+            field_plot(fields, fields.u, "u", z_index),
+            field_plot(fields, fields.v, "v", z_index),
+            field_plot(fields, fields.w, "w", z_index),
+            field_plot(fields, fields.b, "buoyancy", z_index),
+            heatmap(fields.x, fields.y, fields.surface_pressure';
+                    xlabel="x", ylabel="y", title="surface pressure", aspect_ratio=:equal),
+            heatmap(fields.x, fields.y, fields.depth';
+                    xlabel="x", ylabel="y", title="depth", aspect_ratio=:equal),
+        ]
+        plot(panels...; layout=(2, 3), size=(1200, 750))
+    end
+    if !isnothing(output)
+        _, save_timing = timed_stage("saving solution plot") do
+            savefig(figure, output)
+        end
+        @info "Solution plot saved" path=string(output) seconds=round(save_timing.seconds; digits=3)
+    end
     return figure
 end
 
 function plot_surface_pressure(fields::PGFields; output=nothing)
-    figure = heatmap(
-        fields.x, fields.y, fields.surface_pressure';
-        xlabel="x", ylabel="y", title="surface pressure", aspect_ratio=:equal,
-    )
-    isnothing(output) || savefig(figure, output)
+    @info "Plotting surface pressure" output
+    figure, _ = timed_stage("rendering surface-pressure plot") do
+        heatmap(
+            fields.x, fields.y, fields.surface_pressure';
+            xlabel="x", ylabel="y", title="surface pressure", aspect_ratio=:equal,
+        )
+    end
+    if !isnothing(output)
+        _, save_timing = timed_stage("saving surface-pressure plot") do
+            savefig(figure, output)
+        end
+        @info "Surface-pressure plot saved" path=string(output) seconds=round(save_timing.seconds; digits=3)
+    end
     return figure
 end
+
+performance_summary(solution::PGSolution) = solution.timings
+performance_summary(fields::PGFields) = fields.timings
 
 end

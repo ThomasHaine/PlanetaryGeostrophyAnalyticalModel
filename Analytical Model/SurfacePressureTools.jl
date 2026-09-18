@@ -2,6 +2,20 @@ using Gmsh
 using Gridap
 using GridapGmsh
 
+pressure_stage_metrics(measurement) = (
+    seconds=measurement.time,
+    allocated_mib=measurement.bytes / 2.0^20,
+    gc_seconds=measurement.gctime,
+)
+
+function pressure_timed_stage(f, label)
+    @info "Starting $label"
+    measurement = @timed f()
+    metrics = pressure_stage_metrics(measurement)
+    @info "Completed $label" seconds=round(metrics.seconds; digits=3) allocated_mib=round(metrics.allocated_mib; digits=2) gc_seconds=round(metrics.gc_seconds; digits=3)
+    return measurement.value, metrics
+end
+
 """
     generate_pressure_mesh(path, boundary; resolution)
 
@@ -71,12 +85,20 @@ function solve_surface_pressure(
     mesh_file, kernels, p, Hfun, ffun, f_x, f_y, τ, B, bs, H_x, H_y;
     order=2,
 )
-    model = GmshDiscreteModel(mesh_file)
-    Ω = Triangulation(model)
-    dΩ = Measure(Ω, 2 * order)
-    reffe = ReferenceFE(lagrangian, Float64, order)
-    V = TestFESpace(model, reffe; conformity=:H1, dirichlet_tags="boundary")
-    U = TrialFESpace(V)
+    solve_started = time()
+    @info "Surface-pressure solve started" mesh_file=string(mesh_file) finite_element_order=order
+    model, mesh_timing = pressure_timed_stage("loading Gridap surface mesh") do
+        GmshDiscreteModel(mesh_file)
+    end
+    spaces, space_timing = pressure_timed_stage("constructing pressure finite-element spaces") do
+        Ω = Triangulation(model)
+        dΩ = Measure(Ω, 2 * order)
+        reffe = ReferenceFE(lagrangian, Float64, order)
+        V = TestFESpace(model, reffe; conformity=:H1, dirichlet_tags="boundary")
+        U = TrialFESpace(V)
+        (; Ω, dΩ, V, U)
+    end
+    Ω, dΩ, V, U = spaces.Ω, spaces.dΩ, spaces.V, spaces.U
 
     function A_fn(x)
         H = Hfun(x[1], x[2])
@@ -96,11 +118,25 @@ function solve_surface_pressure(
     a(u, v) = ∫(real((∇(v) ⋅ VectorValue(1.0, -im)) *
                      (A_fn * (∇(u) ⋅ VectorValue(1.0, im)))) )dΩ
     l(v) = ∫(real((∇(v) ⋅ VectorValue(-1.0, im)) * B_fn))dΩ
-    psurf = Gridap.solve(AffineFEOperator(a, l, U, V))
+    operator, assembly_timing = pressure_timed_stage("assembling surface-pressure operator") do
+        AffineFEOperator(a, l, U, V)
+    end
+    psurf, linear_solve_timing = pressure_timed_stage("solving surface-pressure linear system") do
+        Gridap.solve(operator)
+    end
     ∇psurf = ∇(psurf)
     gradps(x, y) = begin
         gradient = evaluate(∇psurf, Point(x, y))
         gradient[1] + im * gradient[2]
     end
-    return (; model, psurf, gradps, A_fn, B_fn)
+    total_seconds = time() - solve_started
+    timings = (
+        mesh_load=mesh_timing,
+        finite_element_setup=space_timing,
+        operator_assembly=assembly_timing,
+        linear_solve=linear_solve_timing,
+        total_seconds,
+    )
+    @info "Surface-pressure solve completed" seconds=round(total_seconds; digits=3)
+    return (; model, psurf, gradps, A_fn, B_fn, timings)
 end

@@ -32,4 +32,7 @@ end
     w = PlanetaryGeostrophy.reconstruct_vertical_velocity(u, v, wet, depth, x, y, z)
 
     @test all(iszero, w)
+
+    fields = PGFields(x, y, z, u, v, w, copy(u), zeros(3, 3), depth, wet)
+    @test performance_summary(fields) == (;)
 end
