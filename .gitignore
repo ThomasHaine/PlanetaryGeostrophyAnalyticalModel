@@ -6,6 +6,7 @@
 *.out
 *.bbl
 *.blg
+*.png
 *.synctex*
 !.gitignore
 Development*
