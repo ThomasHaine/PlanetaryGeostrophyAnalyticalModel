@@ -82,11 +82,18 @@ current = depth_integrated_current(solution, x, y)
 ψxy = streamfunction(ψ, x, y)
 
 diagnostics = compute_diagnostics(solution, xs, ys)
-plot_diagnostics(diagnostics; output="sample_pg_diagnostics.png")
+plot_diagnostics(
+    diagnostics;
+    arrow_scale=0.35,
+    output="sample_pg_diagnostics.png",
+)
 plot_bottom_stress(diagnostics)
 plot_depth_integrated_current(diagnostics)
 plot_streamfunction(diagnostics)
 ```
+
+The vector plots use `arrow_scale=0.35` by default. Reduce it further for
+shorter arrows or increase it to emphasize weak flow.
 
 `Analytical Model/PG_Stommel_Gyre_Example.ipynb` provides a separate
 flat-bottom, beta-plane subtropical gyre example with zero buoyancy forcing.
