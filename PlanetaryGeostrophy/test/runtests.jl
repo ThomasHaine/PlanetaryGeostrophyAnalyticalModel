@@ -59,3 +59,30 @@ end
     fields = PGFields(x, y, z, u, v, w, copy(u), zeros(3, 3), depth, wet)
     @test performance_summary(fields) == (;)
 end
+
+@testset "Diagnostic arrow geometry" begin
+    vectors = (
+        x=[0.0],
+        y=[0.0],
+        u=[3.0],
+        v=[4.0],
+    )
+    paths = PlanetaryGeostrophy.vector_paths(vectors, 0.02, 0.01)
+
+    shaft_length = hypot(
+        paths.shaft_x[2] - paths.shaft_x[1],
+        paths.shaft_y[2] - paths.shaft_y[1],
+    )
+    left_head_length = hypot(
+        paths.head_x[2] - paths.head_x[1],
+        paths.head_y[2] - paths.head_y[1],
+    )
+    right_head_length = hypot(
+        paths.head_x[2] - paths.head_x[3],
+        paths.head_y[2] - paths.head_y[3],
+    )
+
+    @test shaft_length ≈ 0.1
+    @test left_head_length ≈ hypot(0.01, 0.006)
+    @test right_head_length ≈ hypot(0.01, 0.006)
+end

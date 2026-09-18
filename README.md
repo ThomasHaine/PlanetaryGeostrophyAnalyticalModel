@@ -93,7 +93,9 @@ plot_streamfunction(diagnostics)
 ```
 
 The vector plots normalize the longest arrow to `arrow_scale=0.35` times the
-sampled grid spacing and use `arrowhead_size=0.08`. Reduce either value for
+sampled grid spacing. Arrowheads are drawn explicitly in data coordinates
+with `arrowhead_size=0.08` times that spacing, so their apparent size remains
+consistent in standalone and composite figures. Reduce either value for
 shorter shafts or smaller heads; the background color retains the physical
 vector magnitude.
 

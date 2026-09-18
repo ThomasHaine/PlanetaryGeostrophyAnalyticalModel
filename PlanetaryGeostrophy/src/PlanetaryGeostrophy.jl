@@ -640,6 +640,30 @@ function sampled_vectors(diagnostics::PGDiagnostics, x_component, y_component, s
     )
 end
 
+function vector_paths(vectors, vector_scale, head_length)
+    shaft_x, shaft_y = Float64[], Float64[]
+    head_x, head_y = Float64[], Float64[]
+    head_width = 0.6head_length
+    for (x, y, u, v) in zip(vectors.x, vectors.y, vectors.u, vectors.v)
+        dx, dy = vector_scale * u, vector_scale * v
+        length = hypot(dx, dy)
+        length > 0 || continue
+        tip_x, tip_y = x + dx, y + dy
+        unit_x, unit_y = dx / length, dy / length
+        base_x, base_y = tip_x - head_length * unit_x, tip_y - head_length * unit_y
+        perpendicular_x, perpendicular_y = -unit_y, unit_x
+        left_x = base_x + head_width * perpendicular_x
+        left_y = base_y + head_width * perpendicular_y
+        right_x = base_x - head_width * perpendicular_x
+        right_y = base_y - head_width * perpendicular_y
+        append!(shaft_x, (x, tip_x, NaN))
+        append!(shaft_y, (y, tip_y, NaN))
+        append!(head_x, (left_x, tip_x, right_x, NaN))
+        append!(head_y, (left_y, tip_y, right_y, NaN))
+    end
+    return (; shaft_x, shaft_y, head_x, head_y)
+end
+
 function vector_diagnostic_plot(
     diagnostics::PGDiagnostics,
     x_component,
@@ -665,10 +689,14 @@ function vector_diagnostic_plot(
     maximum_arrow_length = arrow_scale * min(sampled_dx, sampled_dy)
     vector_scale = maximum_magnitude > 0 ?
         maximum_arrow_length / maximum_magnitude : 0.0
-    quiver!(
-        figure, vectors.x, vectors.y;
-        quiver=(vector_scale .* vectors.u, vector_scale .* vectors.v),
-        arrow=arrow(:open, :head, arrowhead_size),
+    head_length = arrowhead_size * min(sampled_dx, sampled_dy)
+    paths = vector_paths(vectors, vector_scale, head_length)
+    plot!(
+        figure, paths.shaft_x, paths.shaft_y;
+        color=:white, linewidth=1, label=false,
+    )
+    plot!(
+        figure, paths.head_x, paths.head_y;
         color=:white, linewidth=1, label=false,
     )
     return figure
