@@ -70,3 +70,20 @@ performance_summary(solution)
 performance_summary(fields)
 files.timings
 ```
+
+Bottom stress, depth-integrated current, and its streamfunction are available
+as point queries or sampled maps. These use equations (62)--(69) and the
+streamfunction weak form (C2) in the model derivation:
+
+```julia
+stress = bottom_stress(solution, x, y)
+current = depth_integrated_current(solution, x, y)
+ψ = solve_streamfunction(solution)
+ψxy = streamfunction(ψ, x, y)
+
+diagnostics = compute_diagnostics(solution, xs, ys)
+plot_diagnostics(diagnostics; output="sample_pg_diagnostics.png")
+plot_bottom_stress(diagnostics)
+plot_depth_integrated_current(diagnostics)
+plot_streamfunction(diagnostics)
+```
