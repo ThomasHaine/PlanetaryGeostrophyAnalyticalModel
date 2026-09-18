@@ -2,7 +2,7 @@
 
 julia_version = "1.13.0"
 manifest_format = "2.1"
-project_hash = "c3a7b4fdd90f43a5da1fffcd64f2e0af55947006"
+project_hash = "28d5409956871f6d6f9075277f025718adc1e92b"
 
 [[deps.ADTypes]]
 deps = ["PrecompileTools"]
@@ -3028,6 +3028,12 @@ git-tree-sha1 = "f9501cc0430a26bc3d156ae1b5b0c1b47af4d6da"
 registries = "General"
 uuid = "eebad327-c553-4316-9ea0-9fa01ccd7688"
 version = "0.3.3"
+
+[[deps.PlanetaryGeostrophy]]
+deps = ["BSplineKit", "BenchmarkTools", "ClosedIntervals", "Colors", "DelaunayTriangulation", "DomainSets", "FastInterpolations", "ForwardDiff", "GibbsSeaWater", "Gmsh", "Gridap", "GridapGmsh", "GridapMakie", "IJulia", "Infiltrator", "Interpolations", "JSON", "Latexify", "NBInclude", "NCDatasets", "Oceananigans", "Plots", "Polynomials", "PrettyTables", "Printf", "Profile", "ProfileView", "PyPlot", "QuadGK", "Roots", "SpecialFunctions", "StaticArrays", "Statistics", "Surrogates", "SymPy", "SymbolicIntegration", "SymbolicNumericIntegration", "Symbolics", "Test", "ThreadsX", "WriteVTK", "Zygote"]
+path = "."
+uuid = "4d772d21-e32a-4f5b-8b31-6af30e65e99d"
+version = "0.1.0"
 
 [[deps.PlotThemes]]
 deps = ["PlotUtils", "Statistics"]

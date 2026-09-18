@@ -9,8 +9,11 @@ Write a two-dimensional Gmsh mesh for the closed polygon `boundary`, whose
 entries are `(x, y)` pairs. The mesh includes the physical line tag
 `"boundary"` required by `solve_surface_pressure`.
 """
-function generate_pressure_mesh(path, boundary; resolution)
-    isfile(path) && return path
+function generate_pressure_mesh(path, boundary; resolution, overwrite=false)
+    if isfile(path)
+        overwrite || return path
+        rm(path)
+    end
     gmsh.initialize()
     try
         gmsh.model.add("surface_pressure")
