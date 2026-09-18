@@ -87,3 +87,8 @@ plot_bottom_stress(diagnostics)
 plot_depth_integrated_current(diagnostics)
 plot_streamfunction(diagnostics)
 ```
+
+`Analytical Model/PG_Stommel_Gyre_Example.ipynb` provides a separate
+flat-bottom, beta-plane subtropical gyre example with zero buoyancy forcing.
+It compares the computed transport streamfunction with the Sverdrup interior
+and diagnoses the frictional western boundary current.
