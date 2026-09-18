@@ -60,3 +60,13 @@ derivatives can be passed as `depth_x`, `depth_y`, `coriolis_x`, and
 solution contains `u`, `v`, `w`, and `b` on the 3D grid plus surface pressure
 and depth. Vertical velocity is reconstructed from discrete horizontal
 divergence with no-normal-flow conditions at the bottom and rigid lid.
+
+The solver logs each mesh, finite-element, field-reconstruction, output, and
+plotting stage with elapsed time, allocation, and garbage-collection metrics.
+The solve and sampling metrics are also available programmatically:
+
+```julia
+performance_summary(solution)
+performance_summary(fields)
+files.timings
+```
