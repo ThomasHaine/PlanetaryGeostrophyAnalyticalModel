@@ -647,8 +647,10 @@ function vector_diagnostic_plot(
     title;
     stride=max(1, cld(max(length(diagnostics.x), length(diagnostics.y)), 16)),
     arrow_scale=0.35,
+    arrowhead_size=0.08,
 )
     arrow_scale > 0 || throw(ArgumentError("arrow_scale must be positive"))
+    arrowhead_size > 0 || throw(ArgumentError("arrowhead_size must be positive"))
     magnitude = hypot.(x_component, y_component)
     figure = heatmap(
         diagnostics.x, diagnostics.y, magnitude';
@@ -656,10 +658,18 @@ function vector_diagnostic_plot(
         aspect_ratio=:equal,
     )
     vectors = sampled_vectors(diagnostics, x_component, y_component, stride)
+    maximum_magnitude = isempty(vectors.u) ? 0.0 :
+        maximum(hypot.(vectors.u, vectors.v))
+    sampled_dx = stride * minimum(diff(diagnostics.x))
+    sampled_dy = stride * minimum(diff(diagnostics.y))
+    maximum_arrow_length = arrow_scale * min(sampled_dx, sampled_dy)
+    vector_scale = maximum_magnitude > 0 ?
+        maximum_arrow_length / maximum_magnitude : 0.0
     quiver!(
         figure, vectors.x, vectors.y;
-        quiver=(arrow_scale .* vectors.u, arrow_scale .* vectors.v),
-        color=:white, label=false,
+        quiver=(vector_scale .* vectors.u, vector_scale .* vectors.v),
+        arrow=arrow(:open, :head, arrowhead_size),
+        color=:white, linewidth=1, label=false,
     )
     return figure
 end
@@ -678,15 +688,16 @@ function plot_bottom_stress(
     diagnostics::PGDiagnostics;
     stride=nothing,
     arrow_scale=0.35,
+    arrowhead_size=0.08,
     output=nothing,
 )
     vector_stride = isnothing(stride) ?
         max(1, cld(max(length(diagnostics.x), length(diagnostics.y)), 16)) : stride
-    @info "Plotting bottom stress" stride=vector_stride arrow_scale output
+    @info "Plotting bottom stress" stride=vector_stride arrow_scale arrowhead_size output
     figure, _ = timed_stage("rendering bottom-stress plot") do
         vector_diagnostic_plot(
             diagnostics, diagnostics.bottom_stress_x, diagnostics.bottom_stress_y,
-            "bottom stress"; stride=vector_stride, arrow_scale,
+            "bottom stress"; stride=vector_stride, arrow_scale, arrowhead_size,
         )
     end
     return save_diagnostic_plot(figure, output, "bottom-stress plot")
@@ -696,15 +707,16 @@ function plot_depth_integrated_current(
     diagnostics::PGDiagnostics;
     stride=nothing,
     arrow_scale=0.35,
+    arrowhead_size=0.08,
     output=nothing,
 )
     vector_stride = isnothing(stride) ?
         max(1, cld(max(length(diagnostics.x), length(diagnostics.y)), 16)) : stride
-    @info "Plotting depth-integrated current" stride=vector_stride arrow_scale output
+    @info "Plotting depth-integrated current" stride=vector_stride arrow_scale arrowhead_size output
     figure, _ = timed_stage("rendering depth-integrated-current plot") do
         vector_diagnostic_plot(
             diagnostics, diagnostics.transport_U, diagnostics.transport_V,
-            "depth-integrated current"; stride=vector_stride, arrow_scale,
+            "depth-integrated current"; stride=vector_stride, arrow_scale, arrowhead_size,
         )
     end
     return save_diagnostic_plot(
@@ -728,19 +740,20 @@ function plot_diagnostics(
     diagnostics::PGDiagnostics;
     stride=nothing,
     arrow_scale=0.35,
+    arrowhead_size=0.08,
     output=nothing,
 )
     vector_stride = isnothing(stride) ?
         max(1, cld(max(length(diagnostics.x), length(diagnostics.y)), 16)) : stride
-    @info "Plotting PG diagnostics" stride=vector_stride arrow_scale output
+    @info "Plotting PG diagnostics" stride=vector_stride arrow_scale arrowhead_size output
     figure, _ = timed_stage("rendering combined diagnostic plot") do
         stress = vector_diagnostic_plot(
             diagnostics, diagnostics.bottom_stress_x, diagnostics.bottom_stress_y,
-            "bottom stress"; stride=vector_stride, arrow_scale,
+            "bottom stress"; stride=vector_stride, arrow_scale, arrowhead_size,
         )
         current = vector_diagnostic_plot(
             diagnostics, diagnostics.transport_U, diagnostics.transport_V,
-            "depth-integrated current"; stride=vector_stride, arrow_scale,
+            "depth-integrated current"; stride=vector_stride, arrow_scale, arrowhead_size,
         )
         Ψ = contourf(
             diagnostics.x, diagnostics.y, diagnostics.streamfunction';

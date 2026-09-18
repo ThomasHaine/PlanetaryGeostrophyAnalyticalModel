@@ -92,8 +92,10 @@ plot_depth_integrated_current(diagnostics)
 plot_streamfunction(diagnostics)
 ```
 
-The vector plots use `arrow_scale=0.35` by default. Reduce it further for
-shorter arrows or increase it to emphasize weak flow.
+The vector plots normalize the longest arrow to `arrow_scale=0.35` times the
+sampled grid spacing and use `arrowhead_size=0.08`. Reduce either value for
+shorter shafts or smaller heads; the background color retains the physical
+vector magnitude.
 
 `Analytical Model/PG_Stommel_Gyre_Example.ipynb` provides a separate
 flat-bottom, beta-plane subtropical gyre example with zero buoyancy forcing.
