@@ -27,16 +27,27 @@ export PGParameters,
        PGProblem,
        PGSolution,
        PGFields,
+       PGStreamfunction,
+       PGDiagnostics,
        rectangle_boundary,
        ellipse_boundary,
        solve_pg,
        surface_pressure,
        horizontal_velocity,
        buoyancy,
+       bottom_stress,
+       depth_integrated_current,
+       solve_streamfunction,
+       streamfunction,
        sample_solution,
+       compute_diagnostics,
        write_solution,
        plot_solution,
        plot_surface_pressure,
+       plot_bottom_stress,
+       plot_depth_integrated_current,
+       plot_streamfunction,
+       plot_diagnostics,
        performance_summary
 
 """
@@ -241,6 +252,59 @@ function buoyancy(solution::PGSolution, x, y, z)
     return solution.buoyancy_function(x, y, z)
 end
 
+"""
+    bottom_stress(solution, x, y)
+
+Evaluate the non-dimensional bottom stress, including surface-pressure,
+buoyancy, and wind-stress contributions, using equations (62)--(64).
+"""
+function bottom_stress(solution::PGSolution, x, y)
+    H = require_water(solution, x, y)
+    problem = solution.problem
+    p = internal_parameters(problem.parameters)
+    pressure_term = bottom_stress_coefficient(
+        p, H, problem.coriolis(x, y),
+    ) * solution.pressure.gradps(x, y)
+    stress = pressure_term + solution.pressure.T_fn(Point(x, y))
+    return (x=real(stress), y=imag(stress))
+end
+
+"""
+    depth_integrated_current(solution, x, y)
+
+Evaluate the non-dimensional depth-integrated horizontal current `(U, V)`.
+"""
+function depth_integrated_current(solution::PGSolution, x, y)
+    H = require_water(solution, x, y)
+    p = internal_parameters(solution.problem.parameters)
+    A = pressure_coefficient(p, H, solution.problem.coriolis(x, y))
+    current = A * solution.pressure.gradps(x, y) +
+              solution.pressure.diagnostic_B_fn(Point(x, y))
+    return (U=real(current), V=imag(current))
+end
+
+struct PGStreamfunction{F,V,T}
+    finite_element::F
+    value::V
+    timings::T
+end
+
+"""
+    solve_streamfunction(solution; order=2)
+
+Solve for the streamfunction of the depth-integrated horizontal current.
+"""
+function solve_streamfunction(solution::PGSolution; order=2)
+    order > 0 || throw(ArgumentError("order must be positive"))
+    result = solve_transport_streamfunction(solution.pressure; order)
+    value = (x, y) -> evaluate(result.finite_element, Point(x, y))
+    return PGStreamfunction(result.finite_element, value, result.timings)
+end
+
+function streamfunction(solution::PGStreamfunction, x, y)
+    return solution.value(x, y)
+end
+
 struct PGFields{TX<:AbstractVector,TY<:AbstractVector,TZ<:AbstractVector,T}
     x::TX
     y::TY
@@ -257,6 +321,18 @@ end
 
 PGFields(x, y, z, u, v, w, b, ps, depth, wet) =
     PGFields(x, y, z, u, v, w, b, ps, depth, wet, (;))
+
+struct PGDiagnostics{TX<:AbstractVector,TY<:AbstractVector,T}
+    x::TX
+    y::TY
+    bottom_stress_x::Matrix{Float64}
+    bottom_stress_y::Matrix{Float64}
+    transport_U::Matrix{Float64}
+    transport_V::Matrix{Float64}
+    streamfunction::Matrix{Float64}
+    wet::BitMatrix
+    timings::T
+end
 
 function horizontal_derivative(values, wet, coordinates, i, j, k, axis)
     n = axis == 1 ? size(values, 1) : size(values, 2)
@@ -389,6 +465,77 @@ function sample_solution(solution::PGSolution, x_values, y_values, z_values)
 end
 
 """
+    compute_diagnostics(solution, x, y; streamfunction_order=2)
+
+Sample bottom stress and depth-integrated horizontal current, and solve and
+sample its streamfunction, on an increasing horizontal rectilinear grid.
+"""
+function compute_diagnostics(
+    solution::PGSolution,
+    x_values,
+    y_values;
+    streamfunction_order=2,
+)
+    diagnostic_started = time()
+    x, y = collect(float.(x_values)), collect(float.(y_values))
+    length(x) >= 2 && length(y) >= 2 ||
+        throw(ArgumentError("x and y must each contain at least two points"))
+    issorted(x) && all(diff(x) .> 0) ||
+        throw(ArgumentError("x must be strictly increasing"))
+    issorted(y) && all(diff(y) .> 0) ||
+        throw(ArgumentError("y must be strictly increasing"))
+    @info "PG diagnostic calculation started" Nx=length(x) Ny=length(y) horizontal_points=length(x) * length(y)
+    ψ = solve_streamfunction(solution; order=streamfunction_order)
+
+    shape = (length(x), length(y))
+    τx, τy = fill(NaN, shape), fill(NaN, shape)
+    U, V = fill(NaN, shape), fill(NaN, shape)
+    Ψ = fill(NaN, shape)
+    wet = falses(shape)
+    step = solution.problem.derivative_step
+    progress_stride = max(1, cld(length(y), 10))
+    _, sampling_timing = timed_stage(
+        "sampling bottom stress, transport, and streamfunction",
+    ) do
+        for j in eachindex(y)
+            for i in eachindex(x)
+                xx, yy = x[i], y[j]
+                solution.problem.inside(xx, yy) || continue
+                solution.problem.depth(xx, yy) > 0 || continue
+                stencil_is_inside = all(
+                    solution.problem.inside(xq, yq) for (xq, yq) in (
+                        (xx - step, yy), (xx + step, yy),
+                        (xx, yy - step), (xx, yy + step),
+                    )
+                )
+                stencil_is_inside || continue
+                stress = bottom_stress(solution, xx, yy)
+                current = depth_integrated_current(solution, xx, yy)
+                τx[i, j], τy[i, j] = float(stress.x), float(stress.y)
+                U[i, j], V[i, j] = float(current.U), float(current.V)
+                Ψ[i, j] = float(streamfunction(ψ, xx, yy))
+                wet[i, j] = true
+            end
+            if j == 1 || j == length(y) || j % progress_stride == 0
+                @info "PG diagnostic sampling progress" rows_completed=j rows_total=length(y) percent=round(100j / length(y); digits=1) wet_points=count(wet)
+            end
+        end
+    end
+
+    total_seconds = time() - diagnostic_started
+    wet_points = count(wet)
+    timings = (
+        streamfunction=ψ.timings,
+        sampling=sampling_timing,
+        total_seconds,
+        wet_points,
+        points_per_second=wet_points / max(sampling_timing.seconds, eps()),
+    )
+    @info "PG diagnostic calculation completed" seconds=round(total_seconds; digits=3) wet_points points_per_second=round(timings.points_per_second; digits=1)
+    return PGDiagnostics(x, y, τx, τy, U, V, Ψ, wet, timings)
+end
+
+"""
     write_solution(fields, prefix)
 
 Write `<prefix>_3D_solution.vtr` containing `u`, `v`, `w`, and `b`, and
@@ -479,7 +626,125 @@ function plot_surface_pressure(fields::PGFields; output=nothing)
     return figure
 end
 
+function sampled_vectors(diagnostics::PGDiagnostics, x_component, y_component, stride)
+    stride > 0 || throw(ArgumentError("stride must be positive"))
+    indices = CartesianIndex{2}[]
+    for j in 1:stride:length(diagnostics.y), i in 1:stride:length(diagnostics.x)
+        diagnostics.wet[i, j] && push!(indices, CartesianIndex(i, j))
+    end
+    return (
+        x=[diagnostics.x[index[1]] for index in indices],
+        y=[diagnostics.y[index[2]] for index in indices],
+        u=[x_component[index] for index in indices],
+        v=[y_component[index] for index in indices],
+    )
+end
+
+function vector_diagnostic_plot(
+    diagnostics::PGDiagnostics,
+    x_component,
+    y_component,
+    title;
+    stride=max(1, cld(max(length(diagnostics.x), length(diagnostics.y)), 16)),
+)
+    magnitude = hypot.(x_component, y_component)
+    figure = heatmap(
+        diagnostics.x, diagnostics.y, magnitude';
+        xlabel="x", ylabel="y", title, colorbar_title="magnitude",
+        aspect_ratio=:equal,
+    )
+    vectors = sampled_vectors(diagnostics, x_component, y_component, stride)
+    quiver!(
+        figure, vectors.x, vectors.y;
+        quiver=(vectors.u, vectors.v), color=:white, label=false,
+    )
+    return figure
+end
+
+function save_diagnostic_plot(figure, output, description)
+    if !isnothing(output)
+        _, timing = timed_stage("saving $description") do
+            savefig(figure, output)
+        end
+        @info "$description saved" path=string(output) seconds=round(timing.seconds; digits=3)
+    end
+    return figure
+end
+
+function plot_bottom_stress(diagnostics::PGDiagnostics; stride=nothing, output=nothing)
+    vector_stride = isnothing(stride) ?
+        max(1, cld(max(length(diagnostics.x), length(diagnostics.y)), 16)) : stride
+    @info "Plotting bottom stress" stride=vector_stride output
+    figure, _ = timed_stage("rendering bottom-stress plot") do
+        vector_diagnostic_plot(
+            diagnostics, diagnostics.bottom_stress_x, diagnostics.bottom_stress_y,
+            "bottom stress"; stride=vector_stride,
+        )
+    end
+    return save_diagnostic_plot(figure, output, "bottom-stress plot")
+end
+
+function plot_depth_integrated_current(
+    diagnostics::PGDiagnostics;
+    stride=nothing,
+    output=nothing,
+)
+    vector_stride = isnothing(stride) ?
+        max(1, cld(max(length(diagnostics.x), length(diagnostics.y)), 16)) : stride
+    @info "Plotting depth-integrated current" stride=vector_stride output
+    figure, _ = timed_stage("rendering depth-integrated-current plot") do
+        vector_diagnostic_plot(
+            diagnostics, diagnostics.transport_U, diagnostics.transport_V,
+            "depth-integrated current"; stride=vector_stride,
+        )
+    end
+    return save_diagnostic_plot(
+        figure, output, "depth-integrated-current plot",
+    )
+end
+
+function plot_streamfunction(diagnostics::PGDiagnostics; output=nothing)
+    @info "Plotting transport streamfunction" output
+    figure, _ = timed_stage("rendering transport-streamfunction plot") do
+        contourf(
+            diagnostics.x, diagnostics.y, diagnostics.streamfunction';
+            xlabel="x", ylabel="y", title="transport streamfunction",
+            colorbar_title="streamfunction", aspect_ratio=:equal,
+        )
+    end
+    return save_diagnostic_plot(figure, output, "transport-streamfunction plot")
+end
+
+function plot_diagnostics(
+    diagnostics::PGDiagnostics;
+    stride=nothing,
+    output=nothing,
+)
+    vector_stride = isnothing(stride) ?
+        max(1, cld(max(length(diagnostics.x), length(diagnostics.y)), 16)) : stride
+    @info "Plotting PG diagnostics" stride=vector_stride output
+    figure, _ = timed_stage("rendering combined diagnostic plot") do
+        stress = vector_diagnostic_plot(
+            diagnostics, diagnostics.bottom_stress_x, diagnostics.bottom_stress_y,
+            "bottom stress"; stride=vector_stride,
+        )
+        current = vector_diagnostic_plot(
+            diagnostics, diagnostics.transport_U, diagnostics.transport_V,
+            "depth-integrated current"; stride=vector_stride,
+        )
+        Ψ = contourf(
+            diagnostics.x, diagnostics.y, diagnostics.streamfunction';
+            xlabel="x", ylabel="y", title="transport streamfunction",
+            colorbar_title="streamfunction", aspect_ratio=:equal,
+        )
+        plot(stress, current, Ψ; layout=(1, 3), size=(1350, 420))
+    end
+    return save_diagnostic_plot(figure, output, "combined diagnostic plot")
+end
+
 performance_summary(solution::PGSolution) = solution.timings
 performance_summary(fields::PGFields) = fields.timings
+performance_summary(solution::PGStreamfunction) = solution.timings
+performance_summary(diagnostics::PGDiagnostics) = diagnostics.timings
 
 end

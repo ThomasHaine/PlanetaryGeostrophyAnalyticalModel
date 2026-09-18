@@ -21,6 +21,29 @@ using Test
     @test_throws ArgumentError PGParameters(0.0, 0.2)
 end
 
+@testset "Analytical diagnostic coefficients" begin
+    p = PlanetaryGeostrophy.VelocityParameters(0.02, 0.2, 1.0, 1.0, 1.0, 0.0)
+    H, f = 1.0, 1.0
+    τ(x, y) = 0.03 - 0.01im
+    Hfun(x, y) = H
+    ffun(x, y) = f
+    B(x, y, z) = 0.0
+    bs(x, y) = 0.0
+    q = sqrt(im * f / p.Ek)
+
+    T = PlanetaryGeostrophy.bottom_stress_forcing(
+        p, Hfun, ffun, τ, B, bs, 0.0, 0.0,
+    )
+    Btransport = PlanetaryGeostrophy.transport_forcing(
+        p, Hfun, ffun, τ, B, bs, 0.0, 0.0,
+    )
+
+    @test T ≈ -2exp(q * H) / (1 + exp(2q * H)) * τ(0.0, 0.0)
+    @test Btransport ≈
+        (exp(q * H) - 1)^2 /
+        (p.ν * q^2 * (1 + exp(2q * H))) * τ(0.0, 0.0)
+end
+
 @testset "Vertical velocity reconstruction" begin
     x = [-1.0, 0.0, 1.0]
     y = [-1.0, 0.0, 1.0]

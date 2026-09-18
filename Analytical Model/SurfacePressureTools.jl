@@ -66,12 +66,86 @@ ellipse_boundary(ax, ay; points=96) = [
 function pressure_coefficient(p, H, f)
     q = sqrt(im * f / (p.ν * p.Ek))
     return ((exp(2 * q * H) - 1) / (q * (1 + exp(2 * q * H))) - H) /
-           (q^2 * p.Ek)
+           (p.ν * q^2 * p.Ek)
 end
 
 function wind_transport_coefficient(p, H, f, τ)
     q = sqrt(im * f / (p.ν * p.Ek))
-    return (exp(q * H) - 1)^2 * τ / (q^2 * (1 + exp(2 * q * H)))
+    return (exp(q * H) - 1)^2 * τ /
+           (p.ν * q^2 * (1 + exp(2 * q * H)))
+end
+
+function baroclinic_pressure_gradient(
+    p, Hfun, B, bs, x, y, ξ;
+    gradient_step=1e-5,
+)
+    return VelocityFieldPrototype.finite_complex_gradient(
+        (xx, yy) -> VelocityFieldPrototype.Pi_direct(
+            p, Hfun, B, bs, xx, yy, ξ,
+        ),
+        x, y; step=gradient_step,
+    )
+end
+
+"""
+    bottom_stress_coefficient(p, H, f)
+
+Analytical coefficient `S` in equation (63), such that
+`τ_b = S * (∂x + i∂y)p_s + T`.
+"""
+function bottom_stress_coefficient(p, H, f)
+    q = sqrt(im * f / (p.ν * p.Ek))
+    return tanh(q * H) / (q * p.Ek)
+end
+
+"""
+    bottom_stress_forcing(p, H, f, τ, B, bs, x, y; gradient_step)
+
+Analytical forcing `T` in equation (64), including the baroclinic and surface
+wind-stress contributions.
+"""
+function bottom_stress_forcing(
+    p, Hfun, ffun, τ, B, bs, x, y;
+    gradient_step=1e-5,
+)
+    H = Hfun(x, y)
+    q = sqrt(im * ffun(x, y) / (p.ν * p.Ek))
+    baroclinic = VelocityFieldPrototype.split_quadgk(
+        ξ -> exp(q * (H - ξ)) * (1 + exp(2 * q * ξ)) /
+             (1 + exp(2 * q * H)) *
+             baroclinic_pressure_gradient(
+                 p, Hfun, B, bs, x, y, ξ; gradient_step,
+             ),
+        -H, 0.0,
+    ) / p.Ek
+    wind = -2 * exp(q * H) / (1 + exp(2 * q * H)) * τ(x, y)
+    return baroclinic + wind
+end
+
+"""
+    transport_forcing(p, H, f, τ, B, bs, x, y; gradient_step)
+
+Analytical forcing `B` in equation (68), including the baroclinic and surface
+wind-stress contributions.
+"""
+function transport_forcing(
+    p, Hfun, ffun, τ, B, bs, x, y;
+    gradient_step=1e-5,
+)
+    H = Hfun(x, y)
+    q = sqrt(im * ffun(x, y) / (p.ν * p.Ek))
+    baroclinic = VelocityFieldPrototype.split_quadgk(
+        ξ -> exp(-q * ξ) *
+             (exp(q * ξ) - exp(q * H)) *
+             (exp(q * (ξ + H)) - 1) *
+             baroclinic_pressure_gradient(
+                 p, Hfun, B, bs, x, y, ξ; gradient_step,
+             ),
+        -H, 0.0,
+    ) / p.Ek
+    wind = (exp(q * H) - 1)^2 * τ(x, y)
+    return (baroclinic + wind) /
+           (p.ν * q^2 * (1 + exp(2 * q * H)))
 end
 
 """
@@ -114,6 +188,20 @@ function solve_surface_pressure(
             p, H, ffun(x[1], x[2]), τ(x[1], x[2]),
         )
     end
+    function diagnostic_B_fn(x)
+        H = Hfun(x[1], x[2])
+        H > 0 || return 0.0 + 0.0im
+        return transport_forcing(
+            p, Hfun, ffun, τ, B, bs, x[1], x[2],
+        )
+    end
+    function T_fn(x)
+        H = Hfun(x[1], x[2])
+        H > 0 || return 0.0 + 0.0im
+        return bottom_stress_forcing(
+            p, Hfun, ffun, τ, B, bs, x[1], x[2],
+        )
+    end
 
     a(u, v) = ∫(real((∇(v) ⋅ VectorValue(1.0, -im)) *
                      (A_fn * (∇(u) ⋅ VectorValue(1.0, im)))) )dΩ
@@ -138,5 +226,71 @@ function solve_surface_pressure(
         total_seconds,
     )
     @info "Surface-pressure solve completed" seconds=round(total_seconds; digits=3)
-    return (; model, psurf, gradps, A_fn, B_fn, timings)
+    return (; model, psurf, gradps, A_fn, B_fn, diagnostic_B_fn, T_fn, timings)
+end
+
+"""
+    solve_transport_streamfunction(pressure; order=2)
+
+Solve for the streamfunction of the depth-integrated horizontal current
+`U + im * V = A * grad(p_s) + B`, with zero streamfunction on the basin
+boundary.
+"""
+function solve_transport_streamfunction(pressure; order=2)
+    solve_started = time()
+    @info "Transport streamfunction solve started" finite_element_order=order
+    spaces, space_timing = pressure_timed_stage(
+        "constructing streamfunction finite-element spaces",
+    ) do
+        Ω = Triangulation(pressure.model)
+        dΩ = Measure(Ω, 2 * order)
+        reffe = ReferenceFE(lagrangian, Float64, order)
+        V = TestFESpace(
+            pressure.model, reffe; conformity=:H1, dirichlet_tags="boundary",
+        )
+        U = TrialFESpace(V)
+        vector_reffe = ReferenceFE(lagrangian, VectorValue{2,Float64}, order)
+        V_vector = TestFESpace(
+            pressure.model, vector_reffe;
+            conformity=:H1, dirichlet_tags="boundary",
+        )
+        (; Ω, dΩ, V, U, V_vector)
+    end
+    Ω, dΩ, V, U = spaces.Ω, spaces.dΩ, spaces.V, spaces.U
+
+    current, projection_timing = pressure_timed_stage(
+        "projecting depth-integrated current",
+    ) do
+        gradp = interpolate(∇(pressure.psurf), spaces.V_vector)
+        real_A = interpolate(x -> real(pressure.A_fn(x)), U)
+        imag_A = interpolate(x -> imag(pressure.A_fn(x)), U)
+        real_B = interpolate(x -> real(pressure.diagnostic_B_fn(x)), U)
+        imag_B = interpolate(x -> imag(pressure.diagnostic_B_fn(x)), U)
+        (real_A + im * imag_A) *
+        (gradp ⋅ VectorValue(1.0, im)) +
+        (real_B + im * imag_B)
+    end
+
+    a(ψ, v) = ∫(∇(v) ⋅ ∇(ψ))dΩ
+    l(v) = ∫(-real((∇(v) ⋅ VectorValue(im, 1.0)) * current))dΩ
+    operator, assembly_timing = pressure_timed_stage(
+        "assembling transport-streamfunction operator",
+    ) do
+        AffineFEOperator(a, l, U, V)
+    end
+    ψ, linear_solve_timing = pressure_timed_stage(
+        "solving transport-streamfunction linear system",
+    ) do
+        Gridap.solve(operator)
+    end
+    total_seconds = time() - solve_started
+    timings = (
+        finite_element_setup=space_timing,
+        current_projection=projection_timing,
+        operator_assembly=assembly_timing,
+        linear_solve=linear_solve_timing,
+        total_seconds,
+    )
+    @info "Transport streamfunction solve completed" seconds=round(total_seconds; digits=3)
+    return (; finite_element=ψ, timings)
 end
