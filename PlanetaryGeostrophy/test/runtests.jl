@@ -86,3 +86,16 @@ end
     @test left_head_length ≈ hypot(0.01, 0.006)
     @test right_head_length ≈ hypot(0.01, 0.006)
 end
+
+@testset "Streamfunction-current convention" begin
+    ψ = PGStreamfunction(
+        nothing,
+        (x, y) -> x^2 + 3y,
+        (x, y) -> (2x, 3.0),
+        (;),
+    )
+    current = streamfunction_current(ψ, 2.0, -1.0)
+
+    @test current == (U=-3.0, V=4.0)
+    @test current.U * 4.0 + current.V * 3.0 == 0.0
+end

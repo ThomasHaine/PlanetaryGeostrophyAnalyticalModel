@@ -80,6 +80,7 @@ stress = bottom_stress(solution, x, y)
 current = depth_integrated_current(solution, x, y)
 ψ = solve_streamfunction(solution)
 ψxy = streamfunction(ψ, x, y)
+current_from_ψ = streamfunction_current(ψ, x, y)
 
 diagnostics = compute_diagnostics(solution, xs, ys)
 plot_diagnostics(
@@ -91,6 +92,15 @@ plot_bottom_stress(diagnostics)
 plot_depth_integrated_current(diagnostics)
 plot_streamfunction(diagnostics)
 ```
+
+`depth_integrated_current` returns the direct analytical expression (66).
+Because Gridap enforces its nondivergence only weakly, `compute_diagnostics`
+uses the discretely nondivergent current
+`(U, V) = (-∂yΨ, ∂xΨ)` for `transport_U` and `transport_V`, so plotted arrows
+are tangent to the streamfunction contours, which are overlaid on transport
+plots. The direct pointwise values remain
+available as `analytical_transport_U` and `analytical_transport_V`; their
+relative projection difference is reported in the performance summary.
 
 The vector plots normalize the longest arrow to `arrow_scale=0.35` times the
 sampled grid spacing. Arrowheads are drawn explicitly in data coordinates
