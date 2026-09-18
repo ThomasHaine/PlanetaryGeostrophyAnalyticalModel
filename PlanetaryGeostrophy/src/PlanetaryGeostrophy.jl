@@ -39,6 +39,7 @@ export PGParameters,
        depth_integrated_current,
        solve_streamfunction,
        streamfunction,
+       streamfunction_current,
        sample_solution,
        compute_diagnostics,
        write_solution,
@@ -283,9 +284,10 @@ function depth_integrated_current(solution::PGSolution, x, y)
     return (U=real(current), V=imag(current))
 end
 
-struct PGStreamfunction{F,V,T}
+struct PGStreamfunction{F,V,G,T}
     finite_element::F
     value::V
+    gradient::G
     timings::T
 end
 
@@ -298,11 +300,26 @@ function solve_streamfunction(solution::PGSolution; order=2)
     order > 0 || throw(ArgumentError("order must be positive"))
     result = solve_transport_streamfunction(solution.pressure; order)
     value = (x, y) -> evaluate(result.finite_element, Point(x, y))
-    return PGStreamfunction(result.finite_element, value, result.timings)
+    finite_element_gradient = ∇(result.finite_element)
+    gradient = (x, y) -> evaluate(finite_element_gradient, Point(x, y))
+    return PGStreamfunction(
+        result.finite_element, value, gradient, result.timings,
+    )
 end
 
 function streamfunction(solution::PGStreamfunction, x, y)
     return solution.value(x, y)
+end
+
+"""
+    streamfunction_current(solution, x, y)
+
+Evaluate the discretely nondivergent current represented by the finite-element
+streamfunction, using `(U, V) = (-∂yΨ, ∂xΨ)`.
+"""
+function streamfunction_current(solution::PGStreamfunction, x, y)
+    gradient = solution.gradient(x, y)
+    return (U=-gradient[2], V=gradient[1])
 end
 
 struct PGFields{TX<:AbstractVector,TY<:AbstractVector,TZ<:AbstractVector,T}
@@ -329,10 +346,15 @@ struct PGDiagnostics{TX<:AbstractVector,TY<:AbstractVector,T}
     bottom_stress_y::Matrix{Float64}
     transport_U::Matrix{Float64}
     transport_V::Matrix{Float64}
+    analytical_transport_U::Matrix{Float64}
+    analytical_transport_V::Matrix{Float64}
     streamfunction::Matrix{Float64}
     wet::BitMatrix
     timings::T
 end
+
+PGDiagnostics(x, y, τx, τy, U, V, Ψ, wet, timings) =
+    PGDiagnostics(x, y, τx, τy, U, V, copy(U), copy(V), Ψ, wet, timings)
 
 function horizontal_derivative(values, wet, coordinates, i, j, k, axis)
     n = axis == 1 ? size(values, 1) : size(values, 2)
@@ -490,6 +512,7 @@ function compute_diagnostics(
     shape = (length(x), length(y))
     τx, τy = fill(NaN, shape), fill(NaN, shape)
     U, V = fill(NaN, shape), fill(NaN, shape)
+    analytical_U, analytical_V = fill(NaN, shape), fill(NaN, shape)
     Ψ = fill(NaN, shape)
     wet = falses(shape)
     step = solution.problem.derivative_step
@@ -510,9 +533,12 @@ function compute_diagnostics(
                 )
                 stencil_is_inside || continue
                 stress = bottom_stress(solution, xx, yy)
-                current = depth_integrated_current(solution, xx, yy)
+                analytical_current = depth_integrated_current(solution, xx, yy)
+                current = streamfunction_current(ψ, xx, yy)
                 τx[i, j], τy[i, j] = float(stress.x), float(stress.y)
                 U[i, j], V[i, j] = float(current.U), float(current.V)
+                analytical_U[i, j] = float(analytical_current.U)
+                analytical_V[i, j] = float(analytical_current.V)
                 Ψ[i, j] = float(streamfunction(ψ, xx, yy))
                 wet[i, j] = true
             end
@@ -524,15 +550,27 @@ function compute_diagnostics(
 
     total_seconds = time() - diagnostic_started
     wet_points = count(wet)
+    transport_projection_error = begin
+        differences = hypot.(
+            U[wet] .- analytical_U[wet],
+            V[wet] .- analytical_V[wet],
+        )
+        analytical_magnitudes = hypot.(analytical_U[wet], analytical_V[wet])
+        sqrt(sum(abs2, differences)) /
+        max(sqrt(sum(abs2, analytical_magnitudes)), eps())
+    end
     timings = (
         streamfunction=ψ.timings,
         sampling=sampling_timing,
         total_seconds,
         wet_points,
         points_per_second=wet_points / max(sampling_timing.seconds, eps()),
+        transport_projection_relative_l2=transport_projection_error,
     )
-    @info "PG diagnostic calculation completed" seconds=round(total_seconds; digits=3) wet_points points_per_second=round(timings.points_per_second; digits=1)
-    return PGDiagnostics(x, y, τx, τy, U, V, Ψ, wet, timings)
+    @info "PG diagnostic calculation completed" seconds=round(total_seconds; digits=3) wet_points points_per_second=round(timings.points_per_second; digits=1) transport_projection_relative_l2=round(transport_projection_error; digits=4)
+    return PGDiagnostics(
+        x, y, τx, τy, U, V, analytical_U, analytical_V, Ψ, wet, timings,
+    )
 end
 
 """
@@ -672,6 +710,7 @@ function vector_diagnostic_plot(
     stride=max(1, cld(max(length(diagnostics.x), length(diagnostics.y)), 16)),
     arrow_scale=0.35,
     arrowhead_size=0.08,
+    contours=nothing,
 )
     arrow_scale > 0 || throw(ArgumentError("arrow_scale must be positive"))
     arrowhead_size > 0 || throw(ArgumentError("arrowhead_size must be positive"))
@@ -681,6 +720,12 @@ function vector_diagnostic_plot(
         xlabel="x", ylabel="y", title, colorbar_title="magnitude",
         aspect_ratio=:equal,
     )
+    if !isnothing(contours)
+        contour!(
+            figure, diagnostics.x, diagnostics.y, contours';
+            color=:black, linewidth=0.7, colorbar=false, label=false,
+        )
+    end
     vectors = sampled_vectors(diagnostics, x_component, y_component, stride)
     maximum_magnitude = isempty(vectors.u) ? 0.0 :
         maximum(hypot.(vectors.u, vectors.v))
@@ -744,7 +789,8 @@ function plot_depth_integrated_current(
     figure, _ = timed_stage("rendering depth-integrated-current plot") do
         vector_diagnostic_plot(
             diagnostics, diagnostics.transport_U, diagnostics.transport_V,
-            "depth-integrated current"; stride=vector_stride, arrow_scale, arrowhead_size,
+            "depth-integrated current"; stride=vector_stride, arrow_scale,
+            arrowhead_size, contours=diagnostics.streamfunction,
         )
     end
     return save_diagnostic_plot(
@@ -781,7 +827,8 @@ function plot_diagnostics(
         )
         current = vector_diagnostic_plot(
             diagnostics, diagnostics.transport_U, diagnostics.transport_V,
-            "depth-integrated current"; stride=vector_stride, arrow_scale, arrowhead_size,
+            "depth-integrated current"; stride=vector_stride, arrow_scale,
+            arrowhead_size, contours=diagnostics.streamfunction,
         )
         Ψ = contourf(
             diagnostics.x, diagnostics.y, diagnostics.streamfunction';
