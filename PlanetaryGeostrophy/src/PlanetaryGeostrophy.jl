@@ -29,6 +29,7 @@ export PGParameters,
        PGFields,
        PGStreamfunction,
        PGDiagnostics,
+       PGDIMDiagnostics,
        rectangle_boundary,
        ellipse_boundary,
        solve_pg,
@@ -36,12 +37,16 @@ export PGParameters,
        horizontal_velocity,
        buoyancy,
        bottom_stress,
+       bottom_pressure,
+       baroclinic_potential_energy,
        depth_integrated_current,
+       depth_integrated_momentum_terms,
        solve_streamfunction,
        streamfunction,
        streamfunction_current,
        sample_solution,
        compute_diagnostics,
+       compute_dim_diagnostics,
        write_solution,
        plot_solution,
        plot_surface_pressure,
@@ -49,6 +54,9 @@ export PGParameters,
        plot_depth_integrated_current,
        plot_streamfunction,
        plot_diagnostics,
+       plot_dim_balance,
+       plot_baroclinic_potential_energy,
+       plot_bottom_pressure,
        performance_summary
 
 """
@@ -271,6 +279,38 @@ function bottom_stress(solution::PGSolution, x, y)
 end
 
 """
+    bottom_pressure(solution, x, y)
+
+Evaluate the bottom pressure
+`p_b = p_s + ∫_{-H}^0 b dz` under the pressure convention used by the
+Green-function implementation.
+"""
+function bottom_pressure(solution::PGSolution, x, y)
+    require_water(solution, x, y)
+    problem = solution.problem
+    p = internal_parameters(problem.parameters)
+    buoyancy_pressure = VelocityFieldPrototype.bottom_pressure(
+        solution.kernels, p, problem.depth, problem.restoring_buoyancy,
+        problem.surface_buoyancy, x, y,
+    )
+    return surface_pressure(solution, x, y) + buoyancy_pressure
+end
+
+"""
+    baroclinic_potential_energy(solution, x, y)
+
+Evaluate the baroclinic potential energy
+`χ = -∫_{-H}^0 z b dz` from equation (34).
+"""
+function baroclinic_potential_energy(solution::PGSolution, x, y)
+    H = require_water(solution, x, y)
+    return -VelocityFieldPrototype.split_quadgk(
+        z -> z * solution.buoyancy_function(x, y, z),
+        -H, 0.0,
+    )
+end
+
+"""
     depth_integrated_current(solution, x, y)
 
 Evaluate the non-dimensional depth-integrated horizontal current `(U, V)`.
@@ -282,6 +322,57 @@ function depth_integrated_current(solution::PGSolution, x, y)
     current = A * solution.pressure.gradps(x, y) +
               solution.pressure.diagnostic_B_fn(Point(x, y))
     return (U=real(current), V=imag(current))
+end
+
+"""
+    depth_integrated_momentum_terms(solution, x, y)
+
+Evaluate every signed term in the two depth-integrated momentum equations
+corresponding to (32)--(33), expressed using the Green-function solver's
+pressure and bottom-stress conventions. Residuals are left-hand side minus
+the sum of right-hand-side terms.
+"""
+function depth_integrated_momentum_terms(solution::PGSolution, x, y)
+    H = require_water(solution, x, y)
+    problem = solution.problem
+    step = problem.derivative_step
+    current = depth_integrated_current(solution, x, y)
+    stress = bottom_stress(solution, x, y)
+    bottom_pressure_gradient = VelocityFieldPrototype.finite_complex_gradient(
+        (xx, yy) -> bottom_pressure(solution, xx, yy),
+        x, y; step,
+    )
+    χ_gradient = VelocityFieldPrototype.finite_complex_gradient(
+        (xx, yy) -> baroclinic_potential_energy(solution, xx, yy),
+        x, y; step,
+    )
+    wind = problem.wind_stress(x, y)
+    f = problem.coriolis(x, y)
+
+    Ek = problem.parameters.Ek
+    x_terms = (
+        coriolis=-f * current.V,
+        bottom_pressure=-H * real(bottom_pressure_gradient),
+        baroclinic=real(χ_gradient),
+        bottom_stress=Ek * stress.x,
+        surface_stress=Ek * real(wind),
+    )
+    y_terms = (
+        coriolis=f * current.U,
+        bottom_pressure=-H * imag(bottom_pressure_gradient),
+        baroclinic=imag(χ_gradient),
+        bottom_stress=Ek * stress.y,
+        surface_stress=Ek * imag(wind),
+    )
+    x_residual = x_terms.coriolis - (
+        x_terms.bottom_pressure + x_terms.baroclinic +
+        x_terms.bottom_stress + x_terms.surface_stress
+    )
+    y_residual = y_terms.coriolis - (
+        y_terms.bottom_pressure + y_terms.baroclinic +
+        y_terms.bottom_stress + y_terms.surface_stress
+    )
+    return (; x=x_terms, y=y_terms, x_residual, y_residual)
 end
 
 struct PGStreamfunction{F,V,G,T}
@@ -355,6 +446,27 @@ end
 
 PGDiagnostics(x, y, τx, τy, U, V, Ψ, wet, timings) =
     PGDiagnostics(x, y, τx, τy, U, V, copy(U), copy(V), Ψ, wet, timings)
+
+struct PGDIMDiagnostics{TX<:AbstractVector,TY<:AbstractVector,T}
+    x::TX
+    y::TY
+    chi::Matrix{Float64}
+    bottom_pressure::Matrix{Float64}
+    x_coriolis::Matrix{Float64}
+    x_bottom_pressure::Matrix{Float64}
+    x_baroclinic::Matrix{Float64}
+    x_bottom_stress::Matrix{Float64}
+    x_surface_stress::Matrix{Float64}
+    x_residual::Matrix{Float64}
+    y_coriolis::Matrix{Float64}
+    y_bottom_pressure::Matrix{Float64}
+    y_baroclinic::Matrix{Float64}
+    y_bottom_stress::Matrix{Float64}
+    y_surface_stress::Matrix{Float64}
+    y_residual::Matrix{Float64}
+    wet::BitMatrix
+    timings::T
+end
 
 function horizontal_derivative(values, wet, coordinates, i, j, k, axis)
     n = axis == 1 ? size(values, 1) : size(values, 2)
@@ -542,6 +654,7 @@ function compute_diagnostics(
                 Ψ[i, j] = float(streamfunction(ψ, xx, yy))
                 wet[i, j] = true
             end
+
             if j == 1 || j == length(y) || j % progress_stride == 0
                 @info "PG diagnostic sampling progress" rows_completed=j rows_total=length(y) percent=round(100j / length(y); digits=1) wet_points=count(wet)
             end
@@ -570,6 +683,82 @@ function compute_diagnostics(
     @info "PG diagnostic calculation completed" seconds=round(total_seconds; digits=3) wet_points points_per_second=round(timings.points_per_second; digits=1) transport_projection_relative_l2=round(transport_projection_error; digits=4)
     return PGDiagnostics(
         x, y, τx, τy, U, V, analytical_U, analytical_V, Ψ, wet, timings,
+    )
+end
+
+"""
+    compute_dim_diagnostics(solution, diagnostics)
+
+Compute maps of all signed terms in the depth-integrated momentum equations
+corresponding to (32)--(33), together with bottom pressure, baroclinic
+potential energy `χ`, and componentwise closure residuals.
+"""
+function compute_dim_diagnostics(
+    solution::PGSolution,
+    diagnostics::PGDiagnostics,
+)
+    started = time()
+    x, y = diagnostics.x, diagnostics.y
+    shape = (length(x), length(y))
+    arrays = [fill(NaN, shape) for _ in 1:14]
+    χ, pb = arrays[1], arrays[2]
+    x_coriolis, x_pb, x_χ, x_τb, x_τs, x_residual = arrays[3:8]
+    y_coriolis, y_pb, y_χ, y_τb, y_τs, y_residual = arrays[9:14]
+    wet = copy(diagnostics.wet)
+    progress_stride = max(1, cld(length(y), 10))
+
+    @info "DIM diagnostic calculation started" Nx=length(x) Ny=length(y) wet_points=count(wet)
+    _, sampling_timing = timed_stage(
+        "sampling depth-integrated momentum terms",
+    ) do
+        for j in eachindex(y)
+            for i in eachindex(x)
+                wet[i, j] || continue
+                xx, yy = x[i], y[j]
+                χ[i, j] = float(baroclinic_potential_energy(solution, xx, yy))
+                pb[i, j] = float(bottom_pressure(solution, xx, yy))
+                terms = depth_integrated_momentum_terms(solution, xx, yy)
+                x_coriolis[i, j] = terms.x.coriolis
+                x_pb[i, j] = terms.x.bottom_pressure
+                x_χ[i, j] = terms.x.baroclinic
+                x_τb[i, j] = terms.x.bottom_stress
+                x_τs[i, j] = terms.x.surface_stress
+                x_residual[i, j] = terms.x_residual
+                y_coriolis[i, j] = terms.y.coriolis
+                y_pb[i, j] = terms.y.bottom_pressure
+                y_χ[i, j] = terms.y.baroclinic
+                y_τb[i, j] = terms.y.bottom_stress
+                y_τs[i, j] = terms.y.surface_stress
+                y_residual[i, j] = terms.y_residual
+            end
+            if j == 1 || j == length(y) || j % progress_stride == 0
+                @info "DIM diagnostic sampling progress" rows_completed=j rows_total=length(y) percent=round(100j / length(y); digits=1)
+            end
+        end
+    end
+
+    finite_l2(values) = sqrt(sum(abs2, values[wet]))
+    x_scale = max(finite_l2(x_coriolis), eps())
+    y_scale = max(finite_l2(y_coriolis), eps())
+    total_seconds = time() - started
+    timings = (
+        sampling=sampling_timing,
+        total_seconds,
+        x_relative_l2_residual=finite_l2(x_residual) / x_scale,
+        y_relative_l2_residual=finite_l2(y_residual) / y_scale,
+    )
+    @info "DIM diagnostic calculation completed" seconds=round(total_seconds; digits=3) x_relative_l2_residual=round(timings.x_relative_l2_residual; digits=6) y_relative_l2_residual=round(timings.y_relative_l2_residual; digits=6)
+    return PGDIMDiagnostics(
+        x, y, χ, pb,
+        x_coriolis, x_pb, x_χ, x_τb, x_τs, x_residual,
+        y_coriolis, y_pb, y_χ, y_τb, y_τs, y_residual,
+        wet, timings,
+    )
+end
+
+function compute_dim_diagnostics(solution::PGSolution, x, y; kwargs...)
+    return compute_dim_diagnostics(
+        solution, compute_diagnostics(solution, x, y; kwargs...),
     )
 end
 
@@ -840,9 +1029,129 @@ function plot_diagnostics(
     return save_diagnostic_plot(figure, output, "combined diagnostic plot")
 end
 
+function scalar_diagnostic_plot(dim::PGDIMDiagnostics, values, title, colorbar_title)
+    return heatmap(
+        dim.x, dim.y, values';
+        xlabel="x", ylabel="y", title, colorbar_title, aspect_ratio=:equal,
+    )
+end
+
+"""
+    plot_baroclinic_potential_energy(dim; output=nothing)
+
+Plot `χ = -∫_{-H}^0 z b dz` from equation (34).
+"""
+function plot_baroclinic_potential_energy(
+    dim::PGDIMDiagnostics;
+    output=nothing,
+)
+    @info "Plotting baroclinic potential energy" output
+    figure, _ = timed_stage("rendering baroclinic-potential-energy plot") do
+        scalar_diagnostic_plot(
+            dim, dim.chi, "baroclinic potential energy", "χ",
+        )
+    end
+    return save_diagnostic_plot(
+        figure, output, "baroclinic-potential-energy plot",
+    )
+end
+
+"""
+    plot_bottom_pressure(dim; output=nothing)
+
+Plot `p_b = p_s + ∫_{-H}^0 b dz`.
+"""
+function plot_bottom_pressure(dim::PGDIMDiagnostics; output=nothing)
+    @info "Plotting bottom pressure" output
+    figure, _ = timed_stage("rendering bottom-pressure plot") do
+        scalar_diagnostic_plot(dim, dim.bottom_pressure, "bottom pressure", "p_b")
+    end
+    return save_diagnostic_plot(figure, output, "bottom-pressure plot")
+end
+
+finite_absmax(values) = begin
+    finite = filter(isfinite, vec(values))
+    isempty(finite) ? 1.0 : max(maximum(abs, finite), eps())
+end
+
+function dim_component_fields(dim::PGDIMDiagnostics, component)
+    if component === :x
+        return (
+            ("-f V", dim.x_coriolis),
+            ("-H ∂x p_b", dim.x_bottom_pressure),
+            ("∂x χ", dim.x_baroclinic),
+            ("Ek τ_bˣ", dim.x_bottom_stress),
+            ("Ek τˣ", dim.x_surface_stress),
+            ("residual", dim.x_residual),
+        )
+    elseif component === :y
+        return (
+            ("f U", dim.y_coriolis),
+            ("-H ∂y p_b", dim.y_bottom_pressure),
+            ("∂y χ", dim.y_baroclinic),
+            ("Ek τ_bʸ", dim.y_bottom_stress),
+            ("Ek τʸ", dim.y_surface_stress),
+            ("residual", dim.y_residual),
+        )
+    end
+    throw(ArgumentError("component must be :x or :y"))
+end
+
+function dim_component_plots(dim::PGDIMDiagnostics, component)
+    fields = dim_component_fields(dim, component)
+    scale = maximum(finite_absmax(values) for (_, values) in fields[1:5])
+    return [
+        heatmap(
+            dim.x, dim.y, values';
+            xlabel="x", ylabel="y", title, clims=(-scale, scale),
+            color=:balance, colorbar=index == length(fields),
+            aspect_ratio=:equal,
+        )
+        for (index, (title, values)) in enumerate(fields)
+    ]
+end
+
+"""
+    plot_dim_balance(dim; component=:both, output=nothing)
+
+Plot every signed term and the closure residual corresponding to equations
+(32)--(33). `component` may be `:x`, `:y`, or `:both`. Terms in each momentum
+component share symmetric color limits so their magnitudes can be compared
+directly.
+"""
+function plot_dim_balance(
+    dim::PGDIMDiagnostics;
+    component=:both,
+    output=nothing,
+)
+    component in (:x, :y, :both) ||
+        throw(ArgumentError("component must be :x, :y, or :both"))
+    @info "Plotting depth-integrated momentum balance" component output
+    figure, _ = timed_stage("rendering DIM balance plot") do
+        if component === :both
+            panels = vcat(
+                dim_component_plots(dim, :x),
+                dim_component_plots(dim, :y),
+            )
+            plot(
+                panels...; layout=(2, 6), size=(1900, 650),
+                plot_title="depth-integrated momentum balance",
+            )
+        else
+            panels = dim_component_plots(dim, component)
+            plot(
+                panels...; layout=(2, 3), size=(1100, 700),
+                plot_title="$(component)-momentum balance",
+            )
+        end
+    end
+    return save_diagnostic_plot(figure, output, "DIM balance plot")
+end
+
 performance_summary(solution::PGSolution) = solution.timings
 performance_summary(fields::PGFields) = fields.timings
 performance_summary(solution::PGStreamfunction) = solution.timings
 performance_summary(diagnostics::PGDiagnostics) = diagnostics.timings
+performance_summary(diagnostics::PGDIMDiagnostics) = diagnostics.timings
 
 end

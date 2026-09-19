@@ -99,3 +99,78 @@ end
     @test current == (U=-3.0, V=4.0)
     @test current.U * 4.0 + current.V * 3.0 == 0.0
 end
+
+@testset "Depth-integrated momentum diagnostics" begin
+    Lx, Ly = 2.0, 1.5
+    problem = PGProblem(
+        parameters=PGParameters(0.02, 0.2),
+        depth=(x, y) -> 1.0,
+        depth_x=(x, y) -> 0.0,
+        depth_y=(x, y) -> 0.0,
+        coriolis=(x, y) -> 1.0 + 0.15y,
+        coriolis_x=(x, y) -> 0.0,
+        coriolis_y=(x, y) -> 0.15,
+        wind_stress=(x, y) -> 1e-3cos(pi * y / Ly) + 0im,
+        restoring_buoyancy=(x, y, z) -> 1e-2z + 2e-3sin(pi * x / Lx),
+        surface_buoyancy=(x, y) ->
+            2e-3cos(pi * x / Lx) * cos(pi * y / Ly),
+        boundary=rectangle_boundary(Lx, Ly),
+    )
+
+    mktempdir() do directory
+        solution = solve_pg(
+            problem;
+            mesh_file=joinpath(directory, "pressure.msh"),
+            mesh_resolution=0.3,
+            pressure_order=1,
+            overwrite_mesh=true,
+        )
+        x, y = -0.3, 0.0
+        terms = depth_integrated_momentum_terms(solution, x, y)
+        column_buoyancy = PlanetaryGeostrophy.VelocityFieldPrototype.bottom_pressure(
+            solution.kernels,
+            PlanetaryGeostrophy.internal_parameters(problem.parameters),
+            problem.depth,
+            problem.restoring_buoyancy,
+            problem.surface_buoyancy,
+            x,
+            y,
+        )
+
+        @test bottom_pressure(solution, x, y) ≈
+            surface_pressure(solution, x, y) + column_buoyancy
+        @test abs(terms.x_residual) < 1e-9
+        @test abs(terms.y_residual) < 1e-9
+
+        coordinates = [-0.3, 0.2]
+        shape = (2, 2)
+        zeros2 = zeros(shape)
+        diagnostics = PGDiagnostics(
+            coordinates,
+            coordinates,
+            zeros2,
+            zeros2,
+            zeros2,
+            zeros2,
+            zeros2,
+            trues(shape),
+            (;),
+        )
+        dim = compute_dim_diagnostics(solution, diagnostics)
+
+        @test size(dim.chi) == shape
+        @test maximum(abs, dim.x_residual) < 1e-9
+        @test maximum(abs, dim.y_residual) < 1e-9
+
+        balance_path = joinpath(directory, "dim_balance.png")
+        chi_path = joinpath(directory, "chi.png")
+        pressure_path = joinpath(directory, "bottom_pressure.png")
+        plot_dim_balance(dim; output=balance_path)
+        plot_baroclinic_potential_energy(dim; output=chi_path)
+        plot_bottom_pressure(dim; output=pressure_path)
+
+        @test isfile(balance_path)
+        @test isfile(chi_path)
+        @test isfile(pressure_path)
+    end
+end
