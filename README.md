@@ -111,6 +111,13 @@ plot_dim_balance(dim; output="sample_pg_dim_balance.png")
 plot_baroclinic_potential_energy(dim; output="sample_pg_chi.png")
 plot_bottom_pressure(dim; output="sample_pg_bottom_pressure.png")
 
+barotropic_vorticity =
+    compute_barotropic_vorticity_diagnostics(solution, diagnostics)
+plot_barotropic_vorticity_balance(
+    barotropic_vorticity;
+    output="sample_pg_barotropic_vorticity_balance.png",
+)
+
 vorticity = compute_vorticity_diagnostics(solution, diagnostics)
 plot_vorticity_balance(
     vorticity;
@@ -123,13 +130,25 @@ baroclinic-gradient, bottom-stress, and surface-stress terms plus the closure
 residual for each horizontal component. Terms within each component share
 symmetric color limits.
 
+The barotropic vorticity diagnostic evaluates equation (36):
+
+```math
+f(\partial_x U+\partial_y V)+U f_x+V f_y
+=J(p_b,H)
++\mathrm{Ek}\,[\nabla\times(\boldsymbol{\tau}_b)]_z
++\mathrm{Ek}\,[\nabla\times\boldsymbol{\tau}]_z,
+```
+
+where $J(p_b,H)=p_{b,x}H_y-p_{b,y}H_x$. It retains the transport-divergence
+term explicitly, although this term vanishes for the steady solution.
+
 The depth-integrated vorticity diagnostic evaluates equation (41), generalized
 from the manuscript's beta plane to flexible $f(x,y)$:
 
 ```math
 U f_x + V f_y + f w_b
 =
-+ \mathrm{Ek}\,[\nabla\times(\boldsymbol{\tau}_b)]_z
+\mathrm{Ek}\,[\nabla\times(\boldsymbol{\tau}_b)]_z
 + \mathrm{Ek}\,[\nabla\times\boldsymbol{\tau}]_z,
 ```
 
