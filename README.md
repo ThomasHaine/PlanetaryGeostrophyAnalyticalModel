@@ -117,12 +117,13 @@ baroclinic-gradient, bottom-stress, and surface-stress terms plus the closure
 residual for each horizontal component. Terms within each component share
 symmetric color limits.
 
-The Green-function implementation follows the Section 5 conventions
-`p = p_s + ∫_z^0 b dz` and `τ_b = -ν ∂z u|bottom`. Consequently its DIM
-balance is `-fV = -H p_b,x + χ_x + Ek(τ_b,x + τ_x)`, with the analogous
-y equation. This is the convention-equivalent form used in the plots; it
-differs in signs and explicit Ekman factors from the printed equations
-(32)--(33), whose pressure and bottom-stress conventions follow Section 3a.
+The API uses conventional oceanographic buoyancy and the fixed upper boundary:
+`∂z p = b`, `p = p_s - ∫_z^0 b dz`,
+`p_b = p_s - ∫_{-H}^0 b dz`, and
+`τ_b = -ν ∂z u|bottom`. Its DIM balance is
+`-fV = -H p_b,x - χ_x + Ek(τ_b,x + τ_x)`, with the analogous y equation.
+These are the conventions used by the Green-function velocity, pressure,
+diagnostic, and plotting paths.
 
 The vector plots normalize the longest arrow to `arrow_scale=0.35` times the
 sampled grid spacing. Arrowheads are drawn explicitly in data coordinates

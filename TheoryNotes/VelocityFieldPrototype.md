@@ -3,6 +3,12 @@
 `VelocityFieldPrototype.jl` compares the complex velocity \(u + iv\) from
 equations (B10) and (B23) in the supplied model notes.
 
+The implementation uses conventional oceanographic buoyancy,
+\(\partial_z p=b\), so the internal pressure is
+\(p=p_s-\int_z^0 b\,dz\). The generated symbolic kernels retain the
+\(\int_\xi^0\) limits from the derivation; their assembled baroclinic
+contribution enters the velocity with an overall minus sign.
+
 ```sh
 cd TheoryNotes
 julia --project=. RunVelocityFieldPrototype.jl
