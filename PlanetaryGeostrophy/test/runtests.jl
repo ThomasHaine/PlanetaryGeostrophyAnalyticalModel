@@ -276,10 +276,32 @@ end
         balance_path = joinpath(directory, "dim_balance.png")
         chi_path = joinpath(directory, "chi.png")
         pressure_path = joinpath(directory, "bottom_pressure.png")
-        plot_dim_balance(dim; output=balance_path)
+        balance_figure = plot_dim_balance(dim; output=balance_path)
+        x_balance_figure = plot_dim_balance(dim; component=:x)
         plot_baroclinic_potential_energy(dim; output=chi_path)
         plot_bottom_pressure(dim; output=pressure_path)
 
+        panel_size(figure, index) = Tuple(
+            length.value for length in figure.subplots[index].plotarea.a
+        )
+        x_panel_sizes = [
+            panel_size(balance_figure, index) for index in 1:6
+        ]
+        y_panel_sizes = [
+            panel_size(balance_figure, index) for index in 8:13
+        ]
+        @test all(
+            all(isapprox.(dimensions, first(x_panel_sizes)))
+            for dimensions in x_panel_sizes
+        )
+        @test all(
+            all(isapprox.(dimensions, first(y_panel_sizes)))
+            for dimensions in y_panel_sizes
+        )
+        @test all(
+            all(isapprox.(size, panel_size(x_balance_figure, 1)))
+            for size in (panel_size(x_balance_figure, index) for index in 1:6)
+        )
         @test isfile(balance_path)
         @test isfile(chi_path)
         @test isfile(pressure_path)

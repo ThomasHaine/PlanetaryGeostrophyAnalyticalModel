@@ -3,6 +3,7 @@ module PlanetaryGeostrophy
 using ForwardDiff
 using Gridap
 using Plots
+using Printf
 using WriteVTK
 
 stage_metrics(measurement) = (
@@ -1095,18 +1096,49 @@ function dim_component_fields(dim::PGDIMDiagnostics, component)
     throw(ArgumentError("component must be :x or :y"))
 end
 
-function dim_component_plots(dim::PGDIMDiagnostics, component)
+function dim_component_plots(dim::PGDIMDiagnostics, component; show_xlabel=true)
     fields = dim_component_fields(dim, component)
     scale = maximum(finite_absmax(values) for (_, values) in fields[1:5])
-    return [
+    panels = [
         heatmap(
             dim.x, dim.y, values';
-            xlabel="x", ylabel="y", title, clims=(-scale, scale),
-            color=:balance, colorbar=index == length(fields),
+            xlabel=show_xlabel ? "x" : "",
+            ylabel=index == 1 ? "y" : "",
+            title,
+            clims=(-scale, scale),
+            color=:balance,
+            colorbar=false,
             aspect_ratio=:equal,
+            xticks=show_xlabel ? :auto : false,
+            yticks=index == 1 ? :auto : false,
+            titlefontsize=11,
+            guidefontsize=10,
+            tickfontsize=8,
+            margin=1.5Plots.mm,
         )
         for (index, (title, values)) in enumerate(fields)
     ]
+    return panels, scale
+end
+
+function dim_balance_colorbar(scale)
+    ticks = collect(range(-scale, scale; length=5))
+    labels = [@sprintf("%.2g", value) for value in ticks]
+    levels = collect(range(-scale, scale; length=256))
+    return heatmap(
+        [0.0, 1.0], levels, repeat(levels, 1, 2);
+        clims=(-scale, scale),
+        color=:balance,
+        colorbar=false,
+        title="value",
+        titlefontsize=10,
+        xticks=false,
+        yticks=(ticks, labels),
+        tickfontsize=9,
+        xaxis=false,
+        ymirror=true,
+        margin=2Plots.mm,
+    )
 end
 
 """
@@ -1127,19 +1159,33 @@ function plot_dim_balance(
     @info "Plotting depth-integrated momentum balance" component output
     figure, _ = timed_stage("rendering DIM balance plot") do
         if component === :both
-            panels = vcat(
-                dim_component_plots(dim, :x),
-                dim_component_plots(dim, :y),
+            x_panels, x_scale = dim_component_plots(
+                dim, :x; show_xlabel=false,
             )
+            y_panels, y_scale = dim_component_plots(dim, :y)
+            layout = @layout [
+                grid(1, 6) x_colorbar{0.07w}
+                grid(1, 6) y_colorbar{0.07w}
+            ]
             plot(
-                panels...; layout=(2, 6), size=(1900, 650),
+                x_panels..., dim_balance_colorbar(x_scale),
+                y_panels..., dim_balance_colorbar(y_scale);
+                layout,
+                size=(1900, 700),
                 plot_title="depth-integrated momentum balance",
+                plot_titlefontsize=17,
+                margin=2Plots.mm,
             )
         else
-            panels = dim_component_plots(dim, component)
+            panels, scale = dim_component_plots(dim, component)
+            layout = @layout [grid(1, 6) colorbar{0.07w}]
             plot(
-                panels...; layout=(2, 3), size=(1100, 700),
+                panels..., dim_balance_colorbar(scale);
+                layout,
+                size=(1900, 370),
                 plot_title="$(component)-momentum balance",
+                plot_titlefontsize=17,
+                margin=2Plots.mm,
             )
         end
     end
