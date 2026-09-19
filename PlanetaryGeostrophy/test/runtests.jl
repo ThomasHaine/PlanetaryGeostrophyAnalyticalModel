@@ -107,7 +107,7 @@ end
     @test current.U * 4.0 + current.V * 3.0 == 0.0
 end
 
-@testset "Depth-integrated momentum diagnostics" begin
+@testset "Depth-integrated dynamical diagnostics" begin
     Lx, Ly = 2.0, 1.5
     problem = PGProblem(
         parameters=PGParameters(0.02, 0.2),
@@ -134,6 +134,7 @@ end
         )
         x, y = -0.3, 0.0
         terms = depth_integrated_momentum_terms(solution, x, y)
+        vorticity_terms = depth_integrated_vorticity_terms(solution, x, y)
         p = PlanetaryGeostrophy.internal_parameters(problem.parameters)
         column_buoyancy =
             PlanetaryGeostrophy.VelocityFieldPrototype.buoyancy_column_integral(
@@ -150,6 +151,19 @@ end
             surface_pressure(solution, x, y) - column_buoyancy
         @test abs(terms.x_residual) < 1e-9
         @test abs(terms.y_residual) < 1e-9
+        @test vorticity_terms.bottom_vortex_stretching ≈ 0 atol=1e-12
+        @test vorticity_terms.residual ≈
+            vorticity_terms.planetary_vorticity_advection +
+            vorticity_terms.bottom_vortex_stretching -
+            vorticity_terms.bottom_stress_curl -
+            vorticity_terms.surface_stress_curl
+        curl_y = 0.2
+        curl_terms = depth_integrated_vorticity_terms(solution, x, curl_y)
+        expected_surface_curl = (
+            problem.parameters.Ek * 1e-3 * pi / Ly *
+            sin(pi * curl_y / Ly)
+        )
+        @test curl_terms.surface_stress_curl ≈ expected_surface_curl rtol=1e-8
 
         z, dz = -0.4, 1e-4
         internal_pressure(zz) = surface_pressure(solution, x, y) -
@@ -268,16 +282,29 @@ end
             (;),
         )
         dim = compute_dim_diagnostics(solution, diagnostics)
+        vorticity = compute_vorticity_diagnostics(solution, diagnostics)
 
         @test size(dim.chi) == shape
         @test maximum(abs, dim.x_residual) < 1e-9
         @test maximum(abs, dim.y_residual) < 1e-9
+        @test size(vorticity.planetary_vorticity_advection) == shape
+        @test vorticity.residual ≈
+            vorticity.planetary_vorticity_advection .+
+            vorticity.bottom_vortex_stretching .-
+            vorticity.bottom_stress_curl .-
+            vorticity.surface_stress_curl
+        @test performance_summary(vorticity) == vorticity.timings
+        @test isfinite(vorticity.timings.relative_l2_residual)
 
         balance_path = joinpath(directory, "dim_balance.png")
+        vorticity_path = joinpath(directory, "vorticity_balance.png")
         chi_path = joinpath(directory, "chi.png")
         pressure_path = joinpath(directory, "bottom_pressure.png")
         balance_figure = plot_dim_balance(dim; output=balance_path)
         x_balance_figure = plot_dim_balance(dim; component=:x)
+        vorticity_figure = plot_vorticity_balance(
+            vorticity; output=vorticity_path,
+        )
         plot_baroclinic_potential_energy(dim; output=chi_path)
         plot_bottom_pressure(dim; output=pressure_path)
 
@@ -302,7 +329,12 @@ end
             all(isapprox.(size, panel_size(x_balance_figure, 1)))
             for size in (panel_size(x_balance_figure, index) for index in 1:6)
         )
+        @test all(
+            all(isapprox.(size, panel_size(vorticity_figure, 1)))
+            for size in (panel_size(vorticity_figure, index) for index in 1:5)
+        )
         @test isfile(balance_path)
+        @test isfile(vorticity_path)
         @test isfile(chi_path)
         @test isfile(pressure_path)
 
@@ -329,7 +361,18 @@ end
             x,
             y,
         )
+        variable_vorticity_terms = depth_integrated_vorticity_terms(
+            variable_solution,
+            x,
+            y,
+        )
         @test abs(variable_terms.x_residual) < 1e-8
         @test abs(variable_terms.y_residual) < 1e-8
+        @test abs(variable_vorticity_terms.bottom_vortex_stretching) < 1e-12
+        @test variable_vorticity_terms.residual ≈
+            variable_vorticity_terms.planetary_vorticity_advection +
+            variable_vorticity_terms.bottom_vortex_stretching -
+            variable_vorticity_terms.bottom_stress_curl -
+            variable_vorticity_terms.surface_stress_curl
     end
 end

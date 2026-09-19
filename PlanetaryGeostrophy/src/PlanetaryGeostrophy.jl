@@ -31,6 +31,7 @@ export PGParameters,
        PGStreamfunction,
        PGDiagnostics,
        PGDIMDiagnostics,
+       PGVorticityDiagnostics,
        rectangle_boundary,
        ellipse_boundary,
        solve_pg,
@@ -42,12 +43,14 @@ export PGParameters,
        baroclinic_potential_energy,
        depth_integrated_current,
        depth_integrated_momentum_terms,
+       depth_integrated_vorticity_terms,
        solve_streamfunction,
        streamfunction,
        streamfunction_current,
        sample_solution,
        compute_diagnostics,
        compute_dim_diagnostics,
+       compute_vorticity_diagnostics,
        write_solution,
        plot_solution,
        plot_surface_pressure,
@@ -56,6 +59,7 @@ export PGParameters,
        plot_streamfunction,
        plot_diagnostics,
        plot_dim_balance,
+       plot_vorticity_balance,
        plot_baroclinic_potential_energy,
        plot_bottom_pressure,
        performance_summary
@@ -374,6 +378,72 @@ function depth_integrated_momentum_terms(solution::PGSolution, x, y)
     return (; x=x_terms, y=y_terms, x_residual, y_residual)
 end
 
+"""
+    depth_integrated_vorticity_terms(solution, x, y)
+
+Evaluate every signed term in the depth-integrated vorticity equation (41),
+
+`U f_x + V f_y + f w_b = Ek curl(τ_b) + Ek curl(τ)`,
+
+where `w_b = -(u_b H_x + v_b H_y)` is the bottom vertical velocity and
+`curl(τ) = τ_y,x - τ_x,y`. On a beta plane the first term is `β V`.
+The residual is the left-hand side minus the sum of the right-hand-side terms.
+"""
+function depth_integrated_vorticity_terms(solution::PGSolution, x, y)
+    H = require_water(solution, x, y)
+    problem = solution.problem
+    step = problem.derivative_step
+    current = depth_integrated_current(solution, x, y)
+    bottom_velocity = horizontal_velocity(solution, x, y, -H)
+    bottom_vertical_velocity = -(
+        bottom_velocity.u * problem.depth_x(x, y) +
+        bottom_velocity.v * problem.depth_y(x, y)
+    )
+
+    bottom_stress_complex(xx, yy) = begin
+        stress = bottom_stress(solution, xx, yy)
+        stress.x + im * stress.y
+    end
+    bottom_stress_x = (
+        bottom_stress_complex(x + step, y) -
+        bottom_stress_complex(x - step, y)
+    ) / (2step)
+    bottom_stress_y = (
+        bottom_stress_complex(x, y + step) -
+        bottom_stress_complex(x, y - step)
+    ) / (2step)
+
+    surface_stress_x = (
+        problem.wind_stress(x + step, y) -
+        problem.wind_stress(x - step, y)
+    ) / (2step)
+    surface_stress_y = (
+        problem.wind_stress(x, y + step) -
+        problem.wind_stress(x, y - step)
+    ) / (2step)
+
+    planetary_vorticity_advection = (
+        current.U * problem.coriolis_x(x, y) +
+        current.V * problem.coriolis_y(x, y)
+    )
+    bottom_vortex_stretching =
+        problem.coriolis(x, y) * bottom_vertical_velocity
+    Ek = problem.parameters.Ek
+    bottom_stress_curl = Ek * (imag(bottom_stress_x) - real(bottom_stress_y))
+    surface_stress_curl = Ek * (
+        imag(surface_stress_x) - real(surface_stress_y)
+    )
+    residual = planetary_vorticity_advection + bottom_vortex_stretching -
+        (bottom_stress_curl + surface_stress_curl)
+    return (;
+        planetary_vorticity_advection,
+        bottom_vortex_stretching,
+        bottom_stress_curl,
+        surface_stress_curl,
+        residual,
+    )
+end
+
 struct PGStreamfunction{F,V,G,T}
     finite_element::F
     value::V
@@ -467,6 +537,18 @@ struct PGDIMDiagnostics{TX<:AbstractVector,TY<:AbstractVector,T}
     timings::T
 end
 
+struct PGVorticityDiagnostics{TX<:AbstractVector,TY<:AbstractVector,T}
+    x::TX
+    y::TY
+    planetary_vorticity_advection::Matrix{Float64}
+    bottom_vortex_stretching::Matrix{Float64}
+    bottom_stress_curl::Matrix{Float64}
+    surface_stress_curl::Matrix{Float64}
+    residual::Matrix{Float64}
+    wet::BitMatrix
+    timings::T
+end
+
 function horizontal_derivative(values, wet, coordinates, i, j, k, axis)
     n = axis == 1 ? size(values, 1) : size(values, 2)
     q = axis == 1 ? i : j
@@ -482,6 +564,26 @@ function horizontal_derivative(values, wet, coordinates, i, j, k, axis)
         return (hi - center) / (coordinates[q + 1] - coordinates[q])
     elseif left
         lo = axis == 1 ? values[i - 1, j, k] : values[i, j - 1, k]
+        return (center - lo) / (coordinates[q] - coordinates[q - 1])
+    end
+    return 0.0
+end
+
+function horizontal_derivative(values::AbstractMatrix, wet, coordinates, i, j, axis)
+    n = axis == 1 ? size(values, 1) : size(values, 2)
+    q = axis == 1 ? i : j
+    left = q > 1 && (axis == 1 ? wet[i - 1, j] : wet[i, j - 1])
+    right = q < n && (axis == 1 ? wet[i + 1, j] : wet[i, j + 1])
+    center = values[i, j]
+    if left && right
+        lo = axis == 1 ? values[i - 1, j] : values[i, j - 1]
+        hi = axis == 1 ? values[i + 1, j] : values[i, j + 1]
+        return (hi - lo) / (coordinates[q + 1] - coordinates[q - 1])
+    elseif right
+        hi = axis == 1 ? values[i + 1, j] : values[i, j + 1]
+        return (hi - center) / (coordinates[q + 1] - coordinates[q])
+    elseif left
+        lo = axis == 1 ? values[i - 1, j] : values[i, j - 1]
         return (center - lo) / (coordinates[q] - coordinates[q - 1])
     end
     return 0.0
@@ -757,6 +859,109 @@ end
 
 function compute_dim_diagnostics(solution::PGSolution, x, y; kwargs...)
     return compute_dim_diagnostics(
+        solution, compute_diagnostics(solution, x, y; kwargs...),
+    )
+end
+
+"""
+    compute_vorticity_diagnostics(solution, diagnostics)
+
+Compute maps of all signed terms in the depth-integrated vorticity equation
+(41), together with its closure residual. Stress curls are differentiated on
+the supplied diagnostic grid so finite-element pressure-gradient jumps are not
+sampled with the much smaller pointwise derivative step.
+"""
+function compute_vorticity_diagnostics(
+    solution::PGSolution,
+    diagnostics::PGDiagnostics,
+)
+    started = time()
+    x, y = diagnostics.x, diagnostics.y
+    shape = (length(x), length(y))
+    arrays = [fill(NaN, shape) for _ in 1:5]
+    planetary, stretching, bottom_curl, surface_curl, residual = arrays
+    surface_stress_x, surface_stress_y =
+        fill(NaN, shape), fill(NaN, shape)
+    wet = copy(diagnostics.wet)
+    progress_stride = max(1, cld(length(y), 10))
+
+    @info "Vorticity diagnostic calculation started" Nx=length(x) Ny=length(y) wet_points=count(wet)
+    _, sampling_timing = timed_stage(
+        "sampling depth-integrated vorticity terms",
+    ) do
+        for j in eachindex(y)
+            for i in eachindex(x)
+                wet[i, j] || continue
+                xx, yy = x[i], y[j]
+                H = solution.problem.depth(xx, yy)
+                bottom_velocity = horizontal_velocity(
+                    solution, xx, yy, -H,
+                )
+                bottom_vertical_velocity = -(
+                    bottom_velocity.u * solution.problem.depth_x(xx, yy) +
+                    bottom_velocity.v * solution.problem.depth_y(xx, yy)
+                )
+                planetary[i, j] = (
+                    diagnostics.analytical_transport_U[i, j] *
+                    solution.problem.coriolis_x(xx, yy) +
+                    diagnostics.analytical_transport_V[i, j] *
+                    solution.problem.coriolis_y(xx, yy)
+                )
+                stretching[i, j] =
+                    solution.problem.coriolis(xx, yy) *
+                    bottom_vertical_velocity
+                stress = solution.problem.wind_stress(xx, yy)
+                surface_stress_x[i, j] = real(stress)
+                surface_stress_y[i, j] = imag(stress)
+            end
+            if j == 1 || j == length(y) || j % progress_stride == 0
+                @info "Vorticity diagnostic sampling progress" rows_completed=j rows_total=length(y) percent=round(100j / length(y); digits=1)
+            end
+        end
+
+        Ek = solution.problem.parameters.Ek
+        for j in eachindex(y), i in eachindex(x)
+            wet[i, j] || continue
+            bottom_curl[i, j] = Ek * (
+                horizontal_derivative(
+                    diagnostics.bottom_stress_y, wet, x, i, j, 1,
+                ) -
+                horizontal_derivative(
+                    diagnostics.bottom_stress_x, wet, y, i, j, 2,
+                )
+            )
+            surface_curl[i, j] = Ek * (
+                horizontal_derivative(surface_stress_y, wet, x, i, j, 1) -
+                horizontal_derivative(surface_stress_x, wet, y, i, j, 2)
+            )
+            residual[i, j] = planetary[i, j] + stretching[i, j] -
+                bottom_curl[i, j] - surface_curl[i, j]
+        end
+    end
+
+    finite_l2(values) = sqrt(sum(abs2, values[wet]))
+    balance_scale = max(
+        finite_l2(planetary),
+        finite_l2(stretching),
+        finite_l2(bottom_curl),
+        finite_l2(surface_curl),
+        eps(),
+    )
+    total_seconds = time() - started
+    timings = (
+        sampling=sampling_timing,
+        total_seconds,
+        relative_l2_residual=finite_l2(residual) / balance_scale,
+    )
+    @info "Vorticity diagnostic calculation completed" seconds=round(total_seconds; digits=3) relative_l2_residual=round(timings.relative_l2_residual; digits=6)
+    return PGVorticityDiagnostics(
+        x, y, planetary, stretching, bottom_curl, surface_curl,
+        residual, wet, timings,
+    )
+end
+
+function compute_vorticity_diagnostics(solution::PGSolution, x, y; kwargs...)
+    return compute_vorticity_diagnostics(
         solution, compute_diagnostics(solution, x, y; kwargs...),
     )
 end
@@ -1192,10 +1397,65 @@ function plot_dim_balance(
     return save_diagnostic_plot(figure, output, "DIM balance plot")
 end
 
+"""
+    plot_vorticity_balance(diagnostics; output=nothing)
+
+Plot every signed term and the closure residual in the depth-integrated
+vorticity equation (41). All physical terms and the residual share symmetric
+color limits.
+"""
+function plot_vorticity_balance(
+    diagnostics::PGVorticityDiagnostics;
+    output=nothing,
+)
+    fields = (
+        ("U ∂x f + V ∂y f", diagnostics.planetary_vorticity_advection),
+        ("f w_b", diagnostics.bottom_vortex_stretching),
+        ("Ek curl τ_b", diagnostics.bottom_stress_curl),
+        ("Ek curl τ", diagnostics.surface_stress_curl),
+        ("residual", diagnostics.residual),
+    )
+    scale = maximum(finite_absmax(values) for (_, values) in fields[1:4])
+    @info "Plotting depth-integrated vorticity balance" output
+    figure, _ = timed_stage("rendering vorticity balance plot") do
+        panels = [
+            heatmap(
+                diagnostics.x, diagnostics.y, values';
+                xlabel="x",
+                ylabel=index == 1 ? "y" : "",
+                title,
+                clims=(-scale, scale),
+                color=:balance,
+                colorbar=false,
+                aspect_ratio=:equal,
+                yticks=index == 1 ? :auto : false,
+                titlefontsize=11,
+                guidefontsize=10,
+                tickfontsize=8,
+                margin=1.5Plots.mm,
+            )
+            for (index, (title, values)) in enumerate(fields)
+        ]
+        layout = @layout [grid(1, 5) colorbar{0.08w}]
+        plot(
+            panels..., dim_balance_colorbar(scale);
+            layout,
+            size=(1650, 390),
+            plot_title="depth-integrated vorticity balance",
+            plot_titlefontsize=17,
+            margin=2Plots.mm,
+        )
+    end
+    return save_diagnostic_plot(
+        figure, output, "depth-integrated vorticity balance plot",
+    )
+end
+
 performance_summary(solution::PGSolution) = solution.timings
 performance_summary(fields::PGFields) = fields.timings
 performance_summary(solution::PGStreamfunction) = solution.timings
 performance_summary(diagnostics::PGDiagnostics) = diagnostics.timings
 performance_summary(diagnostics::PGDIMDiagnostics) = diagnostics.timings
+performance_summary(diagnostics::PGVorticityDiagnostics) = diagnostics.timings
 
 end

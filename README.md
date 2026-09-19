@@ -110,12 +110,32 @@ dim = compute_dim_diagnostics(solution, diagnostics)
 plot_dim_balance(dim; output="sample_pg_dim_balance.png")
 plot_baroclinic_potential_energy(dim; output="sample_pg_chi.png")
 plot_bottom_pressure(dim; output="sample_pg_bottom_pressure.png")
+
+vorticity = compute_vorticity_diagnostics(solution, diagnostics)
+plot_vorticity_balance(
+    vorticity;
+    output="sample_pg_vorticity_balance.png",
+)
 ```
 
 The DIM balance plot shows the signed Coriolis, bottom-pressure-gradient,
 baroclinic-gradient, bottom-stress, and surface-stress terms plus the closure
 residual for each horizontal component. Terms within each component share
 symmetric color limits.
+
+The depth-integrated vorticity diagnostic evaluates equation (41), generalized
+from the manuscript's beta plane to flexible $f(x,y)$:
+
+```math
+U f_x + V f_y + f w_b
+=
++ \mathrm{Ek}\,[\nabla\times(\boldsymbol{\tau}_b)]_z
++ \mathrm{Ek}\,[\nabla\times\boldsymbol{\tau}]_z,
+```
+
+where $w_b=-(u_bH_x+v_bH_y)$ follows from the bottom kinematic boundary
+condition. On a beta plane, $U f_x+V f_y=\beta V$. The plot shows these
+signed terms and the closure residual with one shared symmetric color scale.
 
 The API uses conventional oceanographic buoyancy and the fixed upper boundary:
 `∂z p = b`, `p = p_s - ∫_z^0 b dz`,
