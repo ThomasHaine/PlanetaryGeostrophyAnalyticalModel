@@ -119,14 +119,14 @@ function bottom_stress_forcing(
         -H, 0.0,
     ) / p.Ek
     wind = -2 * exp(q * H) / (1 + exp(2 * q * H)) * τ(x, y)
-    return baroclinic + wind
+    return -baroclinic + wind
 end
 
 """
     transport_forcing(p, H, f, τ, B, bs, x, y; gradient_step)
 
-Analytical forcing `B` in equation (68), including the baroclinic and surface
-wind-stress contributions.
+Analytical forcing `B` in equation (68), with a negative baroclinic
+contribution and the unchanged surface wind-stress contribution.
 """
 function transport_forcing(
     p, Hfun, ffun, τ, B, bs, x, y;
@@ -144,7 +144,7 @@ function transport_forcing(
         -H, 0.0,
     ) / p.Ek
     wind = (exp(q * H) - 1)^2 * τ(x, y)
-    return (baroclinic + wind) /
+    return (-baroclinic + wind) /
            (p.ν * q^2 * (1 + exp(2 * q * H)))
 end
 

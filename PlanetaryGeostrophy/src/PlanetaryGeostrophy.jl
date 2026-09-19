@@ -282,18 +282,17 @@ end
     bottom_pressure(solution, x, y)
 
 Evaluate the bottom pressure
-`p_b = p_s + ∫_{-H}^0 b dz` under the pressure convention used by the
-Green-function implementation.
+`p_b = p_s - ∫_{-H}^0 b dz` for conventional oceanographic buoyancy.
 """
 function bottom_pressure(solution::PGSolution, x, y)
     require_water(solution, x, y)
     problem = solution.problem
     p = internal_parameters(problem.parameters)
-    buoyancy_pressure = VelocityFieldPrototype.bottom_pressure(
+    column_buoyancy = VelocityFieldPrototype.buoyancy_column_integral(
         solution.kernels, p, problem.depth, problem.restoring_buoyancy,
         problem.surface_buoyancy, x, y,
     )
-    return surface_pressure(solution, x, y) + buoyancy_pressure
+    return surface_pressure(solution, x, y) - column_buoyancy
 end
 
 """
@@ -328,9 +327,8 @@ end
     depth_integrated_momentum_terms(solution, x, y)
 
 Evaluate every signed term in the two depth-integrated momentum equations
-corresponding to (32)--(33), expressed using the Green-function solver's
-pressure and bottom-stress conventions. Residuals are left-hand side minus
-the sum of right-hand-side terms.
+corresponding to (32)--(33). Residuals are left-hand side minus the sum of
+right-hand-side terms.
 """
 function depth_integrated_momentum_terms(solution::PGSolution, x, y)
     H = require_water(solution, x, y)
@@ -353,14 +351,14 @@ function depth_integrated_momentum_terms(solution::PGSolution, x, y)
     x_terms = (
         coriolis=-f * current.V,
         bottom_pressure=-H * real(bottom_pressure_gradient),
-        baroclinic=real(χ_gradient),
+        baroclinic=-real(χ_gradient),
         bottom_stress=Ek * stress.x,
         surface_stress=Ek * real(wind),
     )
     y_terms = (
         coriolis=f * current.U,
         bottom_pressure=-H * imag(bottom_pressure_gradient),
-        baroclinic=imag(χ_gradient),
+        baroclinic=-imag(χ_gradient),
         bottom_stress=Ek * stress.y,
         surface_stress=Ek * imag(wind),
     )
@@ -1059,7 +1057,7 @@ end
 """
     plot_bottom_pressure(dim; output=nothing)
 
-Plot `p_b = p_s + ∫_{-H}^0 b dz`.
+Plot `p_b = p_s - ∫_{-H}^0 b dz`.
 """
 function plot_bottom_pressure(dim::PGDIMDiagnostics; output=nothing)
     @info "Plotting bottom pressure" output
@@ -1079,7 +1077,7 @@ function dim_component_fields(dim::PGDIMDiagnostics, component)
         return (
             ("-f V", dim.x_coriolis),
             ("-H ∂x p_b", dim.x_bottom_pressure),
-            ("∂x χ", dim.x_baroclinic),
+            ("-∂x χ", dim.x_baroclinic),
             ("Ek τ_bˣ", dim.x_bottom_stress),
             ("Ek τˣ", dim.x_surface_stress),
             ("residual", dim.x_residual),
@@ -1088,7 +1086,7 @@ function dim_component_fields(dim::PGDIMDiagnostics, component)
         return (
             ("f U", dim.y_coriolis),
             ("-H ∂y p_b", dim.y_bottom_pressure),
-            ("∂y χ", dim.y_baroclinic),
+            ("-∂y χ", dim.y_baroclinic),
             ("Ek τ_bʸ", dim.y_bottom_stress),
             ("Ek τʸ", dim.y_surface_stress),
             ("residual", dim.y_residual),

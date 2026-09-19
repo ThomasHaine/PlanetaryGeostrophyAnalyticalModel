@@ -16,6 +16,7 @@ export VelocityParameters,
        buoyancy_from_forcing,
        buoyancy_bottom_stress_b23,
        buoyancy_transport_b23,
+       buoyancy_column_integral,
        load_symbolic_kernels,
        velocity_b10,
        velocity_b23,
@@ -177,7 +178,7 @@ function velocity_b10(p, Hfun, ffun, ps, τ, B, bs, x, y, z; gradient_step=1e-5)
     baroclinic(ξ) = Gu(z, ξ, H, p.ν, φvalue) *
         finite_complex_gradient((xx, yy) -> Pi_direct(p, Hfun, B, bs, xx, yy, ξ),
                                 x, y; step=gradient_step)
-    return (pressure + stress +
+    return (pressure + stress -
             split_quadgk(baroclinic, -H, 0.0, (z,))) / p.Ek
 end
 
@@ -223,7 +224,13 @@ function integrated_pressure_b23(kernels, p, Hfun, ffun, B, bs, x, y, z)
     ) + kernels.Guvb_xi(H, z, φvalue, ψvalue, p.κ, p.ν) * bs(x, y)
 end
 
-function bottom_pressure(kernels, p, Hfun, B, bs, x, y)
+"""
+    buoyancy_column_integral(kernels, p, H, B, bs, x, y)
+
+Evaluate `Π(-H) = ∫_{-H}^0 b dz`. This is the buoyancy-column contribution
+subtracted from surface pressure to obtain total bottom pressure.
+"""
+function buoyancy_column_integral(kernels, p, Hfun, B, bs, x, y)
     H = Hfun(x, y)
     ψvalue = ψ(p)
     return -p.Γ / p.Ek * split_quadgk(
@@ -325,7 +332,7 @@ function velocity_b23_from_gradps(kernels, p, Hfun, ffun, f_x, f_y, gradps, τ, 
     )
     bottom = (H_x(x, y) + im * H_y(x, y)) *
              Gu(z, -H, H, p.ν, φvalue) *
-             bottom_pressure(kernels, p, Hfun, B, bs, x, y)
+             buoyancy_column_integral(kernels, p, Hfun, B, bs, x, y)
 
     function directional_kernel(H_derivative, f_derivative)
         -p.Γ / p.Ek * split_quadgk(
@@ -338,7 +345,7 @@ function velocity_b23_from_gradps(kernels, p, Hfun, ffun, f_x, f_y, gradps, τ, 
 
     kernel_x = directional_kernel(H_x(x, y), f_x(x, y))
     kernel_y = directional_kernel(H_y(x, y), f_y(x, y))
-    return (pressure + stress + integrated - bottom - kernel_x - im * kernel_y) / p.Ek
+    return (pressure + stress - integrated + bottom + kernel_x + im * kernel_y) / p.Ek
 end
 
 function benchmark(f; samples=5)
