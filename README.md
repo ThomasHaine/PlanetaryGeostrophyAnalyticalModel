@@ -102,6 +102,28 @@ plots. The direct pointwise values remain
 available as `analytical_transport_U` and `analytical_transport_V`; their
 relative projection difference is reported in the performance summary.
 
+The depth-integrated momentum terms corresponding to equations (32)--(33),
+bottom pressure, and baroclinic potential energy are available through:
+
+```julia
+dim = compute_dim_diagnostics(solution, diagnostics)
+plot_dim_balance(dim; output="sample_pg_dim_balance.png")
+plot_baroclinic_potential_energy(dim; output="sample_pg_chi.png")
+plot_bottom_pressure(dim; output="sample_pg_bottom_pressure.png")
+```
+
+The DIM balance plot shows the signed Coriolis, bottom-pressure-gradient,
+baroclinic-gradient, bottom-stress, and surface-stress terms plus the closure
+residual for each horizontal component. Terms within each component share
+symmetric color limits.
+
+The Green-function implementation follows the Section 5 conventions
+`p = p_s + ∫_z^0 b dz` and `τ_b = -ν ∂z u|bottom`. Consequently its DIM
+balance is `-fV = -H p_b,x + χ_x + Ek(τ_b,x + τ_x)`, with the analogous
+y equation. This is the convention-equivalent form used in the plots; it
+differs in signs and explicit Ekman factors from the printed equations
+(32)--(33), whose pressure and bottom-stress conventions follow Section 3a.
+
 The vector plots normalize the longest arrow to `arrow_scale=0.35` times the
 sampled grid spacing. Arrowheads are drawn explicitly in data coordinates
 with `arrowhead_size=0.08` times that spacing, so their apparent size remains
