@@ -134,6 +134,7 @@ end
         )
         x, y = -0.3, 0.0
         terms = depth_integrated_momentum_terms(solution, x, y)
+        bv_terms = barotropic_vorticity_terms(solution, x, y)
         vorticity_terms = depth_integrated_vorticity_terms(solution, x, y)
         p = PlanetaryGeostrophy.internal_parameters(problem.parameters)
         column_buoyancy =
@@ -151,6 +152,13 @@ end
             surface_pressure(solution, x, y) - column_buoyancy
         @test abs(terms.x_residual) < 1e-9
         @test abs(terms.y_residual) < 1e-9
+        @test bv_terms.bottom_pressure_torque ≈ 0 atol=1e-12
+        @test bv_terms.residual ≈
+            bv_terms.transport_divergence +
+            bv_terms.planetary_vorticity_advection -
+            bv_terms.bottom_pressure_torque -
+            bv_terms.bottom_stress_curl -
+            bv_terms.surface_stress_curl
         @test vorticity_terms.bottom_vortex_stretching ≈ 0 atol=1e-12
         @test vorticity_terms.residual ≈
             vorticity_terms.planetary_vorticity_advection +
@@ -282,11 +290,22 @@ end
             (;),
         )
         dim = compute_dim_diagnostics(solution, diagnostics)
+        bv = compute_barotropic_vorticity_diagnostics(solution, diagnostics)
         vorticity = compute_vorticity_diagnostics(solution, diagnostics)
 
         @test size(dim.chi) == shape
         @test maximum(abs, dim.x_residual) < 1e-9
         @test maximum(abs, dim.y_residual) < 1e-9
+        @test size(bv.transport_divergence) == shape
+        @test bv.bottom_pressure_torque ≈ zeros2
+        @test bv.residual ≈
+            bv.transport_divergence .+
+            bv.planetary_vorticity_advection .-
+            bv.bottom_pressure_torque .-
+            bv.bottom_stress_curl .-
+            bv.surface_stress_curl
+        @test performance_summary(bv) == bv.timings
+        @test isfinite(bv.timings.relative_l2_residual)
         @test size(vorticity.planetary_vorticity_advection) == shape
         @test vorticity.residual ≈
             vorticity.planetary_vorticity_advection .+
@@ -297,11 +316,13 @@ end
         @test isfinite(vorticity.timings.relative_l2_residual)
 
         balance_path = joinpath(directory, "dim_balance.png")
+        bv_path = joinpath(directory, "barotropic_vorticity_balance.png")
         vorticity_path = joinpath(directory, "vorticity_balance.png")
         chi_path = joinpath(directory, "chi.png")
         pressure_path = joinpath(directory, "bottom_pressure.png")
         balance_figure = plot_dim_balance(dim; output=balance_path)
         x_balance_figure = plot_dim_balance(dim; component=:x)
+        bv_figure = plot_barotropic_vorticity_balance(bv; output=bv_path)
         vorticity_figure = plot_vorticity_balance(
             vorticity; output=vorticity_path,
         )
@@ -330,10 +351,15 @@ end
             for size in (panel_size(x_balance_figure, index) for index in 1:6)
         )
         @test all(
+            all(isapprox.(size, panel_size(bv_figure, 1)))
+            for size in (panel_size(bv_figure, index) for index in 1:6)
+        )
+        @test all(
             all(isapprox.(size, panel_size(vorticity_figure, 1)))
             for size in (panel_size(vorticity_figure, index) for index in 1:5)
         )
         @test isfile(balance_path)
+        @test isfile(bv_path)
         @test isfile(vorticity_path)
         @test isfile(chi_path)
         @test isfile(pressure_path)
@@ -361,6 +387,11 @@ end
             x,
             y,
         )
+        variable_bv_terms = barotropic_vorticity_terms(
+            variable_solution,
+            x,
+            y,
+        )
         variable_vorticity_terms = depth_integrated_vorticity_terms(
             variable_solution,
             x,
@@ -368,6 +399,12 @@ end
         )
         @test abs(variable_terms.x_residual) < 1e-8
         @test abs(variable_terms.y_residual) < 1e-8
+        @test variable_bv_terms.residual ≈
+            variable_bv_terms.transport_divergence +
+            variable_bv_terms.planetary_vorticity_advection -
+            variable_bv_terms.bottom_pressure_torque -
+            variable_bv_terms.bottom_stress_curl -
+            variable_bv_terms.surface_stress_curl
         @test abs(variable_vorticity_terms.bottom_vortex_stretching) < 1e-12
         @test variable_vorticity_terms.residual ≈
             variable_vorticity_terms.planetary_vorticity_advection +
