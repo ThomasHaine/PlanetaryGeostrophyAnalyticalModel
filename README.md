@@ -139,6 +139,14 @@ plot_transport_divergence_vorticity_balance(
     tdvb;
     output="sample_pg_transport_divergence_vorticity_balance.png",
 )
+
+pressure_equation = compute_surface_pressure_equation_diagnostics(
+    solution, diagnostics,
+)
+plot_surface_pressure_equation_diagnostics(
+    pressure_equation;
+    output="sample_pg_surface_pressure_equation.png",
+)
 ```
 
 The DIM balance plot shows the signed Coriolis, bottom-pressure-gradient,
@@ -201,6 +209,34 @@ This balance contains no circulation variable because the depth-integrated
 transport divergence vanishes in the steady fixed-lid problem. It instead
 diagnoses cancellation among bottom pressure, baroclinic potential energy,
 and the surface and bottom stresses.
+
+The surface-pressure coefficient diagnostic evaluates the fields in equation
+(74):
+
+```math
+\nabla\mathbin{\cdot}(\mathfrak A_r\nabla p_s)
+-J(\mathfrak A_i,p_s)
+=-\partial_x\mathfrak B_r-\partial_y\mathfrak B_i.
+```
+
+It reports the advection velocity
+$(\partial_y\mathfrak A_i,-\partial_x\mathfrak A_i)$, diffusivity
+$\mathfrak A_r$, and source
+$-\partial_x\mathfrak B_r-\partial_y\mathfrak B_i$. Because the advecting
+velocity depends only on $\mathfrak A(H,f,\mathrm{Ek},\nu)$, it does not have
+buoyancy- and stress-driven components. The source is split using
+$\mathfrak B=\mathfrak B_b+\mathfrak B_\tau$ into separate baroclinic and
+surface-stress contributions, which share a color scale in the plot.
+
+The complex coefficients $\mathfrak A$ and $\mathfrak B$ are exactly those
+used to assemble the Gridap surface-pressure problem. The mapped diagnostic
+recovers $\mathfrak B$ from the previously sampled analytical transport rather
+than repeating its costly column quadrature. Its derivatives use centered
+diagnostic-grid differences, so unsupported edge and near-land cells are left
+blank. The reported residual is the sampled transport divergence, equivalent
+to the left-hand side minus the source in equation (74). Pointwise values are
+available from
+`surface_pressure_equation_coefficients(solution, x, y)`.
 
 For all four mapped vorticity diagnostics, bottom stress is first interpolated
 into a continuous vector finite-element space before its curl is evaluated. The

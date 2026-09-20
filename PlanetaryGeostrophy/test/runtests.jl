@@ -146,6 +146,8 @@ end
         vorticity_terms = depth_integrated_vorticity_terms(solution, x, y)
         gcvb_terms = geostrophic_contour_vorticity_terms(solution, x, y)
         tdvb_terms = transport_divergence_vorticity_terms(solution, x, y)
+        pressure_coefficients =
+            surface_pressure_equation_coefficients(solution, x, y)
         p = PlanetaryGeostrophy.internal_parameters(problem.parameters)
         column_buoyancy =
             PlanetaryGeostrophy.VelocityFieldPrototype.buoyancy_column_integral(
@@ -196,6 +198,55 @@ end
         )
         @test tdvb_terms.residual ≈
             bv_terms.residual / problem.coriolis(x, y) rtol=1e-6
+        coefficient_step = problem.derivative_step
+        A_y = (
+            solution.pressure.A_fn((x, y + coefficient_step)) -
+            solution.pressure.A_fn((x, y - coefficient_step))
+        ) / (2coefficient_step)
+        B_x = (
+            solution.pressure.B_fn((x + coefficient_step, y)) -
+            solution.pressure.B_fn((x - coefficient_step, y))
+        ) / (2coefficient_step)
+        B_y = (
+            solution.pressure.B_fn((x, y + coefficient_step)) -
+            solution.pressure.B_fn((x, y - coefficient_step))
+        ) / (2coefficient_step)
+        baroclinic_B_x = (
+            solution.pressure.baroclinic_B_fn((
+                x + coefficient_step, y,
+            )) -
+            solution.pressure.baroclinic_B_fn((
+                x - coefficient_step, y,
+            ))
+        ) / (2coefficient_step)
+        baroclinic_B_y = (
+            solution.pressure.baroclinic_B_fn((
+                x, y + coefficient_step,
+            )) -
+            solution.pressure.baroclinic_B_fn((
+                x, y - coefficient_step,
+            ))
+        ) / (2coefficient_step)
+        stress_B_x = (
+            solution.pressure.stress_B_fn((x + coefficient_step, y)) -
+            solution.pressure.stress_B_fn((x - coefficient_step, y))
+        ) / (2coefficient_step)
+        stress_B_y = (
+            solution.pressure.stress_B_fn((x, y + coefficient_step)) -
+            solution.pressure.stress_B_fn((x, y - coefficient_step))
+        ) / (2coefficient_step)
+        @test pressure_coefficients.advection_velocity_x ≈ imag(A_y)
+        @test pressure_coefficients.advection_velocity_y ≈ 0 atol=1e-10
+        @test pressure_coefficients.diffusivity ≈
+            real(solution.pressure.A_fn((x, y)))
+        @test pressure_coefficients.baroclinic_source ≈
+            -real(baroclinic_B_x) - imag(baroclinic_B_y)
+        @test pressure_coefficients.stress_source ≈
+            -real(stress_B_x) - imag(stress_B_y)
+        @test pressure_coefficients.source ≈ -real(B_x) - imag(B_y)
+        @test pressure_coefficients.source ≈
+            pressure_coefficients.baroclinic_source +
+            pressure_coefficients.stress_source
         curl_y = 0.2
         curl_terms = depth_integrated_vorticity_terms(solution, x, curl_y)
         gcvb_curl_terms =
@@ -323,6 +374,15 @@ end
         coordinates = [-0.3, -0.05, 0.2]
         shape = (3, 3)
         zeros2 = zeros(shape)
+        analytical_U = fill(NaN, shape)
+        analytical_V = fill(NaN, shape)
+        for j in eachindex(coordinates), i in eachindex(coordinates)
+            current = depth_integrated_current(
+                solution, coordinates[i], coordinates[j],
+            )
+            analytical_U[i, j] = current.U
+            analytical_V[i, j] = current.V
+        end
         diagnostics = PGDiagnostics(
             coordinates,
             coordinates,
@@ -330,6 +390,8 @@ end
             zeros2,
             zeros2,
             zeros2,
+            analytical_U,
+            analytical_V,
             zeros2,
             trues(shape),
             (;),
@@ -343,6 +405,10 @@ end
         tdvb = compute_transport_divergence_vorticity_diagnostics(
             solution, diagnostics,
         )
+        pressure_equation =
+            compute_surface_pressure_equation_diagnostics(
+                solution, diagnostics,
+            )
 
         @test size(dim.chi) == shape
         @test maximum(abs, dim.x_residual) < 1e-9
@@ -397,12 +463,76 @@ end
         )
         @test performance_summary(tdvb) == tdvb.timings
         @test isfinite(tdvb.timings.relative_l2_residual)
+        @test size(pressure_equation.advection_velocity_x) == shape
+        @test count(pressure_equation.wet) == 1
+        @test all(
+            isnan,
+            pressure_equation.advection_velocity_x[.!pressure_equation.wet],
+        )
+        @test all(isnan, pressure_equation.source[.!pressure_equation.wet])
+        center = CartesianIndex(2, 2)
+        center_A_y = (
+            solution.pressure.A_fn((coordinates[2], coordinates[3])) -
+            solution.pressure.A_fn((coordinates[2], coordinates[1]))
+        ) / (coordinates[3] - coordinates[1])
+        center_A_x = (
+            solution.pressure.A_fn((coordinates[3], coordinates[2])) -
+            solution.pressure.A_fn((coordinates[1], coordinates[2]))
+        ) / (coordinates[3] - coordinates[1])
+        center_B_x = (
+            solution.pressure.B_fn((coordinates[3], coordinates[2])) -
+            solution.pressure.B_fn((coordinates[1], coordinates[2]))
+        ) / (coordinates[3] - coordinates[1])
+        center_B_y = (
+            solution.pressure.B_fn((coordinates[2], coordinates[3])) -
+            solution.pressure.B_fn((coordinates[2], coordinates[1]))
+        ) / (coordinates[3] - coordinates[1])
+        center_stress_B_x = (
+            solution.pressure.stress_B_fn((
+                coordinates[3], coordinates[2],
+            )) -
+            solution.pressure.stress_B_fn((
+                coordinates[1], coordinates[2],
+            ))
+        ) / (coordinates[3] - coordinates[1])
+        center_stress_B_y = (
+            solution.pressure.stress_B_fn((
+                coordinates[2], coordinates[3],
+            )) -
+            solution.pressure.stress_B_fn((
+                coordinates[2], coordinates[1],
+            ))
+        ) / (coordinates[3] - coordinates[1])
+        @test pressure_equation.advection_velocity_x[center] ≈
+            imag(center_A_y)
+        @test pressure_equation.advection_velocity_y[center] ≈
+            -imag(center_A_x)
+        @test pressure_equation.diffusivity[center] ≈
+            real(solution.pressure.A_fn((coordinates[2], coordinates[2])))
+        @test pressure_equation.source[center] ≈
+            -real(center_B_x) - imag(center_B_y) rtol=3e-5
+        @test pressure_equation.stress_source[center] ≈
+            -real(center_stress_B_x) - imag(center_stress_B_y)
+        @test pressure_equation.baroclinic_source[center] +
+            pressure_equation.stress_source[center] ≈
+            pressure_equation.source[center]
+        @test pressure_equation.residual[center] ≈ (
+            (analytical_U[3, 2] - analytical_U[1, 2]) /
+            (coordinates[3] - coordinates[1]) +
+            (analytical_V[2, 3] - analytical_V[2, 1]) /
+            (coordinates[3] - coordinates[1])
+        )
+        @test performance_summary(pressure_equation) ==
+            pressure_equation.timings
+        @test isfinite(pressure_equation.timings.relative_l2_residual)
 
         balance_path = joinpath(directory, "dim_balance.png")
         bv_path = joinpath(directory, "barotropic_vorticity_balance.png")
         vorticity_path = joinpath(directory, "vorticity_balance.png")
         gcvb_path = joinpath(directory, "gcvb_balance.png")
         tdvb_path = joinpath(directory, "tdvb_balance.png")
+        pressure_equation_path =
+            joinpath(directory, "surface_pressure_equation.png")
         chi_path = joinpath(directory, "chi.png")
         pressure_path = joinpath(directory, "bottom_pressure.png")
         balance_figure = plot_dim_balance(dim; output=balance_path)
@@ -417,6 +547,10 @@ end
         tdvb_figure = plot_transport_divergence_vorticity_balance(
             tdvb; output=tdvb_path,
         )
+        pressure_equation_figure =
+            plot_surface_pressure_equation_diagnostics(
+                pressure_equation; output=pressure_equation_path,
+            )
         plot_baroclinic_potential_energy(dim; output=chi_path)
         plot_bottom_pressure(dim; output=pressure_path)
 
@@ -457,11 +591,18 @@ end
             all(isapprox.(size, panel_size(tdvb_figure, 1)))
             for size in (panel_size(tdvb_figure, index) for index in 1:5)
         )
+        @test all(
+            all(isapprox.(size, panel_size(pressure_equation_figure, 1)))
+            for size in (
+                panel_size(pressure_equation_figure, index) for index in 1:4
+            )
+        )
         @test isfile(balance_path)
         @test isfile(bv_path)
         @test isfile(vorticity_path)
         @test isfile(gcvb_path)
         @test isfile(tdvb_path)
+        @test isfile(pressure_equation_path)
         @test isfile(chi_path)
         @test isfile(pressure_path)
 
@@ -612,5 +753,26 @@ end
         @test variable_tdvb_terms.residual ≈
             variable_bv_terms.residual /
             variable_problem.coriolis(x, y) rtol=1e-6
+        variable_pressure_coefficients =
+            surface_pressure_equation_coefficients(
+                variable_solution, x, y,
+            )
+        variable_A_x = (
+            variable_solution.pressure.A_fn((x + derivative_step, y)) -
+            variable_solution.pressure.A_fn((x - derivative_step, y))
+        ) / (2derivative_step)
+        variable_A_y = (
+            variable_solution.pressure.A_fn((x, y + derivative_step)) -
+            variable_solution.pressure.A_fn((x, y - derivative_step))
+        ) / (2derivative_step)
+        @test variable_pressure_coefficients.advection_velocity_x ≈
+            imag(variable_A_y)
+        @test variable_pressure_coefficients.advection_velocity_y ≈
+            -imag(variable_A_x)
+        @test !isapprox(
+            variable_pressure_coefficients.advection_velocity_y,
+            0.0;
+            atol=1e-8,
+        )
     end
 end
