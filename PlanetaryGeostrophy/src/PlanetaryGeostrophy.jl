@@ -114,15 +114,18 @@ automatic_y(field) = (x, y) -> ForwardDiff.derivative(yq -> field(x, yq), y)
 Specify a non-dimensional PG problem. Horizontal vector fields use complex
 notation: `wind_stress(x, y) = τx + im * τy`. The boundary is a counter- or
 clockwise polygon of `(x, y)` tuples. Derivatives may be supplied explicitly;
-otherwise centered automatic differentiation is used.
+otherwise automatic differentiation is used. Supply
+`wind_stress_curl(x, y)` when an exact expression is available or the stress
+callable does not accept automatic-differentiation number types.
 """
-struct PGProblem{P,H,F,FX,FY,T,B,BS,HX,HY,BD,I}
+struct PGProblem{P,H,F,FX,FY,T,TC,B,BS,HX,HY,BD,I}
     parameters::P
     depth::H
     coriolis::F
     coriolis_x::FX
     coriolis_y::FY
     wind_stress::T
+    wind_stress_curl::TC
     restoring_buoyancy::B
     surface_buoyancy::BS
     depth_x::HX
@@ -142,6 +145,7 @@ function PGProblem(;
     boundary,
     coriolis_x=nothing,
     coriolis_y=nothing,
+    wind_stress_curl=nothing,
     depth_x=nothing,
     depth_y=nothing,
     inside=nothing,
@@ -156,6 +160,13 @@ function PGProblem(;
     fy = isnothing(coriolis_y) ? automatic_y(coriolis) : coriolis_y
     hx = isnothing(depth_x) ? automatic_x(depth) : depth_x
     hy = isnothing(depth_y) ? automatic_y(depth) : depth_y
+    τx = (x, y) -> real(wind_stress(x, y))
+    τy = (x, y) -> imag(wind_stress(x, y))
+    τy_x = automatic_x(τy)
+    τx_y = automatic_y(τx)
+    stress_curl = isnothing(wind_stress_curl) ?
+        ((x, y) -> τy_x(x, y) - τx_y(x, y)) :
+        wind_stress_curl
 
     cx = sum(first, polygon) / length(polygon)
     cy = sum(last, polygon) / length(polygon)
@@ -163,7 +174,7 @@ function PGProblem(;
     coriolis(cx, cy) != 0 || throw(ArgumentError("coriolis must be nonzero in the basin"))
 
     return PGProblem(
-        parameters, depth, coriolis, fx, fy, wind_stress,
+        parameters, depth, coriolis, fx, fy, wind_stress, stress_curl,
         restoring_buoyancy, surface_buoyancy, hx, hy, polygon, inside_fn,
         float(derivative_step),
     )
@@ -287,6 +298,46 @@ function bottom_stress(solution::PGSolution, x, y)
     return (x=real(stress), y=imag(stress))
 end
 
+function project_bottom_stress(solution::PGSolution; order=2)
+    order > 0 || throw(ArgumentError("order must be positive"))
+    started = time()
+    model = solution.pressure.model
+    V, setup_timing = timed_stage(
+        "constructing bottom-stress interpolation space",
+    ) do
+        reffe = ReferenceFE(lagrangian, VectorValue{2,Float64}, order)
+        TestFESpace(model, reffe; conformity=:H1)
+    end
+    stress_field(x) = begin
+        xx, yy = x[1], x[2]
+        H = solution.problem.depth(xx, yy)
+        H > 0 || return VectorValue(0.0, 0.0)
+        problem = solution.problem
+        p = internal_parameters(problem.parameters)
+        pressure_term = bottom_stress_coefficient(
+            p, H, problem.coriolis(xx, yy),
+        ) * solution.pressure.gradps(xx, yy)
+        stress = pressure_term + solution.pressure.T_fn(Point(xx, yy))
+        return VectorValue(real(stress), imag(stress))
+    end
+    finite_element, interpolation_timing = timed_stage(
+        "interpolating bottom stress",
+    ) do
+        interpolate_everywhere(stress_field, V)
+    end
+    value = (x, y) -> evaluate(finite_element, Point(x, y))
+    timings = (
+        setup=setup_timing,
+        interpolation=interpolation_timing,
+        total_seconds=time() - started,
+    )
+    return (; finite_element, value, timings)
+end
+
+function analytical_surface_stress_curl(problem::PGProblem, x, y)
+    return problem.wind_stress_curl(x, y)
+end
+
 """
     bottom_pressure(solution, x, y)
 
@@ -397,7 +448,8 @@ Evaluate every signed term in the barotropic vorticity equation (36),
 
 where `J(p_b, H) = p_b,x H_y - p_b,y H_x` and
 `curl(τ) = τ_y,x - τ_x,y`. On a beta plane the planetary-vorticity term
-is `β V`. The residual is the left-hand side minus the sum of the
+is `β V`. The fixed-lid, no-normal-flow mass balance gives
+`div(U) = 0` exactly. The residual is the left-hand side minus the sum of the
 right-hand-side terms.
 """
 function barotropic_vorticity_terms(solution::PGSolution, x, y)
@@ -405,17 +457,8 @@ function barotropic_vorticity_terms(solution::PGSolution, x, y)
     problem = solution.problem
     step = problem.derivative_step
 
-    current_complex(xx, yy) = begin
-        current = depth_integrated_current(solution, xx, yy)
-        current.U + im * current.V
-    end
-    current_derivatives = centered_field_derivatives(
-        current_complex, x, y, step,
-    )
     current = depth_integrated_current(solution, x, y)
-    transport_divergence = problem.coriolis(x, y) * (
-        real(current_derivatives.x) + imag(current_derivatives.y)
-    )
+    transport_divergence = zero(current.U)
     planetary_vorticity_advection = (
         current.U * problem.coriolis_x(x, y) +
         current.V * problem.coriolis_y(x, y)
@@ -437,18 +480,12 @@ function barotropic_vorticity_terms(solution::PGSolution, x, y)
     bottom_stress_derivatives = centered_field_derivatives(
         bottom_stress_complex, x, y, step,
     )
-    surface_stress_derivatives = centered_field_derivatives(
-        problem.wind_stress, x, y, step,
-    )
     Ek = problem.parameters.Ek
     bottom_stress_curl = Ek * (
         imag(bottom_stress_derivatives.x) -
         real(bottom_stress_derivatives.y)
     )
-    surface_stress_curl = Ek * (
-        imag(surface_stress_derivatives.x) -
-        real(surface_stress_derivatives.y)
-    )
+    surface_stress_curl = Ek * analytical_surface_stress_curl(problem, x, y)
     residual = transport_divergence + planetary_vorticity_advection -
         bottom_pressure_torque - bottom_stress_curl - surface_stress_curl
     return (;
@@ -496,15 +533,6 @@ function depth_integrated_vorticity_terms(solution::PGSolution, x, y)
         bottom_stress_complex(x, y - step)
     ) / (2step)
 
-    surface_stress_x = (
-        problem.wind_stress(x + step, y) -
-        problem.wind_stress(x - step, y)
-    ) / (2step)
-    surface_stress_y = (
-        problem.wind_stress(x, y + step) -
-        problem.wind_stress(x, y - step)
-    ) / (2step)
-
     planetary_vorticity_advection = (
         current.U * problem.coriolis_x(x, y) +
         current.V * problem.coriolis_y(x, y)
@@ -513,9 +541,7 @@ function depth_integrated_vorticity_terms(solution::PGSolution, x, y)
         problem.coriolis(x, y) * bottom_vertical_velocity
     Ek = problem.parameters.Ek
     bottom_stress_curl = Ek * (imag(bottom_stress_x) - real(bottom_stress_y))
-    surface_stress_curl = Ek * (
-        imag(surface_stress_x) - real(surface_stress_y)
-    )
+    surface_stress_curl = Ek * analytical_surface_stress_curl(problem, x, y)
     residual = planetary_vorticity_advection + bottom_vortex_stretching -
         (bottom_stress_curl + surface_stress_curl)
     return (;
@@ -685,6 +711,37 @@ function horizontal_derivative(values::AbstractMatrix, wet, coordinates, i, j, a
     return 0.0
 end
 
+function centered_horizontal_derivative(
+    values::AbstractMatrix,
+    wet,
+    coordinates,
+    i,
+    j,
+    axis,
+)
+    n = axis == 1 ? size(values, 1) : size(values, 2)
+    q = axis == 1 ? i : j
+    1 < q < n || return NaN
+    left = axis == 1 ? wet[i - 1, j] : wet[i, j - 1]
+    right = axis == 1 ? wet[i + 1, j] : wet[i, j + 1]
+    left && right || return NaN
+    lo = axis == 1 ? values[i - 1, j] : values[i, j - 1]
+    hi = axis == 1 ? values[i + 1, j] : values[i, j + 1]
+    return (hi - lo) / (coordinates[q + 1] - coordinates[q - 1])
+end
+
+function centered_stencil_is_wet(wet, i, j)
+    return (
+        1 < i < size(wet, 1) &&
+        1 < j < size(wet, 2) &&
+        wet[i, j] &&
+        wet[i - 1, j] &&
+        wet[i + 1, j] &&
+        wet[i, j - 1] &&
+        wet[i, j + 1]
+    )
+end
+
 function reconstruct_vertical_velocity(u, v, wet, depth, x, y, z)
     divergence = fill(NaN, size(u))
     for k in eachindex(z), j in eachindex(y), i in eachindex(x)
@@ -796,16 +853,24 @@ function sample_solution(solution::PGSolution, x_values, y_values, z_values)
 end
 
 """
-    compute_diagnostics(solution, x, y; streamfunction_order=2)
+    compute_diagnostics(
+        solution, x, y;
+        streamfunction_order=2,
+        bottom_stress_projection_order=pressure order,
+    )
 
 Sample bottom stress and depth-integrated horizontal current, and solve and
 sample its streamfunction, on an increasing horizontal rectilinear grid.
+Bottom stress is interpolated into a continuous `H1` finite-element space before
+sampling so subsequent curl diagnostics do not differentiate jumps in the
+raw pressure gradient.
 """
 function compute_diagnostics(
     solution::PGSolution,
     x_values,
     y_values;
     streamfunction_order=2,
+    bottom_stress_projection_order=solution.pressure.order,
 )
     diagnostic_started = time()
     x, y = collect(float.(x_values)), collect(float.(y_values))
@@ -817,6 +882,9 @@ function compute_diagnostics(
         throw(ArgumentError("y must be strictly increasing"))
     @info "PG diagnostic calculation started" Nx=length(x) Ny=length(y) horizontal_points=length(x) * length(y)
     ψ = solve_streamfunction(solution; order=streamfunction_order)
+    projected_stress = project_bottom_stress(
+        solution; order=bottom_stress_projection_order,
+    )
 
     shape = (length(x), length(y))
     τx, τy = fill(NaN, shape), fill(NaN, shape)
@@ -841,10 +909,11 @@ function compute_diagnostics(
                     )
                 )
                 stencil_is_inside || continue
-                stress = bottom_stress(solution, xx, yy)
+                stress_vector = projected_stress.value(xx, yy)
                 analytical_current = depth_integrated_current(solution, xx, yy)
                 current = streamfunction_current(ψ, xx, yy)
-                τx[i, j], τy[i, j] = float(stress.x), float(stress.y)
+                τx[i, j], τy[i, j] =
+                    float(stress_vector[1]), float(stress_vector[2])
                 U[i, j], V[i, j] = float(current.U), float(current.V)
                 analytical_U[i, j] = float(analytical_current.U)
                 analytical_V[i, j] = float(analytical_current.V)
@@ -871,6 +940,7 @@ function compute_diagnostics(
     end
     timings = (
         streamfunction=ψ.timings,
+        bottom_stress_projection=projected_stress.timings,
         sampling=sampling_timing,
         total_seconds,
         wet_points,
@@ -963,8 +1033,12 @@ end
     compute_barotropic_vorticity_diagnostics(solution, diagnostics)
 
 Compute maps of all signed terms in the barotropic vorticity equation (36),
-together with its closure residual. Horizontal derivatives are evaluated on
-the supplied diagnostic grid.
+together with its closure residual. Bottom stress is sampled from its
+continuous finite-element interpolant, surface-stress curl is differentiated
+analytically, and remaining derivatives use centered diagnostic-grid
+differences. Edge points and points adjoining land are omitted because a
+centered stencil is unavailable. The transport-divergence term is set to its
+exact fixed-lid value of zero.
 """
 function compute_barotropic_vorticity_diagnostics(
     solution::PGSolution,
@@ -979,9 +1053,8 @@ function compute_barotropic_vorticity_diagnostics(
     bottom_curl, surface_curl, residual =
         arrays[4], arrays[5], arrays[6]
     bottom_pressure_values = fill(NaN, shape)
-    surface_stress_x, surface_stress_y =
-        fill(NaN, shape), fill(NaN, shape)
     wet = copy(diagnostics.wet)
+    budget_wet = falses(shape)
     progress_stride = max(1, cld(length(y), 10))
 
     @info "BV diagnostic calculation started" Nx=length(x) Ny=length(y) wet_points=count(wet)
@@ -994,9 +1067,6 @@ function compute_barotropic_vorticity_diagnostics(
                 xx, yy = x[i], y[j]
                 bottom_pressure_values[i, j] =
                     bottom_pressure(solution, xx, yy)
-                stress = solution.problem.wind_stress(xx, yy)
-                surface_stress_x[i, j] = real(stress)
-                surface_stress_y[i, j] = imag(stress)
             end
             if j == 1 || j == length(y) || j % progress_stride == 0
                 @info "BV diagnostic sampling progress" rows_completed=j rows_total=length(y) percent=round(100j / length(y); digits=1)
@@ -1005,26 +1075,19 @@ function compute_barotropic_vorticity_diagnostics(
 
         Ek = solution.problem.parameters.Ek
         for j in eachindex(y), i in eachindex(x)
-            wet[i, j] || continue
+            centered_stencil_is_wet(wet, i, j) || continue
             xx, yy = x[i], y[j]
-            U_x = horizontal_derivative(
-                diagnostics.analytical_transport_U, wet, x, i, j, 1,
-            )
-            V_y = horizontal_derivative(
-                diagnostics.analytical_transport_V, wet, y, i, j, 2,
-            )
-            divergence[i, j] =
-                solution.problem.coriolis(xx, yy) * (U_x + V_y)
+            divergence[i, j] = 0.0
             planetary[i, j] = (
                 diagnostics.analytical_transport_U[i, j] *
                 solution.problem.coriolis_x(xx, yy) +
                 diagnostics.analytical_transport_V[i, j] *
                 solution.problem.coriolis_y(xx, yy)
             )
-            pressure_x = horizontal_derivative(
+            pressure_x = centered_horizontal_derivative(
                 bottom_pressure_values, wet, x, i, j, 1,
             )
-            pressure_y = horizontal_derivative(
+            pressure_y = centered_horizontal_derivative(
                 bottom_pressure_values, wet, y, i, j, 2,
             )
             pressure_torque[i, j] = (
@@ -1032,24 +1095,27 @@ function compute_barotropic_vorticity_diagnostics(
                 pressure_y * solution.problem.depth_x(xx, yy)
             )
             bottom_curl[i, j] = Ek * (
-                horizontal_derivative(
+                centered_horizontal_derivative(
                     diagnostics.bottom_stress_y, wet, x, i, j, 1,
                 ) -
-                horizontal_derivative(
+                centered_horizontal_derivative(
                     diagnostics.bottom_stress_x, wet, y, i, j, 2,
                 )
             )
-            surface_curl[i, j] = Ek * (
-                horizontal_derivative(surface_stress_y, wet, x, i, j, 1) -
-                horizontal_derivative(surface_stress_x, wet, y, i, j, 2)
+            surface_curl[i, j] = Ek * analytical_surface_stress_curl(
+                solution.problem, xx, yy,
             )
             residual[i, j] = divergence[i, j] + planetary[i, j] -
                 pressure_torque[i, j] - bottom_curl[i, j] -
                 surface_curl[i, j]
+            budget_wet[i, j] = true
         end
     end
 
-    finite_l2(values) = sqrt(sum(abs2, values[wet]))
+    budget_points = count(budget_wet)
+    budget_points > 0 ||
+        @warn "BV diagnostic grid has no points with a centered wet stencil"
+    finite_l2(values) = sqrt(sum(abs2, values[budget_wet]))
     balance_scale = max(
         finite_l2(divergence),
         finite_l2(planetary),
@@ -1062,12 +1128,13 @@ function compute_barotropic_vorticity_diagnostics(
     timings = (
         sampling=sampling_timing,
         total_seconds,
-        relative_l2_residual=finite_l2(residual) / balance_scale,
+        relative_l2_residual=budget_points > 0 ?
+            finite_l2(residual) / balance_scale : NaN,
     )
     @info "BV diagnostic calculation completed" seconds=round(total_seconds; digits=3) relative_l2_residual=round(timings.relative_l2_residual; digits=6)
     return PGBarotropicVorticityDiagnostics(
         x, y, divergence, planetary, pressure_torque, bottom_curl,
-        surface_curl, residual, wet, timings,
+        surface_curl, residual, budget_wet, timings,
     )
 end
 
@@ -1086,9 +1153,11 @@ end
     compute_vorticity_diagnostics(solution, diagnostics)
 
 Compute maps of all signed terms in the depth-integrated vorticity equation
-(41), together with its closure residual. Stress curls are differentiated on
-the supplied diagnostic grid so finite-element pressure-gradient jumps are not
-sampled with the much smaller pointwise derivative step.
+(41), together with its closure residual. Bottom stress is sampled from its
+continuous finite-element interpolant, surface-stress curl is differentiated
+analytically, and bottom-stress curl uses centered diagnostic-grid differences.
+Edge points and points adjoining land are omitted because a centered stencil
+is unavailable.
 """
 function compute_vorticity_diagnostics(
     solution::PGSolution,
@@ -1099,9 +1168,8 @@ function compute_vorticity_diagnostics(
     shape = (length(x), length(y))
     arrays = [fill(NaN, shape) for _ in 1:5]
     planetary, stretching, bottom_curl, surface_curl, residual = arrays
-    surface_stress_x, surface_stress_y =
-        fill(NaN, shape), fill(NaN, shape)
     wet = copy(diagnostics.wet)
+    budget_wet = falses(shape)
     progress_stride = max(1, cld(length(y), 10))
 
     @info "Vorticity diagnostic calculation started" Nx=length(x) Ny=length(y) wet_points=count(wet)
@@ -1129,9 +1197,6 @@ function compute_vorticity_diagnostics(
                 stretching[i, j] =
                     solution.problem.coriolis(xx, yy) *
                     bottom_vertical_velocity
-                stress = solution.problem.wind_stress(xx, yy)
-                surface_stress_x[i, j] = real(stress)
-                surface_stress_y[i, j] = imag(stress)
             end
             if j == 1 || j == length(y) || j % progress_stride == 0
                 @info "Vorticity diagnostic sampling progress" rows_completed=j rows_total=length(y) percent=round(100j / length(y); digits=1)
@@ -1140,25 +1205,30 @@ function compute_vorticity_diagnostics(
 
         Ek = solution.problem.parameters.Ek
         for j in eachindex(y), i in eachindex(x)
-            wet[i, j] || continue
+            centered_stencil_is_wet(wet, i, j) || continue
             bottom_curl[i, j] = Ek * (
-                horizontal_derivative(
+                centered_horizontal_derivative(
                     diagnostics.bottom_stress_y, wet, x, i, j, 1,
                 ) -
-                horizontal_derivative(
+                centered_horizontal_derivative(
                     diagnostics.bottom_stress_x, wet, y, i, j, 2,
                 )
             )
-            surface_curl[i, j] = Ek * (
-                horizontal_derivative(surface_stress_y, wet, x, i, j, 1) -
-                horizontal_derivative(surface_stress_x, wet, y, i, j, 2)
+            surface_curl[i, j] = Ek * analytical_surface_stress_curl(
+                solution.problem, x[i], y[j],
             )
             residual[i, j] = planetary[i, j] + stretching[i, j] -
                 bottom_curl[i, j] - surface_curl[i, j]
+            budget_wet[i, j] = true
         end
+        planetary[.!budget_wet] .= NaN
+        stretching[.!budget_wet] .= NaN
     end
 
-    finite_l2(values) = sqrt(sum(abs2, values[wet]))
+    budget_points = count(budget_wet)
+    budget_points > 0 ||
+        @warn "Vorticity diagnostic grid has no points with a centered wet stencil"
+    finite_l2(values) = sqrt(sum(abs2, values[budget_wet]))
     balance_scale = max(
         finite_l2(planetary),
         finite_l2(stretching),
@@ -1170,12 +1240,13 @@ function compute_vorticity_diagnostics(
     timings = (
         sampling=sampling_timing,
         total_seconds,
-        relative_l2_residual=finite_l2(residual) / balance_scale,
+        relative_l2_residual=budget_points > 0 ?
+            finite_l2(residual) / balance_scale : NaN,
     )
     @info "Vorticity diagnostic calculation completed" seconds=round(total_seconds; digits=3) relative_l2_residual=round(timings.relative_l2_residual; digits=6)
     return PGVorticityDiagnostics(
         x, y, planetary, stretching, bottom_curl, surface_curl,
-        residual, wet, timings,
+        residual, budget_wet, timings,
     )
 end
 

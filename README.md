@@ -140,7 +140,8 @@ f(\partial_x U+\partial_y V)+U f_x+V f_y
 ```
 
 where $J(p_b,H)=p_{b,x}H_y-p_{b,y}H_x$. It retains the transport-divergence
-term explicitly, although this term vanishes for the steady solution.
+term explicitly and evaluates it as exactly zero from the steady fixed-lid,
+no-normal-flow mass balance, rather than differentiating sampled transport.
 
 The depth-integrated vorticity diagnostic evaluates equation (41), generalized
 from the manuscript's beta plane to flexible $f(x,y)$:
@@ -155,6 +156,17 @@ U f_x + V f_y + f w_b
 where $w_b=-(u_bH_x+v_bH_y)$ follows from the bottom kinematic boundary
 condition. On a beta plane, $U f_x+V f_y=\beta V$. The plot shows these
 signed terms and the closure residual with one shared symmetric color scale.
+
+For both vorticity diagnostics, bottom stress is first interpolated into a
+continuous vector finite-element space before its curl is evaluated. The
+prescribed surface-stress curl is evaluated from the optional exact
+`wind_stress_curl(x, y)` problem specification, or by automatic
+differentiation when it is omitted. The remaining mapped derivatives use
+centered diagnostic-grid differences.
+Cells at the grid edge or next to land are left blank because no centered
+stencil is available; they are also excluded from reported residual norms.
+This avoids interpreting one-sided corner differences or discontinuous
+pressure-element gradients as physical vorticity residuals.
 
 The API uses conventional oceanographic buoyancy and the fixed upper boundary:
 `∂z p = b`, `p = p_s - ∫_z^0 b dz`,
@@ -174,4 +186,10 @@ vector magnitude.
 `Analytical Model/PG_Stommel_Gyre_Example.ipynb` provides a separate
 flat-bottom, beta-plane subtropical gyre example with zero buoyancy forcing.
 It compares the computed transport streamfunction with the Sverdrup interior
-and diagnoses the frictional western boundary current.
+and diagnoses the frictional western boundary current. It uses
+$\mathrm{Ek}=0.0025$, $\beta=0.60$, a pressure-mesh resolution of $0.03$,
+and a $101\times51$ diagnostic grid to resolve a clearer western
+intensification.
+Its Sverdrup comparison uses the nondimensional balance
+$\beta V=\mathrm{Ek}\,[\nabla\times\boldsymbol{\tau}]_z$ and plots the
+interior balance separately from its bottom-stress boundary closure.

@@ -226,7 +226,10 @@ function solve_surface_pressure(
         total_seconds,
     )
     @info "Surface-pressure solve completed" seconds=round(total_seconds; digits=3)
-    return (; model, psurf, gradps, A_fn, B_fn, diagnostic_B_fn, T_fn, timings)
+    return (;
+        model, psurf, gradps, A_fn, B_fn, diagnostic_B_fn, T_fn, order,
+        timings,
+    )
 end
 
 """
