@@ -178,16 +178,21 @@ function solve_surface_pressure(
         H = Hfun(x[1], x[2])
         return H > 0 ? pressure_coefficient(p, H, ffun(x[1], x[2])) : 1.0
     end
-    function B_fn(x)
+    function baroclinic_B_fn(x)
         H = Hfun(x[1], x[2])
         H > 0 || return 0.0 + 0.0im
-        buoyancy = buoyancy_transport_b23(
+        return buoyancy_transport_b23(
             kernels, p, Hfun, ffun, f_x, f_y, B, bs, H_x, H_y, x[1], x[2],
         )
-        return buoyancy + wind_transport_coefficient(
+    end
+    function stress_B_fn(x)
+        H = Hfun(x[1], x[2])
+        H > 0 || return 0.0 + 0.0im
+        return wind_transport_coefficient(
             p, H, ffun(x[1], x[2]), τ(x[1], x[2]),
         )
     end
+    B_fn(x) = baroclinic_B_fn(x) + stress_B_fn(x)
     function diagnostic_B_fn(x)
         H = Hfun(x[1], x[2])
         H > 0 || return 0.0 + 0.0im
@@ -227,8 +232,8 @@ function solve_surface_pressure(
     )
     @info "Surface-pressure solve completed" seconds=round(total_seconds; digits=3)
     return (;
-        model, psurf, gradps, A_fn, B_fn, diagnostic_B_fn, T_fn, order,
-        timings,
+        model, psurf, gradps, A_fn, B_fn, baroclinic_B_fn, stress_B_fn,
+        diagnostic_B_fn, T_fn, order, timings,
     )
 end
 
@@ -267,8 +272,8 @@ function solve_transport_streamfunction(pressure; order=2)
         gradp = interpolate(∇(pressure.psurf), spaces.V_vector)
         real_A = interpolate(x -> real(pressure.A_fn(x)), U)
         imag_A = interpolate(x -> imag(pressure.A_fn(x)), U)
-        real_B = interpolate(x -> real(pressure.diagnostic_B_fn(x)), U)
-        imag_B = interpolate(x -> imag(pressure.diagnostic_B_fn(x)), U)
+        real_B = interpolate(x -> real(pressure.B_fn(x)), U)
+        imag_B = interpolate(x -> imag(pressure.B_fn(x)), U)
         (real_A + im * imag_A) *
         (gradp ⋅ VectorValue(1.0, im)) +
         (real_B + im * imag_B)

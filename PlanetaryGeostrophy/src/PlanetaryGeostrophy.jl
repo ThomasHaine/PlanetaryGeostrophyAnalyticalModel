@@ -35,6 +35,7 @@ export PGParameters,
        PGVorticityDiagnostics,
        PGGeostrophicContourVorticityDiagnostics,
        PGTransportDivergenceVorticityDiagnostics,
+       PGSurfacePressureEquationDiagnostics,
        rectangle_boundary,
        ellipse_boundary,
        solve_pg,
@@ -50,6 +51,7 @@ export PGParameters,
        depth_integrated_vorticity_terms,
        geostrophic_contour_vorticity_terms,
        transport_divergence_vorticity_terms,
+       surface_pressure_equation_coefficients,
        solve_streamfunction,
        streamfunction,
        streamfunction_current,
@@ -60,6 +62,7 @@ export PGParameters,
        compute_vorticity_diagnostics,
        compute_geostrophic_contour_vorticity_diagnostics,
        compute_transport_divergence_vorticity_diagnostics,
+       compute_surface_pressure_equation_diagnostics,
        write_solution,
        plot_solution,
        plot_surface_pressure,
@@ -72,6 +75,7 @@ export PGParameters,
        plot_vorticity_balance,
        plot_geostrophic_contour_vorticity_balance,
        plot_transport_divergence_vorticity_balance,
+       plot_surface_pressure_equation_diagnostics,
        plot_baroclinic_potential_energy,
        plot_bottom_pressure,
        performance_summary
@@ -415,7 +419,7 @@ function depth_integrated_current(solution::PGSolution, x, y)
     p = internal_parameters(solution.problem.parameters)
     A = pressure_coefficient(p, H, solution.problem.coriolis(x, y))
     current = A * solution.pressure.gradps(x, y) +
-              solution.pressure.diagnostic_B_fn(Point(x, y))
+              solution.pressure.B_fn(Point(x, y))
     return (U=real(current), V=imag(current))
 end
 
@@ -716,6 +720,60 @@ function transport_divergence_vorticity_terms(solution::PGSolution, x, y)
     )
 end
 
+"""
+    surface_pressure_equation_coefficients(solution, x, y)
+
+Evaluate the coefficients in the surface-pressure advection-diffusion equation
+(74),
+
+`div(A_r grad(p_s)) + velocity ⋅ grad(p_s) = source`,
+
+where `velocity = (∂y A_i, -∂x A_i)`, `diffusivity = A_r`, and
+`source = -∂x B_r - ∂y B_i`. The source is also returned as separate
+baroclinic and surface-stress contributions from
+`B = B_baroclinic + B_stress`. The complex transport coefficients `A` and
+`B` are exactly those used to assemble the surface-pressure solver.
+"""
+function surface_pressure_equation_coefficients(
+    solution::PGSolution,
+    x,
+    y,
+)
+    step = solution.problem.derivative_step
+    for (xx, yy) in (
+        (x, y),
+        (x - step, y),
+        (x + step, y),
+        (x, y - step),
+        (x, y + step),
+    )
+        require_water(solution, xx, yy)
+    end
+    A(xx, yy) = solution.pressure.A_fn((xx, yy))
+    B_baroclinic(xx, yy) =
+        solution.pressure.baroclinic_B_fn((xx, yy))
+    B_stress(xx, yy) = solution.pressure.stress_B_fn((xx, yy))
+    A_derivatives = centered_field_derivatives(A, x, y, step)
+    B_baroclinic_derivatives = centered_field_derivatives(
+        B_baroclinic, x, y, step,
+    )
+    B_stress_derivatives = centered_field_derivatives(
+        B_stress, x, y, step,
+    )
+    baroclinic_source = -real(B_baroclinic_derivatives.x) -
+        imag(B_baroclinic_derivatives.y)
+    stress_source =
+        -real(B_stress_derivatives.x) - imag(B_stress_derivatives.y)
+    return (
+        advection_velocity_x=imag(A_derivatives.y),
+        advection_velocity_y=-imag(A_derivatives.x),
+        diffusivity=real(A(x, y)),
+        baroclinic_source,
+        stress_source,
+        source=baroclinic_source + stress_source,
+    )
+end
+
 struct PGStreamfunction{F,V,G,T}
     finite_element::F
     value::V
@@ -857,6 +915,22 @@ struct PGTransportDivergenceVorticityDiagnostics{
     baroclinic_torque::Matrix{Float64}
     bottom_stress_curl::Matrix{Float64}
     surface_stress_curl::Matrix{Float64}
+    residual::Matrix{Float64}
+    wet::BitMatrix
+    timings::T
+end
+
+struct PGSurfacePressureEquationDiagnostics{
+    TX<:AbstractVector,TY<:AbstractVector,T
+}
+    x::TX
+    y::TY
+    advection_velocity_x::Matrix{Float64}
+    advection_velocity_y::Matrix{Float64}
+    diffusivity::Matrix{Float64}
+    baroclinic_source::Matrix{Float64}
+    stress_source::Matrix{Float64}
+    source::Matrix{Float64}
     residual::Matrix{Float64}
     wet::BitMatrix
     timings::T
@@ -1702,6 +1776,165 @@ function compute_transport_divergence_vorticity_diagnostics(
 end
 
 """
+    compute_surface_pressure_equation_diagnostics(solution, diagnostics)
+
+Sample the velocity, diffusivity, and source fields in the surface-pressure
+advection-diffusion equation (74). The exact analytical transport coefficients
+`A` and `B` used by the pressure solve are recovered from the already sampled
+analytical transport and pressure gradient; their derivatives are then
+evaluated with centered diagnostic-grid differences. The residual is the
+sampled transport divergence, equivalent to the left-hand side minus source
+in (74). Edge points and points adjoining land are omitted because a centered
+stencil is unavailable.
+"""
+function compute_surface_pressure_equation_diagnostics(
+    solution::PGSolution,
+    diagnostics,
+)
+    started = time()
+    x, y = diagnostics.x, diagnostics.y
+    shape = (length(x), length(y))
+    arrays = [fill(NaN, shape) for _ in 1:7]
+    velocity_x, velocity_y, diffusivity, baroclinic_source, stress_source,
+        source, residual = arrays
+    transport_x_divergence = fill(NaN, shape)
+    transport_y_divergence = fill(NaN, shape)
+    real_A, imag_A = fill(NaN, shape), fill(NaN, shape)
+    real_baroclinic_B, imag_baroclinic_B =
+        fill(NaN, shape), fill(NaN, shape)
+    real_stress_B, imag_stress_B = fill(NaN, shape), fill(NaN, shape)
+    sampled_wet = copy(diagnostics.wet)
+    wet = falses(shape)
+    progress_stride = max(1, cld(length(y), 10))
+
+    @info "Surface-pressure equation diagnostic calculation started" Nx=length(x) Ny=length(y) wet_points=count(sampled_wet)
+    _, sampling_timing = timed_stage(
+        "sampling surface-pressure equation coefficients",
+    ) do
+        for j in eachindex(y)
+            for i in eachindex(x)
+                sampled_wet[i, j] || continue
+                point = (x[i], y[j])
+                A = solution.pressure.A_fn(point)
+                current = (
+                    diagnostics.analytical_transport_U[i, j] +
+                    im * diagnostics.analytical_transport_V[i, j]
+                )
+                B = current - A * solution.pressure.gradps(x[i], y[j])
+                stress_B = solution.pressure.stress_B_fn(point)
+                baroclinic_B = B - stress_B
+                real_A[i, j], imag_A[i, j] = real(A), imag(A)
+                real_baroclinic_B[i, j], imag_baroclinic_B[i, j] =
+                    real(baroclinic_B), imag(baroclinic_B)
+                real_stress_B[i, j], imag_stress_B[i, j] =
+                    real(stress_B), imag(stress_B)
+                diffusivity[i, j] = real(A)
+            end
+            if j == 1 || j == length(y) || j % progress_stride == 0
+                @info "Surface-pressure equation diagnostic sampling progress" rows_completed=j rows_total=length(y) percent=round(100j / length(y); digits=1)
+            end
+        end
+
+        for j in eachindex(y), i in eachindex(x)
+            centered_stencil_is_wet(sampled_wet, i, j) || continue
+            velocity_x[i, j] = centered_horizontal_derivative(
+                imag_A, sampled_wet, y, i, j, 2,
+            )
+            velocity_y[i, j] = -centered_horizontal_derivative(
+                imag_A, sampled_wet, x, i, j, 1,
+            )
+            baroclinic_source[i, j] = -(
+                centered_horizontal_derivative(
+                    real_baroclinic_B, sampled_wet, x, i, j, 1,
+                ) +
+                centered_horizontal_derivative(
+                    imag_baroclinic_B, sampled_wet, y, i, j, 2,
+                )
+            )
+            stress_source[i, j] = -(
+                centered_horizontal_derivative(
+                    real_stress_B, sampled_wet, x, i, j, 1,
+                ) +
+                centered_horizontal_derivative(
+                    imag_stress_B, sampled_wet, y, i, j, 2,
+                )
+            )
+            source[i, j] =
+                baroclinic_source[i, j] + stress_source[i, j]
+            transport_x_divergence[i, j] =
+                centered_horizontal_derivative(
+                    diagnostics.analytical_transport_U,
+                    sampled_wet, x, i, j, 1,
+                )
+            transport_y_divergence[i, j] =
+                centered_horizontal_derivative(
+                    diagnostics.analytical_transport_V,
+                    sampled_wet, y, i, j, 2,
+                )
+            residual[i, j] = (
+                transport_x_divergence[i, j] +
+                transport_y_divergence[i, j]
+            )
+            wet[i, j] = true
+        end
+    end
+
+    wet_points = count(wet)
+    wet_points > 0 ||
+        @warn "Surface-pressure equation diagnostic grid has no points with a centered wet stencil"
+    finite_l2(values) = sqrt(sum(abs2, values[wet]))
+    residual_scale = max(
+        finite_l2(transport_x_divergence),
+        finite_l2(transport_y_divergence),
+        eps(),
+    )
+    total_seconds = time() - started
+    timings = (
+        sampling=sampling_timing,
+        total_seconds,
+        sampled_wet_points=count(sampled_wet),
+        wet_points,
+        points_per_second=wet_points / max(sampling_timing.seconds, eps()),
+        relative_l2_residual=wet_points > 0 ?
+            finite_l2(residual) / residual_scale : NaN,
+    )
+    @info "Surface-pressure equation diagnostic calculation completed" seconds=round(total_seconds; digits=3) wet_points relative_l2_residual=round(timings.relative_l2_residual; digits=6)
+    return PGSurfacePressureEquationDiagnostics(
+        x, y, velocity_x, velocity_y, diffusivity, baroclinic_source,
+        stress_source, source, residual, wet, timings,
+    )
+end
+
+function compute_surface_pressure_equation_diagnostics(
+    solution::PGSolution,
+    x_values,
+    y_values,
+)
+    x, y = collect(float.(x_values)), collect(float.(y_values))
+    length(x) >= 3 && length(y) >= 3 ||
+        throw(ArgumentError("x and y must each contain at least three points"))
+    issorted(x) && all(diff(x) .> 0) ||
+        throw(ArgumentError("x must be strictly increasing"))
+    issorted(y) && all(diff(y) .> 0) ||
+        throw(ArgumentError("y must be strictly increasing"))
+    shape = (length(x), length(y))
+    U, V = fill(NaN, shape), fill(NaN, shape)
+    wet = falses(shape)
+    for j in eachindex(y), i in eachindex(x)
+        xx, yy = x[i], y[j]
+        solution.problem.inside(xx, yy) || continue
+        solution.problem.depth(xx, yy) > 0 || continue
+        current = depth_integrated_current(solution, xx, yy)
+        U[i, j], V[i, j] = current.U, current.V
+        wet[i, j] = true
+    end
+    return compute_surface_pressure_equation_diagnostics(
+        solution,
+        (; x, y, analytical_transport_U=U, analytical_transport_V=V, wet),
+    )
+end
+
+"""
     write_solution(fields, prefix)
 
 Write `<prefix>_3D_solution.vtr` containing `u`, `v`, `w`, and `b`, and
@@ -1792,7 +2025,7 @@ function plot_surface_pressure(fields::PGFields; output=nothing)
     return figure
 end
 
-function sampled_vectors(diagnostics::PGDiagnostics, x_component, y_component, stride)
+function sampled_vectors(diagnostics, x_component, y_component, stride)
     stride > 0 || throw(ArgumentError("stride must be positive"))
     indices = CartesianIndex{2}[]
     for j in 1:stride:length(diagnostics.y), i in 1:stride:length(diagnostics.x)
@@ -1831,7 +2064,7 @@ function vector_paths(vectors, vector_scale, head_length)
 end
 
 function vector_diagnostic_plot(
-    diagnostics::PGDiagnostics,
+    diagnostics,
     x_component,
     y_component,
     title;
@@ -1883,6 +2116,85 @@ function save_diagnostic_plot(figure, output, description)
         @info "$description saved" path=string(output) seconds=round(timing.seconds; digits=3)
     end
     return figure
+end
+
+"""
+    plot_surface_pressure_equation_diagnostics(
+        diagnostics; stride=nothing, output=nothing,
+    )
+
+Plot the advection-velocity magnitude and vectors, diffusivity, and separate
+baroclinic and surface-stress source terms in the surface-pressure equation
+(74).
+"""
+function plot_surface_pressure_equation_diagnostics(
+    diagnostics::PGSurfacePressureEquationDiagnostics;
+    stride=nothing,
+    arrow_scale=0.35,
+    arrowhead_size=0.08,
+    output=nothing,
+)
+    vector_stride = isnothing(stride) ?
+        max(1, cld(max(length(diagnostics.x), length(diagnostics.y)), 16)) :
+        stride
+    source_scale = max(
+        finite_absmax(diagnostics.baroclinic_source),
+        finite_absmax(diagnostics.stress_source),
+    )
+    @info "Plotting surface-pressure equation diagnostics" stride=vector_stride arrow_scale arrowhead_size output
+    figure, _ = timed_stage(
+        "rendering surface-pressure equation diagnostic plot",
+    ) do
+        velocity = vector_diagnostic_plot(
+            diagnostics,
+            diagnostics.advection_velocity_x,
+            diagnostics.advection_velocity_y,
+            "advection velocity";
+            stride=vector_stride,
+            arrow_scale,
+            arrowhead_size,
+        )
+        diffusivity = heatmap(
+            diagnostics.x, diagnostics.y, diagnostics.diffusivity';
+            xlabel="x",
+            ylabel="y",
+            title="diffusivity Aᵣ",
+            colorbar_title="Aᵣ",
+            color=:viridis,
+            aspect_ratio=:equal,
+        )
+        baroclinic_source = heatmap(
+            diagnostics.x, diagnostics.y, diagnostics.baroclinic_source';
+            xlabel="x",
+            ylabel="y",
+            title="baroclinic source",
+            colorbar_title="source",
+            color=:balance,
+            clims=(-source_scale, source_scale),
+            aspect_ratio=:equal,
+        )
+        stress_source = heatmap(
+            diagnostics.x, diagnostics.y, diagnostics.stress_source';
+            xlabel="x",
+            ylabel="y",
+            title="stress source",
+            colorbar_title="source",
+            color=:balance,
+            clims=(-source_scale, source_scale),
+            aspect_ratio=:equal,
+        )
+        plot(
+            velocity, diffusivity, baroclinic_source, stress_source;
+            layout=(1, 4),
+            size=(1750, 430),
+            plot_title="surface-pressure equation coefficients",
+            plot_titlefontsize=16,
+            margin=2Plots.mm,
+        )
+    end
+    return save_diagnostic_plot(
+        figure, output, "surface-pressure equation diagnostic plot",
+    )
 end
 
 function plot_bottom_stress(
@@ -2372,6 +2684,9 @@ performance_summary(
 ) = diagnostics.timings
 performance_summary(
     diagnostics::PGTransportDivergenceVorticityDiagnostics,
+) = diagnostics.timings
+performance_summary(
+    diagnostics::PGSurfacePressureEquationDiagnostics,
 ) = diagnostics.timings
 
 end
