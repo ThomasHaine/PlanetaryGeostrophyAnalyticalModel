@@ -118,11 +118,15 @@ end
         coriolis_x=(x, y) -> 0.0,
         coriolis_y=(x, y) -> 0.15,
         wind_stress=(x, y) -> 1e-3cos(pi * y / Ly) + 0im,
+        wind_stress_curl=(x, y) -> 1e-3 * pi / Ly * sin(pi * y / Ly),
         restoring_buoyancy=(x, y, z) -> 1e-2z + 2e-3sin(pi * x / Lx),
         surface_buoyancy=(x, y) ->
             2e-3cos(pi * x / Lx) * cos(pi * y / Ly),
         boundary=rectangle_boundary(Lx, Ly),
     )
+    @test PlanetaryGeostrophy.analytical_surface_stress_curl(
+        problem, 0.1, Ly / 4,
+    ) ≈ 1e-3 * pi / Ly * sin(pi / 4)
 
     mktempdir() do directory
         solution = solve_pg(
@@ -133,6 +137,10 @@ end
             overwrite_mesh=true,
         )
         x, y = -0.3, 0.0
+        projected_stress = PlanetaryGeostrophy.project_bottom_stress(
+            solution; order=solution.pressure.order,
+        )
+        @test all(isfinite, projected_stress.value(x, y))
         terms = depth_integrated_momentum_terms(solution, x, y)
         bv_terms = barotropic_vorticity_terms(solution, x, y)
         vorticity_terms = depth_integrated_vorticity_terms(solution, x, y)
@@ -275,8 +283,8 @@ end
             )
         @test direct_buoyancy_stress ≈ b23_buoyancy_stress rtol=2e-4
 
-        coordinates = [-0.3, 0.2]
-        shape = (2, 2)
+        coordinates = [-0.3, -0.05, 0.2]
+        shape = (3, 3)
         zeros2 = zeros(shape)
         diagnostics = PGDiagnostics(
             coordinates,
@@ -297,21 +305,29 @@ end
         @test maximum(abs, dim.x_residual) < 1e-9
         @test maximum(abs, dim.y_residual) < 1e-9
         @test size(bv.transport_divergence) == shape
-        @test bv.bottom_pressure_torque ≈ zeros2
-        @test bv.residual ≈
-            bv.transport_divergence .+
-            bv.planetary_vorticity_advection .-
-            bv.bottom_pressure_torque .-
-            bv.bottom_stress_curl .-
-            bv.surface_stress_curl
+        @test count(bv.wet) == 1
+        @test all(isnan, bv.bottom_stress_curl[.!bv.wet])
+        @test all(isnan, bv.residual[.!bv.wet])
+        @test bv.bottom_pressure_torque[bv.wet] ≈ zeros(count(bv.wet))
+        @test bv.residual[bv.wet] ≈ (
+            bv.transport_divergence[bv.wet] .+
+            bv.planetary_vorticity_advection[bv.wet] .-
+            bv.bottom_pressure_torque[bv.wet] .-
+            bv.bottom_stress_curl[bv.wet] .-
+            bv.surface_stress_curl[bv.wet]
+        )
         @test performance_summary(bv) == bv.timings
         @test isfinite(bv.timings.relative_l2_residual)
         @test size(vorticity.planetary_vorticity_advection) == shape
-        @test vorticity.residual ≈
-            vorticity.planetary_vorticity_advection .+
-            vorticity.bottom_vortex_stretching .-
-            vorticity.bottom_stress_curl .-
-            vorticity.surface_stress_curl
+        @test count(vorticity.wet) == 1
+        @test all(isnan, vorticity.bottom_stress_curl[.!vorticity.wet])
+        @test all(isnan, vorticity.residual[.!vorticity.wet])
+        @test vorticity.residual[vorticity.wet] ≈ (
+            vorticity.planetary_vorticity_advection[vorticity.wet] .+
+            vorticity.bottom_vortex_stretching[vorticity.wet] .-
+            vorticity.bottom_stress_curl[vorticity.wet] .-
+            vorticity.surface_stress_curl[vorticity.wet]
+        )
         @test performance_summary(vorticity) == vorticity.timings
         @test isfinite(vorticity.timings.relative_l2_residual)
 
