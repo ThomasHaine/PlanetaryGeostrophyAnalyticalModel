@@ -274,3 +274,13 @@ intensification.
 Its Sverdrup comparison uses the nondimensional balance
 $\beta V=\mathrm{Ek}\,[\nabla\times\boldsymbol{\tau}]_z$ and plots the
 interior balance separately from its bottom-stress boundary closure.
+
+`Analytical Model/PG_Beta_Plume_Example.ipynb` provides a flat-bottom,
+unstratified beta-plume example inspired by Stommel (1982). A smooth
+azimuthal surface stress produces an exactly Gaussian, spatially isolated
+wind-stress curl east of the basin center. The notebook compares the
+westward PG response with the inviscid Sverdrup plume and diagnoses its
+bottom-stress closure, following the vorticity-budget perspective of Haine
+and Fuller (2016). See
+[Stommel (1982)](https://doi.org/10.1016/0012-821X(82)90038-3) and
+[Haine and Fuller (2016)](https://doi.org/10.1002/qj.2866).
