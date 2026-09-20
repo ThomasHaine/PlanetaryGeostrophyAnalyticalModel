@@ -123,6 +123,14 @@ plot_vorticity_balance(
     vorticity;
     output="sample_pg_vorticity_balance.png",
 )
+
+gcvb = compute_geostrophic_contour_vorticity_diagnostics(
+    solution, diagnostics,
+)
+plot_geostrophic_contour_vorticity_balance(
+    gcvb;
+    output="sample_pg_geostrophic_contour_vorticity_balance.png",
+)
 ```
 
 The DIM balance plot shows the signed Coriolis, bottom-pressure-gradient,
@@ -157,7 +165,22 @@ where $w_b=-(u_bH_x+v_bH_y)$ follows from the bottom kinematic boundary
 condition. On a beta plane, $U f_x+V f_y=\beta V$. The plot shows these
 signed terms and the closure residual with one shared symmetric color scale.
 
-For both vorticity diagnostics, bottom stress is first interpolated into a
+The geostrophic-contour vorticity diagnostic evaluates equation (43):
+
+```math
+J\left(\frac{f}{H},\Psi\right)
+=J\left(\frac{1}{H},\chi\right)
+-\mathrm{Ek}\left[\nabla\times
+\left(\frac{\boldsymbol{\tau}+\boldsymbol{\tau}_b}{H}\right)\right]_z,
+```
+
+where $(U,V)=(-\Psi_y,\Psi_x)$ and
+$J(a,b)=a_xb_y-a_yb_x$. The JEBAR term
+$J(1/H,\chi)$ and the two stress contributions diagnose transport across
+$f/H$ contours without bottom pressure.
+
+For the mapped barotropic-vorticity, depth-integrated-vorticity, and
+geostrophic-contour diagnostics, bottom stress is first interpolated into a
 continuous vector finite-element space before its curl is evaluated. The
 prescribed surface-stress curl is evaluated from the optional exact
 `wind_stress_curl(x, y)` problem specification, or by automatic
