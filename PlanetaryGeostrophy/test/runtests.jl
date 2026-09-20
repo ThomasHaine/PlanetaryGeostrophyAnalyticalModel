@@ -145,6 +145,7 @@ end
         bv_terms = barotropic_vorticity_terms(solution, x, y)
         vorticity_terms = depth_integrated_vorticity_terms(solution, x, y)
         gcvb_terms = geostrophic_contour_vorticity_terms(solution, x, y)
+        tdvb_terms = transport_divergence_vorticity_terms(solution, x, y)
         p = PlanetaryGeostrophy.internal_parameters(problem.parameters)
         column_buoyancy =
             PlanetaryGeostrophy.VelocityFieldPrototype.buoyancy_column_integral(
@@ -187,10 +188,20 @@ end
         @test gcvb_terms.surface_stress_curl ≈
             vorticity_terms.surface_stress_curl
         @test gcvb_terms.residual ≈ -vorticity_terms.residual
+        @test tdvb_terms.residual ≈ -(
+            tdvb_terms.bottom_pressure_torque +
+            tdvb_terms.baroclinic_torque +
+            tdvb_terms.bottom_stress_curl +
+            tdvb_terms.surface_stress_curl
+        )
+        @test tdvb_terms.residual ≈
+            bv_terms.residual / problem.coriolis(x, y) rtol=1e-6
         curl_y = 0.2
         curl_terms = depth_integrated_vorticity_terms(solution, x, curl_y)
         gcvb_curl_terms =
             geostrophic_contour_vorticity_terms(solution, x, curl_y)
+        tdvb_curl_terms =
+            transport_divergence_vorticity_terms(solution, x, curl_y)
         expected_surface_curl = (
             problem.parameters.Ek * 1e-3 * pi / Ly *
             sin(pi * curl_y / Ly)
@@ -198,6 +209,14 @@ end
         @test curl_terms.surface_stress_curl ≈ expected_surface_curl rtol=1e-8
         @test gcvb_curl_terms.surface_stress_curl ≈
             expected_surface_curl rtol=1e-8
+        local_f = problem.coriolis(x, curl_y)
+        expected_tdvb_surface_curl = problem.parameters.Ek * (
+            1e-3 * pi / Ly * sin(pi * curl_y / Ly) / local_f +
+            real(problem.wind_stress(x, curl_y)) *
+            problem.coriolis_y(x, curl_y) / local_f^2
+        )
+        @test tdvb_curl_terms.surface_stress_curl ≈
+            expected_tdvb_surface_curl rtol=1e-8
 
         z, dz = -0.4, 1e-4
         internal_pressure(zz) = surface_pressure(solution, x, y) -
@@ -321,6 +340,9 @@ end
         gcvb = compute_geostrophic_contour_vorticity_diagnostics(
             solution, diagnostics,
         )
+        tdvb = compute_transport_divergence_vorticity_diagnostics(
+            solution, diagnostics,
+        )
 
         @test size(dim.chi) == shape
         @test maximum(abs, dim.x_residual) < 1e-9
@@ -363,11 +385,24 @@ end
         )
         @test performance_summary(gcvb) == gcvb.timings
         @test isfinite(gcvb.timings.relative_l2_residual)
+        @test size(tdvb.bottom_pressure_torque) == shape
+        @test count(tdvb.wet) == 1
+        @test all(isnan, tdvb.bottom_pressure_torque[.!tdvb.wet])
+        @test all(isnan, tdvb.residual[.!tdvb.wet])
+        @test tdvb.residual[tdvb.wet] ≈ -(
+            tdvb.bottom_pressure_torque[tdvb.wet] .+
+            tdvb.baroclinic_torque[tdvb.wet] .+
+            tdvb.bottom_stress_curl[tdvb.wet] .+
+            tdvb.surface_stress_curl[tdvb.wet]
+        )
+        @test performance_summary(tdvb) == tdvb.timings
+        @test isfinite(tdvb.timings.relative_l2_residual)
 
         balance_path = joinpath(directory, "dim_balance.png")
         bv_path = joinpath(directory, "barotropic_vorticity_balance.png")
         vorticity_path = joinpath(directory, "vorticity_balance.png")
         gcvb_path = joinpath(directory, "gcvb_balance.png")
+        tdvb_path = joinpath(directory, "tdvb_balance.png")
         chi_path = joinpath(directory, "chi.png")
         pressure_path = joinpath(directory, "bottom_pressure.png")
         balance_figure = plot_dim_balance(dim; output=balance_path)
@@ -378,6 +413,9 @@ end
         )
         gcvb_figure = plot_geostrophic_contour_vorticity_balance(
             gcvb; output=gcvb_path,
+        )
+        tdvb_figure = plot_transport_divergence_vorticity_balance(
+            tdvb; output=tdvb_path,
         )
         plot_baroclinic_potential_energy(dim; output=chi_path)
         plot_bottom_pressure(dim; output=pressure_path)
@@ -415,10 +453,15 @@ end
             all(isapprox.(size, panel_size(gcvb_figure, 1)))
             for size in (panel_size(gcvb_figure, index) for index in 1:5)
         )
+        @test all(
+            all(isapprox.(size, panel_size(tdvb_figure, 1)))
+            for size in (panel_size(tdvb_figure, index) for index in 1:5)
+        )
         @test isfile(balance_path)
         @test isfile(bv_path)
         @test isfile(vorticity_path)
         @test isfile(gcvb_path)
+        @test isfile(tdvb_path)
         @test isfile(chi_path)
         @test isfile(pressure_path)
 
@@ -457,6 +500,11 @@ end
             y,
         )
         variable_gcvb_terms = geostrophic_contour_vorticity_terms(
+            variable_solution,
+            x,
+            y,
+        )
+        variable_tdvb_terms = transport_divergence_vorticity_terms(
             variable_solution,
             x,
             y,
@@ -520,5 +568,49 @@ end
             variable_problem.depth_x(x, y) * χ_y
         ) / H^2
         @test variable_gcvb_terms.jebar ≈ expected_jebar rtol=1e-8
+        surface_stress_over_coriolis(xx, yy) =
+            variable_problem.wind_stress(xx, yy) /
+            variable_problem.coriolis(xx, yy)
+        surface_stress_over_coriolis_x = (
+            surface_stress_over_coriolis(x + derivative_step, y) -
+            surface_stress_over_coriolis(x - derivative_step, y)
+        ) / (2derivative_step)
+        surface_stress_over_coriolis_y = (
+            surface_stress_over_coriolis(x, y + derivative_step) -
+            surface_stress_over_coriolis(x, y - derivative_step)
+        ) / (2derivative_step)
+        expected_coriolis_weighted_surface_curl =
+            imag(surface_stress_over_coriolis_x) -
+            real(surface_stress_over_coriolis_y)
+        @test PlanetaryGeostrophy.analytical_surface_stress_over_coriolis_curl(
+            variable_problem, x, y,
+        ) ≈ expected_coriolis_weighted_surface_curl rtol=1e-8
+
+        pb_x = (
+            bottom_pressure(variable_solution, x + derivative_step, y) -
+            bottom_pressure(variable_solution, x - derivative_step, y)
+        ) / (2derivative_step)
+        pb_y = (
+            bottom_pressure(variable_solution, x, y + derivative_step) -
+            bottom_pressure(variable_solution, x, y - derivative_step)
+        ) / (2derivative_step)
+        f = variable_problem.coriolis(x, y)
+        f_x = variable_problem.coriolis_x(x, y)
+        f_y = variable_problem.coriolis_y(x, y)
+        H_over_f_x = (variable_problem.depth_x(x, y) * f - H * f_x) / f^2
+        H_over_f_y = (variable_problem.depth_y(x, y) * f - H * f_y) / f^2
+        @test variable_tdvb_terms.bottom_pressure_torque ≈
+            pb_x * H_over_f_y - pb_y * H_over_f_x rtol=1e-8
+        @test variable_tdvb_terms.baroclinic_torque ≈
+            (-f_y * χ_x + f_x * χ_y) / f^2 rtol=1e-8
+        @test variable_tdvb_terms.residual ≈ -(
+            variable_tdvb_terms.bottom_pressure_torque +
+            variable_tdvb_terms.baroclinic_torque +
+            variable_tdvb_terms.bottom_stress_curl +
+            variable_tdvb_terms.surface_stress_curl
+        )
+        @test variable_tdvb_terms.residual ≈
+            variable_bv_terms.residual /
+            variable_problem.coriolis(x, y) rtol=1e-6
     end
 end

@@ -131,6 +131,14 @@ plot_geostrophic_contour_vorticity_balance(
     gcvb;
     output="sample_pg_geostrophic_contour_vorticity_balance.png",
 )
+
+tdvb = compute_transport_divergence_vorticity_diagnostics(
+    solution, diagnostics,
+)
+plot_transport_divergence_vorticity_balance(
+    tdvb;
+    output="sample_pg_transport_divergence_vorticity_balance.png",
+)
 ```
 
 The DIM balance plot shows the signed Coriolis, bottom-pressure-gradient,
@@ -179,9 +187,23 @@ $J(a,b)=a_xb_y-a_yb_x$. The JEBAR term
 $J(1/H,\chi)$ and the two stress contributions diagnose transport across
 $f/H$ contours without bottom pressure.
 
-For the mapped barotropic-vorticity, depth-integrated-vorticity, and
-geostrophic-contour diagnostics, bottom stress is first interpolated into a
-continuous vector finite-element space before its curl is evaluated. The
+The transport-divergence vorticity diagnostic evaluates equation (46):
+
+```math
+0
+=J\left(p_b,\frac{H}{f}\right)
++J\left(\chi,\frac{1}{f}\right)
++\mathrm{Ek}\left[\nabla\times
+\left(\frac{\boldsymbol{\tau}+\boldsymbol{\tau}_b}{f}\right)\right]_z.
+```
+
+This balance contains no circulation variable because the depth-integrated
+transport divergence vanishes in the steady fixed-lid problem. It instead
+diagnoses cancellation among bottom pressure, baroclinic potential energy,
+and the surface and bottom stresses.
+
+For all four mapped vorticity diagnostics, bottom stress is first interpolated
+into a continuous vector finite-element space before its curl is evaluated. The
 prescribed surface-stress curl is evaluated from the optional exact
 `wind_stress_curl(x, y)` problem specification, or by automatic
 differentiation when it is omitted. The remaining mapped derivatives use
