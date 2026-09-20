@@ -34,6 +34,7 @@ export PGParameters,
        PGBarotropicVorticityDiagnostics,
        PGVorticityDiagnostics,
        PGGeostrophicContourVorticityDiagnostics,
+       PGTransportDivergenceVorticityDiagnostics,
        rectangle_boundary,
        ellipse_boundary,
        solve_pg,
@@ -48,6 +49,7 @@ export PGParameters,
        barotropic_vorticity_terms,
        depth_integrated_vorticity_terms,
        geostrophic_contour_vorticity_terms,
+       transport_divergence_vorticity_terms,
        solve_streamfunction,
        streamfunction,
        streamfunction_current,
@@ -57,6 +59,7 @@ export PGParameters,
        compute_barotropic_vorticity_diagnostics,
        compute_vorticity_diagnostics,
        compute_geostrophic_contour_vorticity_diagnostics,
+       compute_transport_divergence_vorticity_diagnostics,
        write_solution,
        plot_solution,
        plot_surface_pressure,
@@ -68,6 +71,7 @@ export PGParameters,
        plot_barotropic_vorticity_balance,
        plot_vorticity_balance,
        plot_geostrophic_contour_vorticity_balance,
+       plot_transport_divergence_vorticity_balance,
        plot_baroclinic_potential_energy,
        plot_bottom_pressure,
        performance_summary
@@ -354,6 +358,22 @@ function analytical_surface_stress_over_depth_curl(problem::PGProblem, x, y)
     )
 end
 
+function analytical_surface_stress_over_coriolis_curl(
+    problem::PGProblem,
+    x,
+    y,
+)
+    f = problem.coriolis(x, y)
+    stress = problem.wind_stress(x, y)
+    return (
+        analytical_surface_stress_curl(problem, x, y) / f +
+        (
+            real(stress) * problem.coriolis_y(x, y) -
+            imag(stress) * problem.coriolis_x(x, y)
+        ) / f^2
+    )
+end
+
 """
     bottom_pressure(solution, x, y)
 
@@ -608,6 +628,7 @@ function geostrophic_contour_vorticity_terms(solution::PGSolution, x, y)
         local_depth = problem.depth(xx, yy)
         (stress.x + im * stress.y) / local_depth
     end
+
     bottom_stress_derivatives = centered_field_derivatives(
         bottom_stress_over_depth, x, y, step,
     )
@@ -623,6 +644,72 @@ function geostrophic_contour_vorticity_terms(solution::PGSolution, x, y)
     return (;
         geostrophic_contour_advection,
         jebar,
+        bottom_stress_curl,
+        surface_stress_curl,
+        residual,
+    )
+end
+
+"""
+    transport_divergence_vorticity_terms(solution, x, y)
+
+Evaluate every signed term in the transport-divergence vorticity balance (46),
+
+`0 = J(p_b, H/f) + J(χ, 1/f) + Ek curl((τ + τ_b)/f)`.
+
+The residual follows the package convention of left-hand side minus
+right-hand side and is therefore the negative sum of the four returned
+physical terms.
+"""
+function transport_divergence_vorticity_terms(solution::PGSolution, x, y)
+    H = require_water(solution, x, y)
+    problem = solution.problem
+    step = problem.derivative_step
+    f = problem.coriolis(x, y)
+    f_x, f_y = problem.coriolis_x(x, y), problem.coriolis_y(x, y)
+    H_x, H_y = problem.depth_x(x, y), problem.depth_y(x, y)
+
+    bottom_pressure_gradient = VelocityFieldPrototype.finite_complex_gradient(
+        (xx, yy) -> bottom_pressure(solution, xx, yy),
+        x, y; step,
+    )
+    H_over_f_x = (H_x * f - H * f_x) / f^2
+    H_over_f_y = (H_y * f - H * f_y) / f^2
+    bottom_pressure_torque = (
+        real(bottom_pressure_gradient) * H_over_f_y -
+        imag(bottom_pressure_gradient) * H_over_f_x
+    )
+
+    χ_gradient = VelocityFieldPrototype.finite_complex_gradient(
+        (xx, yy) -> baroclinic_potential_energy(solution, xx, yy),
+        x, y; step,
+    )
+    baroclinic_torque = (
+        -f_y * real(χ_gradient) + f_x * imag(χ_gradient)
+    ) / f^2
+
+    bottom_stress_over_coriolis(xx, yy) = begin
+        stress = bottom_stress(solution, xx, yy)
+        local_f = problem.coriolis(xx, yy)
+        (stress.x + im * stress.y) / local_f
+    end
+    bottom_stress_derivatives = centered_field_derivatives(
+        bottom_stress_over_coriolis, x, y, step,
+    )
+    Ek = problem.parameters.Ek
+    bottom_stress_curl = Ek * (
+        imag(bottom_stress_derivatives.x) -
+        real(bottom_stress_derivatives.y)
+    )
+    surface_stress_curl =
+        Ek * analytical_surface_stress_over_coriolis_curl(problem, x, y)
+    residual = -(
+        bottom_pressure_torque + baroclinic_torque +
+        bottom_stress_curl + surface_stress_curl
+    )
+    return (;
+        bottom_pressure_torque,
+        baroclinic_torque,
         bottom_stress_curl,
         surface_stress_curl,
         residual,
@@ -754,6 +841,20 @@ struct PGGeostrophicContourVorticityDiagnostics{
     y::TY
     geostrophic_contour_advection::Matrix{Float64}
     jebar::Matrix{Float64}
+    bottom_stress_curl::Matrix{Float64}
+    surface_stress_curl::Matrix{Float64}
+    residual::Matrix{Float64}
+    wet::BitMatrix
+    timings::T
+end
+
+struct PGTransportDivergenceVorticityDiagnostics{
+    TX<:AbstractVector,TY<:AbstractVector,T
+}
+    x::TX
+    y::TY
+    bottom_pressure_torque::Matrix{Float64}
+    baroclinic_torque::Matrix{Float64}
     bottom_stress_curl::Matrix{Float64}
     surface_stress_curl::Matrix{Float64}
     residual::Matrix{Float64}
@@ -1469,6 +1570,138 @@ function compute_geostrophic_contour_vorticity_diagnostics(
 end
 
 """
+    compute_transport_divergence_vorticity_diagnostics(solution, diagnostics)
+
+Compute maps of all signed terms in the transport-divergence vorticity balance
+(46), together with its closure residual. Gradients of `H/f` and `1/f` use
+the specified analytical derivatives of `H` and `f`. Bottom-pressure,
+baroclinic-potential-energy, and bottom-stress derivatives use centered
+diagnostic-grid differences, with bottom stress sampled from its continuous
+finite-element interpolant. The curl of the surface stress divided by `f`,
+`curl(τ/f)`, is evaluated analytically. Edge points and points adjoining land
+are omitted because a centered stencil is unavailable.
+"""
+function compute_transport_divergence_vorticity_diagnostics(
+    solution::PGSolution,
+    diagnostics::PGDiagnostics,
+)
+    started = time()
+    x, y = diagnostics.x, diagnostics.y
+    shape = (length(x), length(y))
+    arrays = [fill(NaN, shape) for _ in 1:5]
+    pressure_torque, baroclinic_torque, bottom_curl, surface_curl, residual =
+        arrays
+    bottom_pressure_values = fill(NaN, shape)
+    χ = fill(NaN, shape)
+    bottom_stress_x_over_coriolis = fill(NaN, shape)
+    bottom_stress_y_over_coriolis = fill(NaN, shape)
+    wet = copy(diagnostics.wet)
+    budget_wet = falses(shape)
+    progress_stride = max(1, cld(length(y), 10))
+
+    @info "TDVB diagnostic calculation started" Nx=length(x) Ny=length(y) wet_points=count(wet)
+    _, sampling_timing = timed_stage(
+        "sampling transport-divergence vorticity terms",
+    ) do
+        for j in eachindex(y)
+            for i in eachindex(x)
+                wet[i, j] || continue
+                xx, yy = x[i], y[j]
+                f = solution.problem.coriolis(xx, yy)
+                bottom_pressure_values[i, j] =
+                    bottom_pressure(solution, xx, yy)
+                χ[i, j] = baroclinic_potential_energy(solution, xx, yy)
+                bottom_stress_x_over_coriolis[i, j] =
+                    diagnostics.bottom_stress_x[i, j] / f
+                bottom_stress_y_over_coriolis[i, j] =
+                    diagnostics.bottom_stress_y[i, j] / f
+            end
+            if j == 1 || j == length(y) || j % progress_stride == 0
+                @info "TDVB diagnostic sampling progress" rows_completed=j rows_total=length(y) percent=round(100j / length(y); digits=1)
+            end
+        end
+
+        problem = solution.problem
+        Ek = problem.parameters.Ek
+        for j in eachindex(y), i in eachindex(x)
+            centered_stencil_is_wet(wet, i, j) || continue
+            xx, yy = x[i], y[j]
+            H = problem.depth(xx, yy)
+            f = problem.coriolis(xx, yy)
+            H_x, H_y = problem.depth_x(xx, yy), problem.depth_y(xx, yy)
+            f_x, f_y = problem.coriolis_x(xx, yy), problem.coriolis_y(xx, yy)
+
+            pb_x = centered_horizontal_derivative(
+                bottom_pressure_values, wet, x, i, j, 1,
+            )
+            pb_y = centered_horizontal_derivative(
+                bottom_pressure_values, wet, y, i, j, 2,
+            )
+            H_over_f_x = (H_x * f - H * f_x) / f^2
+            H_over_f_y = (H_y * f - H * f_y) / f^2
+            pressure_torque[i, j] =
+                pb_x * H_over_f_y - pb_y * H_over_f_x
+
+            χ_x = centered_horizontal_derivative(χ, wet, x, i, j, 1)
+            χ_y = centered_horizontal_derivative(χ, wet, y, i, j, 2)
+            baroclinic_torque[i, j] = (-f_y * χ_x + f_x * χ_y) / f^2
+            bottom_curl[i, j] = Ek * (
+                centered_horizontal_derivative(
+                    bottom_stress_y_over_coriolis, wet, x, i, j, 1,
+                ) -
+                centered_horizontal_derivative(
+                    bottom_stress_x_over_coriolis, wet, y, i, j, 2,
+                )
+            )
+            surface_curl[i, j] =
+                Ek * analytical_surface_stress_over_coriolis_curl(
+                    problem, xx, yy,
+                )
+            residual[i, j] = -(
+                pressure_torque[i, j] + baroclinic_torque[i, j] +
+                bottom_curl[i, j] + surface_curl[i, j]
+            )
+            budget_wet[i, j] = true
+        end
+    end
+
+    budget_points = count(budget_wet)
+    budget_points > 0 ||
+        @warn "TDVB diagnostic grid has no points with a centered wet stencil"
+    finite_l2(values) = sqrt(sum(abs2, values[budget_wet]))
+    balance_scale = max(
+        finite_l2(pressure_torque),
+        finite_l2(baroclinic_torque),
+        finite_l2(bottom_curl),
+        finite_l2(surface_curl),
+        eps(),
+    )
+    total_seconds = time() - started
+    timings = (
+        sampling=sampling_timing,
+        total_seconds,
+        relative_l2_residual=budget_points > 0 ?
+            finite_l2(residual) / balance_scale : NaN,
+    )
+    @info "TDVB diagnostic calculation completed" seconds=round(total_seconds; digits=3) relative_l2_residual=round(timings.relative_l2_residual; digits=6)
+    return PGTransportDivergenceVorticityDiagnostics(
+        x, y, pressure_torque, baroclinic_torque, bottom_curl,
+        surface_curl, residual, budget_wet, timings,
+    )
+end
+
+function compute_transport_divergence_vorticity_diagnostics(
+    solution::PGSolution,
+    x,
+    y;
+    kwargs...,
+)
+    return compute_transport_divergence_vorticity_diagnostics(
+        solution, compute_diagnostics(solution, x, y; kwargs...),
+    )
+end
+
+"""
     write_solution(fields, prefix)
 
 Write `<prefix>_3D_solution.vtr` containing `u`, `v`, `w`, and `b`, and
@@ -2067,6 +2300,65 @@ function plot_geostrophic_contour_vorticity_balance(
     )
 end
 
+"""
+    plot_transport_divergence_vorticity_balance(
+        diagnostics; output=nothing,
+    )
+
+Plot every signed term and the closure residual in the transport-divergence
+vorticity balance (46). The four physical panels sum to zero, apart from the
+reported residual. All physical terms and the residual share symmetric color
+limits.
+"""
+function plot_transport_divergence_vorticity_balance(
+    diagnostics::PGTransportDivergenceVorticityDiagnostics;
+    output=nothing,
+)
+    fields = (
+        ("J(p_b, H/f)", diagnostics.bottom_pressure_torque),
+        ("J(χ, 1/f)", diagnostics.baroclinic_torque),
+        ("Ek curl(τ_b/f)", diagnostics.bottom_stress_curl),
+        ("Ek curl(τ/f)", diagnostics.surface_stress_curl),
+        ("residual", diagnostics.residual),
+    )
+    scale = maximum(finite_absmax(values) for (_, values) in fields[1:4])
+    @info "Plotting transport-divergence vorticity balance" output
+    figure, _ = timed_stage(
+        "rendering transport-divergence vorticity balance plot",
+    ) do
+        panels = [
+            heatmap(
+                diagnostics.x, diagnostics.y, values';
+                xlabel="x",
+                ylabel=index == 1 ? "y" : "",
+                title,
+                clims=(-scale, scale),
+                color=:balance,
+                colorbar=false,
+                aspect_ratio=:equal,
+                yticks=index == 1 ? :auto : false,
+                titlefontsize=11,
+                guidefontsize=10,
+                tickfontsize=8,
+                margin=1.5Plots.mm,
+            )
+            for (index, (title, values)) in enumerate(fields)
+        ]
+        layout = @layout [grid(1, 5) colorbar{0.08w}]
+        plot(
+            panels..., dim_balance_colorbar(scale);
+            layout,
+            size=(1650, 390),
+            plot_title="transport-divergence vorticity balance",
+            plot_titlefontsize=17,
+            margin=2Plots.mm,
+        )
+    end
+    return save_diagnostic_plot(
+        figure, output, "transport-divergence vorticity balance plot",
+    )
+end
+
 performance_summary(solution::PGSolution) = solution.timings
 performance_summary(fields::PGFields) = fields.timings
 performance_summary(solution::PGStreamfunction) = solution.timings
@@ -2077,6 +2369,9 @@ performance_summary(diagnostics::PGBarotropicVorticityDiagnostics) =
 performance_summary(diagnostics::PGVorticityDiagnostics) = diagnostics.timings
 performance_summary(
     diagnostics::PGGeostrophicContourVorticityDiagnostics,
+) = diagnostics.timings
+performance_summary(
+    diagnostics::PGTransportDivergenceVorticityDiagnostics,
 ) = diagnostics.timings
 
 end
