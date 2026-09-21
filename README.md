@@ -29,6 +29,7 @@ Questions/comments welcome.
   - [General variable-topography example](#general-variable-topography-example)
   - [Stommel gyre](#stommel-gyre)
   - [Isolated beta plume](#isolated-beta-plume)
+  - [Schott--Stommel beta spiral](#schott--stommel-beta-spiral)
   - [Validation and derivation notebooks](#validation-and-derivation-notebooks)
 
 ## Non-dimensional PG API
@@ -363,6 +364,17 @@ bottom-stress closure, following the vorticity-budget perspective of Haine
 and Fuller (2016). See
 [Stommel (1982)](https://doi.org/10.1016/0012-821X(82)90038-3) and
 [Haine and Fuller (2016)](https://doi.org/10.1002/qj.2866).
+
+### Schott--Stommel beta spiral
+
+`AnalyticalModel/PG_Beta_Spiral_Example.ipynb` reproduces the local,
+inviscid beta-spiral mechanism of Schott and Stommel (1978). It integrates a
+synthetic subtropical PG water column, plots the absolute-velocity hodograph,
+verifies the isopycnal-slope constraint, recovers the unknown reference
+velocity by overdetermined least squares, and demonstrates the paper's
+wrong-latitude residual test. It also compares the inviscid spiral with an
+independently solved frictional PG basin at small Ekman number. See
+[Schott and Stommel (1978)](https://doi.org/10.1016/0011-7471(78)90001-7).
 
 ### Validation and derivation notebooks
 
