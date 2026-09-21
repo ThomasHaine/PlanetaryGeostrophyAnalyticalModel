@@ -51,7 +51,7 @@ fields = sample_solution(
     range(-1.0, 0.0; length=9),
 )
 write_solution(fields, "sample_pg")
-plot_solution(fields; z_index=5, output="sample_pg.png")
+plot_solution(fields; sigma_level=0.5, output="sample_pg.png")
 ```
 
 `wind_stress` uses the complex convention `τx + im * τy`. Custom analytic
@@ -60,6 +60,9 @@ derivatives can be passed as `depth_x`, `depth_y`, `coriolis_x`, and
 solution contains `u`, `v`, `w`, and `b` on the 3D grid plus surface pressure
 and depth. Vertical velocity is reconstructed from discrete horizontal
 divergence with no-normal-flow conditions at the bottom and rigid lid.
+For variable topography, `sigma_level=0.5` plots a terrain-following slice at
+`z/H=-0.5`; a fixed `z_index` intentionally leaves cells below the local
+bottom blank.
 
 The solver logs each mesh, finite-element, field-reconstruction, output, and
 plotting stage with elapsed time, allocation, and garbage-collection metrics.

@@ -1969,29 +1969,95 @@ function write_solution(fields::PGFields, prefix)
     )
 end
 
-function field_plot(fields, values, title, z_index)
+function horizontal_slice(fields, values, z_index)
+    checkbounds(fields.z, z_index)
+    return values[:, :, z_index], "z=$(round(fields.z[z_index]; digits=3))"
+end
+
+function terrain_following_slice(fields, values, sigma_level)
+    0 <= sigma_level < 1 ||
+        throw(ArgumentError("sigma_level must satisfy 0 ≤ sigma_level < 1"))
+    slice = fill(NaN, length(fields.x), length(fields.y))
+    for j in eachindex(fields.y), i in eachindex(fields.x)
+        target_z = -sigma_level * fields.depth[i, j]
+        upper = searchsortedfirst(fields.z, target_z)
+        if upper == 1
+            fields.wet[i, j, 1] && (slice[i, j] = values[i, j, 1])
+            continue
+        elseif upper > length(fields.z)
+            fields.wet[i, j, end] && (slice[i, j] = values[i, j, end])
+            continue
+        end
+        lower = upper - 1
+        fields.wet[i, j, lower] && fields.wet[i, j, upper] || continue
+        weight = (
+            (target_z - fields.z[lower]) /
+            (fields.z[upper] - fields.z[lower])
+        )
+        slice[i, j] = (
+            (1 - weight) * values[i, j, lower] +
+            weight * values[i, j, upper]
+        )
+    end
+    return slice, "z/H=-$(round(sigma_level; digits=3))"
+end
+
+function finite_slice_absmax(values)
+    finite = filter(isfinite, vec(values))
+    return isempty(finite) ? 1.0 : max(maximum(abs, finite), eps())
+end
+
+function field_plot(fields, values, title, level_label; signed=false)
+    options = signed ? (
+        color=:balance,
+        clims=(-finite_slice_absmax(values), finite_slice_absmax(values)),
+    ) : (;)
     heatmap(
-        fields.x, fields.y, values[:, :, z_index]';
-        xlabel="x", ylabel="y", title="$title at z=$(round(fields.z[z_index], digits=3))",
-        aspect_ratio=:equal,
+        fields.x, fields.y, values';
+        xlabel="x", ylabel="y", title="$title at $level_label",
+        aspect_ratio=:equal, options...,
     )
 end
 
 """
-    plot_solution(fields; z_index=length(fields.z), output=nothing)
+    plot_solution(fields; z_index=nothing, sigma_level=nothing, output=nothing)
 
-Plot one horizontal slice of all four 3D fields together with surface
-pressure and depth. Pass `output="figure.png"` to save the figure.
+Plot one slice of all four 3D fields together with surface pressure and depth.
+Pass `z_index` for a fixed-height slice or `sigma_level` for a
+terrain-following slice at `z/H = -sigma_level`. If neither is supplied, the
+surface level is plotted. Fixed-height slices below the local bottom are left
+blank. Pass `output="figure.png"` to save the figure.
 """
-function plot_solution(fields::PGFields; z_index=length(fields.z), output=nothing)
-    checkbounds(fields.z, z_index)
-    @info "Plotting PG solution" z_index z=fields.z[z_index] output
+function plot_solution(
+    fields::PGFields;
+    z_index=nothing,
+    sigma_level=nothing,
+    output=nothing,
+)
+    !isnothing(z_index) && !isnothing(sigma_level) &&
+        throw(ArgumentError("specify either z_index or sigma_level, not both"))
+    if isnothing(sigma_level)
+        selected_index = isnothing(z_index) ? length(fields.z) : z_index
+        slice_field = values -> horizontal_slice(
+            fields, values, selected_index,
+        )
+        @info "Plotting PG solution" z_index=selected_index z=fields.z[selected_index] output
+    else
+        slice_field = values -> terrain_following_slice(
+            fields, values, sigma_level,
+        )
+        @info "Plotting PG solution" sigma_level output
+    end
     figure, timing = timed_stage("rendering solution plot") do
+        u, level_label = slice_field(fields.u)
+        v, _ = slice_field(fields.v)
+        w, _ = slice_field(fields.w)
+        b, _ = slice_field(fields.b)
         panels = [
-            field_plot(fields, fields.u, "u", z_index),
-            field_plot(fields, fields.v, "v", z_index),
-            field_plot(fields, fields.w, "w", z_index),
-            field_plot(fields, fields.b, "buoyancy", z_index),
+            field_plot(fields, u, "u", level_label; signed=true),
+            field_plot(fields, v, "v", level_label; signed=true),
+            field_plot(fields, w, "w", level_label; signed=true),
+            field_plot(fields, b, "buoyancy", level_label),
             heatmap(fields.x, fields.y, fields.surface_pressure';
                     xlabel="x", ylabel="y", title="surface pressure", aspect_ratio=:equal),
             heatmap(fields.x, fields.y, fields.depth';
