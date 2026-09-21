@@ -206,6 +206,7 @@ end
             vorticity_terms.bottom_vortex_stretching -
             vorticity_terms.bottom_stress_curl -
             vorticity_terms.surface_stress_curl
+        @test vorticity_terms.residual ≈ bv_terms.residual rtol=1e-6
         @test gcvb_terms.jebar ≈ 0 atol=1e-12
         @test gcvb_terms.residual ≈
             gcvb_terms.geostrophic_contour_advection -
@@ -466,6 +467,8 @@ end
             vorticity.bottom_stress_curl[vorticity.wet] .-
             vorticity.surface_stress_curl[vorticity.wet]
         )
+        @test vorticity.residual[vorticity.wet] ≈
+            bv.residual[bv.wet]
         @test performance_summary(vorticity) == vorticity.timings
         @test isfinite(vorticity.timings.relative_l2_residual)
         @test size(gcvb.geostrophic_contour_advection) == shape
@@ -693,6 +696,8 @@ end
             variable_vorticity_terms.bottom_vortex_stretching -
             variable_vorticity_terms.bottom_stress_curl -
             variable_vorticity_terms.surface_stress_curl
+        @test variable_vorticity_terms.residual ≈
+            variable_bv_terms.residual rtol=1e-6
         @test variable_gcvb_terms.residual ≈
             variable_gcvb_terms.geostrophic_contour_advection -
             variable_gcvb_terms.jebar +

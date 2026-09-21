@@ -183,6 +183,11 @@ U f_x + V f_y + f w_b
 where $w_b=-(u_bH_x+v_bH_y)$ follows from the bottom kinematic boundary
 condition. On a beta plane, $U f_x+V f_y=\beta V$. The plot shows these
 signed terms and the closure residual with one shared symmetric color scale.
+For sloping bathymetry, equation (41) requires the bottom vertical-vorticity
+flux with horizontal derivatives taken at fixed $z$. The diagnostic therefore
+corrects the curl of stress sampled along $z=-H(x,y)$ by
+$f w_b+J(p_b,H)$. Omitting this chain-rule correction gives a spuriously large
+DIV residual over topography, although the two curls coincide for flat depth.
 
 The geostrophic-contour vorticity diagnostic evaluates equation (43):
 
