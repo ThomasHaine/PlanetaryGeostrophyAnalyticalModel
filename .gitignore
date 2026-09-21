@@ -10,5 +10,6 @@
 *.synctex*
 !.gitignore
 Development*
+AnalyticalModel/Old*
 .vscode*
 .DS_Store
