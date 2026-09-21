@@ -20,6 +20,7 @@ export VelocityParameters,
        load_symbolic_kernels,
        velocity_b10,
        velocity_b23,
+       velocity_b23_column_from_gradps,
        velocity_b23_from_gradps,
        run_manufactured_test
 
@@ -318,34 +319,76 @@ the generalized Coriolis parameter.
 """
 function velocity_b23_from_gradps(kernels, p, Hfun, ffun, f_x, f_y, gradps, τ, B,
                                   bs, H_x, H_y, x, y, z; gradient_step=1e-5)
+    velocity = velocity_b23_column_from_gradps(
+        kernels, p, Hfun, ffun, f_x, f_y, gradps, τ, B, bs,
+        H_x, H_y, x, y; gradient_step,
+    )
+    return velocity(z)
+end
+
+"""
+    velocity_b23_column_from_gradps(
+        kernels, p, H, f, f_x, f_y, gradps, τ, B, bs, H_x, H_y, x, y;
+        gradient_step=1e-5,
+    )
+
+Prepare an analytical B23 velocity evaluator for one water column. Quantities
+that depend only on `(x, y)`, including the pressure gradient and vertically
+integrated buoyancy, are evaluated once and reused for every requested depth.
+"""
+function velocity_b23_column_from_gradps(
+    kernels, p, Hfun, ffun, f_x, f_y, gradps, τ, B,
+    bs, H_x, H_y, x, y; gradient_step=1e-5,
+)
     H = Hfun(x, y)
     fvalue = ffun(x, y)
-    checked_depth(H, z)
+    checked_depth(H, 0.0)
     fvalue != 0 || throw(ArgumentError("f(x, y) must be nonzero; got $fvalue"))
     φvalue, ψvalue = φ_from_f(p, fvalue), ψ(p)
+    pressure_gradient = gradps(x, y)
+    surface_stress = τ(x, y)
+    Hx, Hy = H_x(x, y), H_y(x, y)
+    fx, fy = f_x(x, y), f_y(x, y)
+    column_buoyancy =
+        buoyancy_column_integral(kernels, p, Hfun, B, bs, x, y)
+    surface_buoyancy = bs(x, y)
 
-    pressure = Gu_integral(z, H, p.ν, φvalue) * gradps(x, y)
-    stress = -p.Ek * Gu(z, 0.0, H, p.ν, φvalue) * τ(x, y)
-    integrated = finite_complex_gradient(
-        (xx, yy) -> integrated_pressure_b23(kernels, p, Hfun, ffun, B, bs, xx, yy, z),
-        x, y; step=gradient_step,
-    )
-    bottom = (H_x(x, y) + im * H_y(x, y)) *
-             Gu(z, -H, H, p.ν, φvalue) *
-             buoyancy_column_integral(kernels, p, Hfun, B, bs, x, y)
+    function velocity(z)
+        checked_depth(H, z)
+        pressure =
+            Gu_integral(z, H, p.ν, φvalue) * pressure_gradient
+        stress =
+            -p.Ek * Gu(z, 0.0, H, p.ν, φvalue) * surface_stress
+        integrated = finite_complex_gradient(
+            (xx, yy) -> integrated_pressure_b23(
+                kernels, p, Hfun, ffun, B, bs, xx, yy, z,
+            ),
+            x, y; step=gradient_step,
+        )
+        bottom = (Hx + im * Hy) * Gu(z, -H, H, p.ν, φvalue) *
+            column_buoyancy
 
-    function directional_kernel(H_derivative, f_derivative)
-        -p.Γ / p.Ek * split_quadgk(
-            ξp -> kernels.Guv_y_b(H, z, ξp, φvalue, ψvalue, p.κ, p.ν,
-                                   f_derivative, fvalue, H_derivative) * B(x, y, ξp),
-            -H, 0.0, (z,),
-        ) + kernels.Guv_y_b_xi(H, z, φvalue, ψvalue, p.κ, p.ν,
-                                f_derivative, fvalue, H_derivative) * bs(x, y)
+        function directional_kernel(H_derivative, f_derivative)
+            -p.Γ / p.Ek * split_quadgk(
+                ξp -> kernels.Guv_y_b(
+                    H, z, ξp, φvalue, ψvalue, p.κ, p.ν,
+                    f_derivative, fvalue, H_derivative,
+                ) * B(x, y, ξp),
+                -H, 0.0, (z,),
+            ) + kernels.Guv_y_b_xi(
+                H, z, φvalue, ψvalue, p.κ, p.ν,
+                f_derivative, fvalue, H_derivative,
+            ) * surface_buoyancy
+        end
+
+        kernel_x = directional_kernel(Hx, fx)
+        kernel_y = directional_kernel(Hy, fy)
+        return (
+            pressure + stress - integrated + bottom +
+            kernel_x + im * kernel_y
+        ) / p.Ek
     end
-
-    kernel_x = directional_kernel(H_x(x, y), f_x(x, y))
-    kernel_y = directional_kernel(H_y(x, y), f_y(x, y))
-    return (pressure + stress - integrated + bottom + kernel_x + im * kernel_y) / p.Ek
+    return velocity
 end
 
 function benchmark(f; samples=5)
