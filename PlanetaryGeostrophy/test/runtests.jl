@@ -65,6 +65,35 @@ end
 
     fields = PGFields(x, y, z, u, v, w, copy(u), zeros(3, 3), depth, wet)
     @test performance_summary(fields) == (;)
+
+    varying_depth = [
+        1.0 0.75 0.5
+        1.0 0.75 0.5
+        1.0 0.75 0.5
+    ]
+    varying_wet = [
+        z[k] >= -varying_depth[i, j]
+        for i in eachindex(x), j in eachindex(y), k in eachindex(z)
+    ]
+    linear_z = [
+        varying_wet[i, j, k] ? z[k] : NaN
+        for i in eachindex(x), j in eachindex(y), k in eachindex(z)
+    ]
+    varying_fields = PGFields(
+        x, y, z, linear_z, linear_z, linear_z, linear_z,
+        zeros(3, 3), varying_depth, BitArray(varying_wet),
+    )
+    sigma_slice, label = PlanetaryGeostrophy.terrain_following_slice(
+        varying_fields, varying_fields.u, 0.5,
+    )
+    @test sigma_slice ≈ -0.5 .* varying_depth
+    @test label == "z/H=-0.5"
+    @test_throws ArgumentError PlanetaryGeostrophy.terrain_following_slice(
+        varying_fields, varying_fields.u, 1.0,
+    )
+    @test_throws ArgumentError plot_solution(
+        varying_fields; z_index=2, sigma_level=0.5,
+    )
 end
 
 @testset "Diagnostic arrow geometry" begin
