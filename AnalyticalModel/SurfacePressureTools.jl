@@ -272,8 +272,14 @@ function solve_transport_streamfunction(pressure; order=2)
         gradp = interpolate(∇(pressure.psurf), spaces.V_vector)
         real_A = interpolate(x -> real(pressure.A_fn(x)), U)
         imag_A = interpolate(x -> imag(pressure.A_fn(x)), U)
-        real_B = interpolate(x -> real(pressure.B_fn(x)), U)
-        imag_B = interpolate(x -> imag(pressure.B_fn(x)), U)
+        B_cache = Dict{Tuple{Float64,Float64},ComplexF64}()
+        B_at(x) = get!(
+            () -> ComplexF64(pressure.B_fn(x)),
+            B_cache,
+            (Float64(x[1]), Float64(x[2])),
+        )
+        real_B = interpolate(x -> real(B_at(x)), U)
+        imag_B = interpolate(x -> imag(B_at(x)), U)
         (real_A + im * imag_A) *
         (gradp ⋅ VectorValue(1.0, im)) +
         (real_B + im * imag_B)

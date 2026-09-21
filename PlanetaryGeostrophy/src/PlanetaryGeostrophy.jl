@@ -22,7 +22,7 @@ end
 
 include(joinpath(@__DIR__, "..", "..", "TheoryNotes", "VelocityFieldPrototype.jl"))
 using .VelocityFieldPrototype
-include(joinpath(@__DIR__, "..", "..", "Analytical Model", "SurfacePressureTools.jl"))
+include(joinpath(@__DIR__, "..", "..", "AnalyticalModel", "SurfacePressureTools.jl"))
 
 export PGParameters,
        PGProblem,
@@ -264,6 +264,28 @@ function solve_pg(
     )
     @info "PG solve completed" seconds=round(total_seconds; digits=3) mesh_reused=reusing_mesh
     return PGSolution(problem, kernels, pressure, b, uv, string(mesh), timings)
+end
+
+function horizontal_velocity_column(solution::PGSolution, x, y)
+    problem = solution.problem
+    require_water(solution, x, y)
+    return VelocityFieldPrototype.velocity_b23_column_from_gradps(
+        solution.kernels,
+        internal_parameters(problem.parameters),
+        problem.depth,
+        problem.coriolis,
+        problem.coriolis_x,
+        problem.coriolis_y,
+        solution.pressure.gradps,
+        problem.wind_stress,
+        problem.restoring_buoyancy,
+        problem.surface_buoyancy,
+        problem.depth_x,
+        problem.depth_y,
+        x,
+        y;
+        gradient_step=problem.derivative_step,
+    )
 end
 
 function require_water(solution::PGSolution, x, y, z=nothing)
@@ -1099,9 +1121,12 @@ function sample_solution(solution::PGSolution, x_values, y_values, z_values)
                     (xx - step, yy), (xx + step, yy), (xx, yy - step), (xx, yy + step),
                 ))
                 stencil_is_inside || continue
+                velocity_column = horizontal_velocity_column(
+                    solution, xx, yy,
+                )
                 for k in eachindex(z)
                     -H <= z[k] <= 0 || continue
-                    uv = solution.horizontal_velocity_function(xx, yy, z[k])
+                    uv = velocity_column(z[k])
                     u[i, j, k], v[i, j, k] = float(real(uv)), float(imag(uv))
                     b[i, j, k] = float(solution.buoyancy_function(xx, yy, z[k]))
                     wet[i, j, k] = true

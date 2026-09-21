@@ -49,6 +49,30 @@ end
         samples=1,
     )
     @test comparison.relative_error < 2e-5
+
+    prototype = PlanetaryGeostrophy.VelocityFieldPrototype
+    p = prototype.VelocityParameters(0.02, 0.2, 1.0, 1.0, 1.0, 0.0)
+    kernels = prototype.load_symbolic_kernels()
+    H(x, y) = 1.0 + 0.05x
+    f(x, y) = 1.0 + 0.1y
+    f_x(x, y) = 0.0
+    f_y(x, y) = 0.1
+    gradps(x, y) = 0.02x - 0.01im * y
+    τ(x, y) = 1e-3cos(y) + 0im
+    B(x, y, z) = 1e-2z + 1e-3x
+    bs(x, y) = 1e-3cos(x) * cos(y)
+    H_x(x, y) = 0.05
+    H_y(x, y) = 0.0
+    x, y = 0.1, -0.2
+    column_velocity = prototype.velocity_b23_column_from_gradps(
+        kernels, p, H, f, f_x, f_y, gradps, τ, B, bs, H_x, H_y, x, y,
+    )
+    for z in (-H(x, y), -0.5H(x, y), 0.0)
+        @test column_velocity(z) ≈ prototype.velocity_b23_from_gradps(
+            kernels, p, H, f, f_x, f_y, gradps, τ, B, bs,
+            H_x, H_y, x, y, z,
+        )
+    end
 end
 
 @testset "Vertical velocity reconstruction" begin

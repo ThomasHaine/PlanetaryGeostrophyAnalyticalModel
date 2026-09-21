@@ -38,7 +38,7 @@ The reusable Julia API is a standalone package in the root-level
 analytical solver dependencies; Oceananigans remains confined to the separate
 validation environment.
 It packages the B23 Green-function velocity and buoyancy kernels used by
-`PG_Solution_v0.1.ipynb` with the Gridap surface-pressure solve used by
+the original derivation notebook with the Gridap surface-pressure solve used by
 `Oceananigans_Variable_Basin_Validation.ipynb`.
 
 ### Installation
@@ -333,7 +333,7 @@ vector magnitude.
 
 ### General variable-topography example
 
-`Analytical Model/PG_API_Example.ipynb` is the main API walkthrough. It uses a
+`AnalyticalModel/PG_API_Example.ipynb` is the main API walkthrough. It uses a
 smooth zonal slope and Gaussian seamount to demonstrate flexible
 two-dimensional bathymetry, solves and plots the full three-dimensional
 fields, and runs every mapped dynamical-balance and surface-pressure
@@ -341,7 +341,7 @@ diagnostic.
 
 ### Stommel gyre
 
-`Analytical Model/PG_Stommel_Gyre_Example.ipynb` provides a separate
+`AnalyticalModel/PG_Stommel_Gyre_Example.ipynb` provides a separate
 flat-bottom, beta-plane subtropical gyre example with zero buoyancy forcing.
 It compares the computed transport streamfunction with the Sverdrup interior
 and diagnoses the frictional western boundary current. It uses
@@ -354,7 +354,7 @@ interior balance separately from its bottom-stress boundary closure.
 
 ### Isolated beta plume
 
-`Analytical Model/PG_Beta_Plume_Example.ipynb` provides a flat-bottom,
+`AnalyticalModel/PG_Beta_Plume_Example.ipynb` provides a flat-bottom,
 unstratified beta-plume example inspired by Stommel (1982). A smooth
 azimuthal surface stress produces an exactly Gaussian, spatially isolated
 wind-stress curl east of the basin center. The notebook compares the
@@ -366,9 +366,7 @@ and Fuller (2016). See
 
 ### Validation and derivation notebooks
 
-- `Analytical Model/Oceananigans_PG_Validation.ipynb` validates the analytical
+- `AnalyticalModel/Oceananigans_PG_Validation.ipynb` validates the analytical
   solution against Oceananigans.
-- `Analytical Model/Oceananigans_Variable_Basin_Validation.ipynb` covers
+- `AnalyticalModel/Oceananigans_Variable_Basin_Validation.ipynb` covers
   variable-basin validation.
-- `Analytical Model/PG_Solution_v0.1.ipynb` contains the original analytical
-  solution workflow on which the reusable API is based.
