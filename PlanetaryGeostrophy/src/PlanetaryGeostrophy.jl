@@ -2571,23 +2571,23 @@ end
 """
     plot_barotropic_vorticity_balance(diagnostics; output=nothing)
 
-Plot every signed term and the closure residual in the barotropic vorticity
-equation (36). All physical terms and the residual share symmetric color
-limits.
+Plot the nonzero signed terms and closure residual in the barotropic vorticity
+equation (36). The exact fixed-lid transport divergence is retained in the
+diagnostic data and residual but omitted from the figure. All plotted physical
+terms and the residual share symmetric color limits.
 """
 function plot_barotropic_vorticity_balance(
     diagnostics::PGBarotropicVorticityDiagnostics;
     output=nothing,
 )
     fields = (
-        ("f div(U)", diagnostics.transport_divergence),
         ("U ∂x f + V ∂y f", diagnostics.planetary_vorticity_advection),
         ("J(p_b, H)", diagnostics.bottom_pressure_torque),
         ("Ek curl τ_b", diagnostics.bottom_stress_curl),
         ("Ek curl τ", diagnostics.surface_stress_curl),
         ("residual", diagnostics.residual),
     )
-    scale = maximum(finite_absmax(values) for (_, values) in fields[1:5])
+    scale = maximum(finite_absmax(values) for (_, values) in fields[1:4])
     @info "Plotting barotropic vorticity balance" output
     figure, _ = timed_stage("rendering barotropic vorticity balance plot") do
         panels = [
@@ -2608,11 +2608,11 @@ function plot_barotropic_vorticity_balance(
             )
             for (index, (title, values)) in enumerate(fields)
         ]
-        layout = @layout [grid(1, 6) colorbar{0.07w}]
+        layout = @layout [grid(1, 5) colorbar{0.07w}]
         plot(
             panels..., dim_balance_colorbar(scale);
             layout,
-            size=(1900, 390),
+            size=(1650, 390),
             plot_title="barotropic vorticity balance",
             plot_titlefontsize=17,
             margin=2Plots.mm,
