@@ -1,4 +1,4 @@
-PlanetaryGeostrophyAnalyticalModel
+# Planetary Geostrophy Analytical Model
 
 * LaTeX notes on planetary geostrophy with analytic solutions for certain cases.
 * Julia code to support the theory derivation using `Symbolics.jl`
@@ -6,7 +6,30 @@ PlanetaryGeostrophyAnalyticalModel
 
 See also: [this archived repo](https://github.com/ThomasHaine/ArcticOceanDynamicsWorkshop25), on which this one is based.
 
-  Questions/comments welcome.
+Questions/comments welcome.
+
+## Contents
+
+- [Non-dimensional PG API](#non-dimensional-pg-api)
+  - [Installation](#installation)
+  - [Quick start](#quick-start)
+  - [Problem specification and field output](#problem-specification-and-field-output)
+  - [Performance metrics](#performance-metrics)
+- [Transport diagnostics](#transport-diagnostics)
+- [Dynamical-balance diagnostics](#dynamical-balance-diagnostics)
+  - [Depth-integrated momentum](#depth-integrated-momentum)
+  - [Barotropic vorticity](#barotropic-vorticity)
+  - [Depth-integrated vorticity](#depth-integrated-vorticity)
+  - [Geostrophic-contour vorticity](#geostrophic-contour-vorticity)
+  - [Transport-divergence vorticity](#transport-divergence-vorticity)
+  - [Surface-pressure equation](#surface-pressure-equation)
+  - [Mapped-derivative conventions](#mapped-derivative-conventions)
+- [Model and plotting conventions](#model-and-plotting-conventions)
+- [Example notebooks](#example-notebooks)
+  - [General variable-topography example](#general-variable-topography-example)
+  - [Stommel gyre](#stommel-gyre)
+  - [Isolated beta plume](#isolated-beta-plume)
+  - [Validation and derivation notebooks](#validation-and-derivation-notebooks)
 
 ## Non-dimensional PG API
 
@@ -18,6 +41,8 @@ It packages the B23 Green-function velocity and buoyancy kernels used by
 `PG_Solution_v0.1.ipynb` with the Gridap surface-pressure solve used by
 `Oceananigans_Variable_Basin_Validation.ipynb`.
 
+### Installation
+
 From the repository root, activate the standalone API environment:
 
 ```julia
@@ -26,6 +51,8 @@ Pkg.activate("PlanetaryGeostrophy")
 Pkg.instantiate()
 using PlanetaryGeostrophy
 ```
+
+### Quick start
 
 A problem is specified entirely with non-dimensional parameters and functions:
 
@@ -54,6 +81,8 @@ write_solution(fields, "sample_pg")
 plot_solution(fields; sigma_level=0.5, output="sample_pg.png")
 ```
 
+### Problem specification and field output
+
 `wind_stress` uses the complex convention `τx + im * τy`. Custom analytic
 derivatives can be passed as `depth_x`, `depth_y`, `coriolis_x`, and
 `coriolis_y`; centered derivatives are generated otherwise. The sampled
@@ -64,6 +93,8 @@ For variable topography, `sigma_level=0.5` plots a terrain-following slice at
 `z/H=-0.5`; a fixed `z_index` intentionally leaves cells below the local
 bottom blank.
 
+### Performance metrics
+
 The solver logs each mesh, finite-element, field-reconstruction, output, and
 plotting stage with elapsed time, allocation, and garbage-collection metrics.
 The solve and sampling metrics are also available programmatically:
@@ -73,6 +104,8 @@ performance_summary(solution)
 performance_summary(fields)
 files.timings
 ```
+
+## Transport diagnostics
 
 Bottom stress, depth-integrated current, and its streamfunction are available
 as point queries or sampled maps. These use equations (62)--(69) and the
@@ -104,6 +137,10 @@ are tangent to the streamfunction contours, which are overlaid on transport
 plots. The direct pointwise values remain
 available as `analytical_transport_U` and `analytical_transport_V`; their
 relative projection difference is reported in the performance summary.
+
+## Dynamical-balance diagnostics
+
+### Diagnostic API
 
 The depth-integrated momentum terms corresponding to equations (32)--(33),
 bottom pressure, and baroclinic potential energy are available through:
@@ -152,10 +189,14 @@ plot_surface_pressure_equation_diagnostics(
 )
 ```
 
+### Depth-integrated momentum
+
 The DIM balance plot shows the signed Coriolis, bottom-pressure-gradient,
 baroclinic-gradient, bottom-stress, and surface-stress terms plus the closure
 residual for each horizontal component. Terms within each component share
 symmetric color limits.
+
+### Barotropic vorticity
 
 The barotropic vorticity diagnostic evaluates equation (36):
 
@@ -169,6 +210,8 @@ f(\partial_x U+\partial_y V)+U f_x+V f_y
 where $J(p_b,H)=p_{b,x}H_y-p_{b,y}H_x$. It retains the transport-divergence
 term explicitly and evaluates it as exactly zero from the steady fixed-lid,
 no-normal-flow mass balance, rather than differentiating sampled transport.
+
+### Depth-integrated vorticity
 
 The depth-integrated vorticity diagnostic evaluates equation (41), generalized
 from the manuscript's beta plane to flexible $f(x,y)$:
@@ -189,6 +232,8 @@ corrects the curl of stress sampled along $z=-H(x,y)$ by
 $f w_b+J(p_b,H)$. Omitting this chain-rule correction gives a spuriously large
 DIV residual over topography, although the two curls coincide for flat depth.
 
+### Geostrophic-contour vorticity
+
 The geostrophic-contour vorticity diagnostic evaluates equation (43):
 
 ```math
@@ -202,6 +247,8 @@ where $(U,V)=(-\Psi_y,\Psi_x)$ and
 $J(a,b)=a_xb_y-a_yb_x$. The JEBAR term
 $J(1/H,\chi)$ and the two stress contributions diagnose transport across
 $f/H$ contours without bottom pressure.
+
+### Transport-divergence vorticity
 
 The transport-divergence vorticity diagnostic evaluates equation (46):
 
@@ -217,6 +264,8 @@ This balance contains no circulation variable because the depth-integrated
 transport divergence vanishes in the steady fixed-lid problem. It instead
 diagnoses cancellation among bottom pressure, baroclinic potential energy,
 and the surface and bottom stresses.
+
+### Surface-pressure equation
 
 The surface-pressure coefficient diagnostic evaluates the fields in equation
 (74):
@@ -246,6 +295,8 @@ to the left-hand side minus the source in equation (74). Pointwise values are
 available from
 `surface_pressure_equation_coefficients(solution, x, y)`.
 
+### Mapped-derivative conventions
+
 For all four mapped vorticity diagnostics, bottom stress is first interpolated
 into a continuous vector finite-element space before its curl is evaluated. The
 prescribed surface-stress curl is evaluated from the optional exact
@@ -257,6 +308,10 @@ stencil is available; they are also excluded from reported residual norms.
 This avoids interpreting one-sided corner differences or discontinuous
 pressure-element gradients as physical vorticity residuals.
 
+## Model and plotting conventions
+
+### Oceanographic sign conventions
+
 The API uses conventional oceanographic buoyancy and the fixed upper boundary:
 `∂z p = b`, `p = p_s - ∫_z^0 b dz`,
 `p_b = p_s - ∫_{-H}^0 b dz`, and
@@ -265,12 +320,26 @@ The API uses conventional oceanographic buoyancy and the fixed upper boundary:
 These are the conventions used by the Green-function velocity, pressure,
 diagnostic, and plotting paths.
 
+### Vector-plot scaling
+
 The vector plots normalize the longest arrow to `arrow_scale=0.35` times the
 sampled grid spacing. Arrowheads are drawn explicitly in data coordinates
 with `arrowhead_size=0.08` times that spacing, so their apparent size remains
 consistent in standalone and composite figures. Reduce either value for
 shorter shafts or smaller heads; the background color retains the physical
 vector magnitude.
+
+## Example notebooks
+
+### General variable-topography example
+
+`Analytical Model/PG_API_Example.ipynb` is the main API walkthrough. It uses a
+smooth zonal slope and Gaussian seamount to demonstrate flexible
+two-dimensional bathymetry, solves and plots the full three-dimensional
+fields, and runs every mapped dynamical-balance and surface-pressure
+diagnostic.
+
+### Stommel gyre
 
 `Analytical Model/PG_Stommel_Gyre_Example.ipynb` provides a separate
 flat-bottom, beta-plane subtropical gyre example with zero buoyancy forcing.
@@ -283,6 +352,8 @@ Its Sverdrup comparison uses the nondimensional balance
 $\beta V=\mathrm{Ek}\,[\nabla\times\boldsymbol{\tau}]_z$ and plots the
 interior balance separately from its bottom-stress boundary closure.
 
+### Isolated beta plume
+
 `Analytical Model/PG_Beta_Plume_Example.ipynb` provides a flat-bottom,
 unstratified beta-plume example inspired by Stommel (1982). A smooth
 azimuthal surface stress produces an exactly Gaussian, spatially isolated
@@ -292,3 +363,12 @@ bottom-stress closure, following the vorticity-budget perspective of Haine
 and Fuller (2016). See
 [Stommel (1982)](https://doi.org/10.1016/0012-821X(82)90038-3) and
 [Haine and Fuller (2016)](https://doi.org/10.1002/qj.2866).
+
+### Validation and derivation notebooks
+
+- `Analytical Model/Oceananigans_PG_Validation.ipynb` validates the analytical
+  solution against Oceananigans.
+- `Analytical Model/Oceananigans_Variable_Basin_Validation.ipynb` covers
+  variable-basin validation.
+- `Analytical Model/PG_Solution_v0.1.ipynb` contains the original analytical
+  solution workflow on which the reusable API is based.
