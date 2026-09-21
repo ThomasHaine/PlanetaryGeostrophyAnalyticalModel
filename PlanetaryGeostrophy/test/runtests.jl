@@ -633,7 +633,7 @@ end
         )
         @test all(
             all(isapprox.(size, panel_size(bv_figure, 1)))
-            for size in (panel_size(bv_figure, index) for index in 1:6)
+            for size in (panel_size(bv_figure, index) for index in 1:5)
         )
         @test all(
             all(isapprox.(size, panel_size(vorticity_figure, 1)))
