@@ -764,11 +764,12 @@ Evaluate the coefficients in the surface-pressure advection-diffusion equation
 
 `div(A_r grad(p_s)) + velocity ⋅ grad(p_s) = source`,
 
-where `velocity = (∂y A_i, -∂x A_i)`, `diffusivity = A_r`, and
-`source = -∂x B_r - ∂y B_i`. The source is also returned as separate
-baroclinic and surface-stress contributions from
-`B = B_baroclinic + B_stress`. The complex transport coefficients `A` and
-`B` are exactly those used to assemble the surface-pressure solver.
+where `velocity = velocity_inviscid + velocity_frictional`,
+`velocity_inviscid = (∂y(H/f), -∂x(H/f))`, `diffusivity = A_r`, and
+`source = -∂x B_r - ∂y B_i`. The total velocity retains the derivatives of
+the exact `A_i` used by the pressure solve. The source is also returned as
+separate baroclinic and surface-stress contributions from
+`B = B_baroclinic + B_stress`.
 """
 function surface_pressure_equation_coefficients(
     solution::PGSolution,
@@ -786,10 +787,20 @@ function surface_pressure_equation_coefficients(
         require_water(solution, xx, yy)
     end
     A(xx, yy) = solution.pressure.A_fn((xx, yy))
+    A_i_components(xx, yy) =
+        surface_pressure_imaginary_coefficient_components(
+            solution.problem, xx, yy,
+        )
+    A_i_inviscid(xx, yy) = A_i_components(xx, yy).inviscid
+    A_i_frictional(xx, yy) = A_i_components(xx, yy).frictional
     B_baroclinic(xx, yy) =
         solution.pressure.baroclinic_B_fn((xx, yy))
     B_stress(xx, yy) = solution.pressure.stress_B_fn((xx, yy))
     A_derivatives = centered_field_derivatives(A, x, y, step)
+    A_i_inviscid_derivatives =
+        centered_field_derivatives(A_i_inviscid, x, y, step)
+    A_i_frictional_derivatives =
+        centered_field_derivatives(A_i_frictional, x, y, step)
     B_baroclinic_derivatives = centered_field_derivatives(
         B_baroclinic, x, y, step,
     )
@@ -803,11 +814,41 @@ function surface_pressure_equation_coefficients(
     return (
         advection_velocity_x=imag(A_derivatives.y),
         advection_velocity_y=-imag(A_derivatives.x),
+        inviscid_advection_velocity_x=A_i_inviscid_derivatives.y,
+        inviscid_advection_velocity_y=-A_i_inviscid_derivatives.x,
+        frictional_advection_velocity_x=A_i_frictional_derivatives.y,
+        frictional_advection_velocity_y=-A_i_frictional_derivatives.x,
         diffusivity=real(A(x, y)),
         baroclinic_source,
         stress_source,
         source=baroclinic_source + stress_source,
     )
+end
+
+function surface_pressure_imaginary_coefficient_components(problem, x, y)
+    H = problem.depth(x, y)
+    f = problem.coriolis(x, y)
+    f != 0 || throw(ArgumentError("f(x, y) must be nonzero; got $f"))
+    parameters = problem.parameters
+    α = sqrt(abs(f) / (2 * parameters.viscosity * parameters.Ek))
+    s = α * H
+    ratio = if s < 0.05
+        2s * (1 - 8s^4 / 15 + 992s^8 / 2835)
+    elseif s < 20
+        (sinh(2s) + sin(2s)) / (cosh(2s) + cos(2s))
+    else
+        scaled_exponential = exp(-2s)
+        (
+            1 - scaled_exponential^2 +
+            2scaled_exponential * sin(2s)
+        ) / (
+            1 + scaled_exponential^2 +
+            2scaled_exponential * cos(2s)
+        )
+    end
+    inviscid = H / f
+    frictional = -ratio / (2α * f)
+    return (; inviscid, frictional)
 end
 
 struct PGStreamfunction{F,V,G,T}
@@ -963,6 +1004,10 @@ struct PGSurfacePressureEquationDiagnostics{
     y::TY
     advection_velocity_x::Matrix{Float64}
     advection_velocity_y::Matrix{Float64}
+    inviscid_advection_velocity_x::Matrix{Float64}
+    inviscid_advection_velocity_y::Matrix{Float64}
+    frictional_advection_velocity_x::Matrix{Float64}
+    frictional_advection_velocity_y::Matrix{Float64}
     diffusivity::Matrix{Float64}
     baroclinic_source::Matrix{Float64}
     stress_source::Matrix{Float64}
@@ -1840,10 +1885,11 @@ Sample the velocity, diffusivity, and source fields in the surface-pressure
 advection-diffusion equation (74). The exact analytical transport coefficients
 `A` and `B` used by the pressure solve are recovered from the already sampled
 analytical transport and pressure gradient; their derivatives are then
-evaluated with centered diagnostic-grid differences. The residual is the
-sampled transport divergence, equivalent to the left-hand side minus source
-in (74). Edge points and points adjoining land are omitted because a centered
-stencil is unavailable.
+evaluated with centered diagnostic-grid differences. The total advection
+velocity is accompanied by its inviscid `A_i = H/f` and frictional
+components. The residual is the sampled transport divergence, equivalent to
+the left-hand side minus source in (74). Edge points and points adjoining land
+are omitted because a centered stencil is unavailable.
 """
 function compute_surface_pressure_equation_diagnostics(
     solution::PGSolution,
@@ -1852,12 +1898,15 @@ function compute_surface_pressure_equation_diagnostics(
     started = time()
     x, y = diagnostics.x, diagnostics.y
     shape = (length(x), length(y))
-    arrays = [fill(NaN, shape) for _ in 1:7]
-    velocity_x, velocity_y, diffusivity, baroclinic_source, stress_source,
-        source, residual = arrays
+    arrays = [fill(NaN, shape) for _ in 1:11]
+    velocity_x, velocity_y, inviscid_velocity_x, inviscid_velocity_y,
+        frictional_velocity_x, frictional_velocity_y, diffusivity,
+        baroclinic_source, stress_source, source, residual = arrays
     transport_x_divergence = fill(NaN, shape)
     transport_y_divergence = fill(NaN, shape)
     real_A, imag_A = fill(NaN, shape), fill(NaN, shape)
+    inviscid_A_i, frictional_A_i =
+        fill(NaN, shape), fill(NaN, shape)
     real_baroclinic_B, imag_baroclinic_B =
         fill(NaN, shape), fill(NaN, shape)
     real_stress_B, imag_stress_B = fill(NaN, shape), fill(NaN, shape)
@@ -1882,6 +1931,12 @@ function compute_surface_pressure_equation_diagnostics(
                 stress_B = solution.pressure.stress_B_fn(point)
                 baroclinic_B = B - stress_B
                 real_A[i, j], imag_A[i, j] = real(A), imag(A)
+                A_i_components =
+                    surface_pressure_imaginary_coefficient_components(
+                        solution.problem, x[i], y[j],
+                    )
+                inviscid_A_i[i, j] = A_i_components.inviscid
+                frictional_A_i[i, j] = A_i_components.frictional
                 real_baroclinic_B[i, j], imag_baroclinic_B[i, j] =
                     real(baroclinic_B), imag(baroclinic_B)
                 real_stress_B[i, j], imag_stress_B[i, j] =
@@ -1900,6 +1955,18 @@ function compute_surface_pressure_equation_diagnostics(
             )
             velocity_y[i, j] = -centered_horizontal_derivative(
                 imag_A, sampled_wet, x, i, j, 1,
+            )
+            inviscid_velocity_x[i, j] = centered_horizontal_derivative(
+                inviscid_A_i, sampled_wet, y, i, j, 2,
+            )
+            inviscid_velocity_y[i, j] = -centered_horizontal_derivative(
+                inviscid_A_i, sampled_wet, x, i, j, 1,
+            )
+            frictional_velocity_x[i, j] = centered_horizontal_derivative(
+                frictional_A_i, sampled_wet, y, i, j, 2,
+            )
+            frictional_velocity_y[i, j] = -centered_horizontal_derivative(
+                frictional_A_i, sampled_wet, x, i, j, 1,
             )
             baroclinic_source[i, j] = -(
                 centered_horizontal_derivative(
@@ -1958,8 +2025,11 @@ function compute_surface_pressure_equation_diagnostics(
     )
     @info "Surface-pressure equation diagnostic calculation completed" seconds=round(total_seconds; digits=3) wet_points relative_l2_residual=round(timings.relative_l2_residual; digits=6)
     return PGSurfacePressureEquationDiagnostics(
-        x, y, velocity_x, velocity_y, diffusivity, baroclinic_source,
-        stress_source, source, residual, wet, timings,
+        x, y, velocity_x, velocity_y,
+        inviscid_velocity_x, inviscid_velocity_y,
+        frictional_velocity_x, frictional_velocity_y,
+        diffusivity, baroclinic_source, stress_source, source, residual, wet,
+        timings,
     )
 end
 
@@ -2196,6 +2266,7 @@ function vector_diagnostic_plot(
     arrow_scale=0.35,
     arrowhead_size=0.08,
     contours=nothing,
+    magnitude_scale=nothing,
 )
     arrow_scale > 0 || throw(ArgumentError("arrow_scale must be positive"))
     arrowhead_size > 0 || throw(ArgumentError("arrowhead_size must be positive"))
@@ -2203,6 +2274,7 @@ function vector_diagnostic_plot(
     figure = heatmap(
         diagnostics.x, diagnostics.y, magnitude';
         xlabel="x", ylabel="y", title, colorbar_title="magnitude",
+        clims=isnothing(magnitude_scale) ? :auto : (0, magnitude_scale),
         aspect_ratio=:equal,
     )
     if !isnothing(contours)
@@ -2212,8 +2284,9 @@ function vector_diagnostic_plot(
         )
     end
     vectors = sampled_vectors(diagnostics, x_component, y_component, stride)
-    maximum_magnitude = isempty(vectors.u) ? 0.0 :
-        maximum(hypot.(vectors.u, vectors.v))
+    maximum_magnitude = isnothing(magnitude_scale) ?
+        (isempty(vectors.u) ? 0.0 : maximum(hypot.(vectors.u, vectors.v))) :
+        magnitude_scale
     sampled_dx = stride * minimum(diff(diagnostics.x))
     sampled_dy = stride * minimum(diff(diagnostics.y))
     maximum_arrow_length = arrow_scale * min(sampled_dx, sampled_dy)
@@ -2247,9 +2320,9 @@ end
         diagnostics; stride=nothing, output=nothing,
     )
 
-Plot the advection-velocity magnitude and vectors, diffusivity, and separate
-baroclinic and surface-stress source terms in the surface-pressure equation
-(74).
+Plot the inviscid, frictional, and total advection-velocity magnitudes and
+vectors on a common scale, plus diffusivity and the separate baroclinic and
+surface-stress source terms in the surface-pressure equation (74).
 """
 function plot_surface_pressure_equation_diagnostics(
     diagnostics::PGSurfacePressureEquationDiagnostics;
@@ -2265,18 +2338,53 @@ function plot_surface_pressure_equation_diagnostics(
         finite_absmax(diagnostics.baroclinic_source),
         finite_absmax(diagnostics.stress_source),
     )
+    velocity_scale = maximum((
+        finite_absmax(hypot.(
+            diagnostics.inviscid_advection_velocity_x,
+            diagnostics.inviscid_advection_velocity_y,
+        )),
+        finite_absmax(hypot.(
+            diagnostics.frictional_advection_velocity_x,
+            diagnostics.frictional_advection_velocity_y,
+        )),
+        finite_absmax(hypot.(
+            diagnostics.advection_velocity_x,
+            diagnostics.advection_velocity_y,
+        )),
+    ))
     @info "Plotting surface-pressure equation diagnostics" stride=vector_stride arrow_scale arrowhead_size output
     figure, _ = timed_stage(
         "rendering surface-pressure equation diagnostic plot",
     ) do
-        velocity = vector_diagnostic_plot(
+        inviscid_velocity = vector_diagnostic_plot(
             diagnostics,
-            diagnostics.advection_velocity_x,
-            diagnostics.advection_velocity_y,
-            "advection velocity";
+            diagnostics.inviscid_advection_velocity_x,
+            diagnostics.inviscid_advection_velocity_y,
+            "inviscid advection velocity";
             stride=vector_stride,
             arrow_scale,
             arrowhead_size,
+            magnitude_scale=velocity_scale,
+        )
+        frictional_velocity = vector_diagnostic_plot(
+            diagnostics,
+            diagnostics.frictional_advection_velocity_x,
+            diagnostics.frictional_advection_velocity_y,
+            "frictional advection velocity";
+            stride=vector_stride,
+            arrow_scale,
+            arrowhead_size,
+            magnitude_scale=velocity_scale,
+        )
+        total_velocity = vector_diagnostic_plot(
+            diagnostics,
+            diagnostics.advection_velocity_x,
+            diagnostics.advection_velocity_y,
+            "total advection velocity";
+            stride=vector_stride,
+            arrow_scale,
+            arrowhead_size,
+            magnitude_scale=velocity_scale,
         )
         diffusivity = heatmap(
             diagnostics.x, diagnostics.y, diagnostics.diffusivity';
@@ -2308,9 +2416,10 @@ function plot_surface_pressure_equation_diagnostics(
             aspect_ratio=:equal,
         )
         plot(
-            velocity, diffusivity, baroclinic_source, stress_source;
-            layout=(1, 4),
-            size=(1750, 430),
+            inviscid_velocity, frictional_velocity, total_velocity,
+            diffusivity, baroclinic_source, stress_source;
+            layout=(2, 3),
+            size=(1350, 850),
             plot_title="surface-pressure equation coefficients",
             plot_titlefontsize=16,
             margin=2Plots.mm,
