@@ -1,0 +1,705 @@
+\documentclass[10pt]{amsart}
+\usepackage{geometry}                % See geometry.pdf to learn the layout options. There are lots.
+\geometry{letterpaper}                   % ... or a4paper or a5paper or ... 
+%\geometry{landscape}                % Activate for for rotated page geometry
+%\usepackage[parfill]{parskip}    % Activate to begin paragraphs with an empty line rather than an indent
+\usepackage{graphicx}
+\usepackage{amssymb}
+\usepackage{epstopdf}
+\DeclareGraphicsRule{.tif}{png}{.png}{`convert #1 `dirname #1`/`basename #1 .tif`.png}
+
+\title{On the surface pressure equation advection diffusion equation analogy}
+\author{Github Copilot}
+\date{}                                           % Activate to display a given date or no date
+
+\begin{document}
+\maketitle
+%\section{}
+\subsection{Sign-definiteness of diffusivity}
+
+Let
+\begin{equation}
+\varphi=\sqrt{\frac{i f}{\nu\,\mathrm{Ek}}},
+\qquad
+\mathfrak A
+=
+\frac{\varphi^{-1}\tanh(\varphi H)-H}{\nu \varphi^2\mathrm{Ek}},
+\end{equation}
+where \(H>0\), \(\nu>0\), \(\mathrm{Ek}>0\), and \(f \neq 0\).
+Introducing
+\begin{equation}
+\sigma=\operatorname{sgn}(f),
+\qquad
+\alpha=\sqrt{\frac{|f|}{2\nu\,\mathrm{Ek}}},
+\qquad
+s=\alpha H>0,
+\end{equation}
+gives
+\begin{equation}
+\varphi=\alpha(1+i\sigma),
+\qquad
+\nu \varphi^2\mathrm{Ek}=if.
+\end{equation}
+Using
+\begin{equation}
+\tanh\!\left[s(1+i\sigma)\right]
+=
+\frac{\sinh(2s)+i\sigma\sin(2s)}
+     {\cosh(2s)+\cos(2s)},
+\end{equation}
+we obtain
+\begin{align}
+\frac{\tanh(\varphi H)}{\varphi}
+&=
+\frac{
+\sinh(2s)+\sin(2s)
++i\sigma\left[\sin(2s)-\sinh(2s)\right]
+}{
+2\alpha\left[\cosh(2s)+\cos(2s)\right]
+},
+\\
+\mathfrak A_r
+\equiv \operatorname{Re}\mathfrak A
+&=
+\frac{\sin(2s)-\sinh(2s)}
+{
+2\alpha |f|
+\left[\cosh(2s)+\cos(2s)\right]
+}.
+\end{align}
+For \(s>0\),
+\begin{equation}
+\cosh(2s)+\cos(2s)>0
+\end{equation}
+and
+\begin{equation}
+\sinh(2s)-\sin(2s)>0,
+\end{equation}
+the latter following, for example, from
+\begin{equation}
+\sinh(2s)-\sin(2s)
+=
+\int_0^{2s}\left(\cosh r-\cos r\right)\,dr>0.
+\end{equation}
+Consequently,
+\begin{equation}
+\boxed{\mathfrak A_r<0}
+\qquad
+(H>0,\ \nu>0,\ \mathrm{Ek}>0,\ f\neq0).
+\end{equation}
+
+Thus the positive-definite diffusivity is
+\begin{equation}
+K\equiv-\mathfrak A_r
+=
+\frac{\sinh(2s)-\sin(2s)}
+{
+2\alpha |f|
+\left[\cosh(2s)+\cos(2s)\right]
+}>0.
+\end{equation}
+The pressure-driven transport is therefore strictly down-gradient:
+\begin{equation}
+\boldsymbol U_{p,\mathrm{diss}}
+=
+\mathfrak A_r\nabla p_s
+=
+-K\nabla p_s.
+\end{equation}
+Equivalently, the second-order part of the surface-pressure equation is
+\begin{equation}
+\nabla\cdot\left(\mathfrak A_r\nabla p_s\right)
+=
+-\nabla\cdot\left(K\nabla p_s\right),
+\qquad K>0.
+\end{equation}
+
+\subsection{Peclet Number}
+
+
+The surface-pressure equation may be written as
+\begin{equation}
+-\nabla\cdot\left(K\nabla p_s\right)
++\boldsymbol{c}\cdot\nabla p_s
+=S,
+\end{equation}
+where
+\begin{equation}
+K=-\mathfrak A_r>0,
+\qquad
+\boldsymbol{c}
+=
+\left(\partial_y\mathfrak A_i,-\partial_x\mathfrak A_i\right)
+=
+\nabla^\perp\mathfrak A_i.
+\end{equation}
+A natural local P\'eclet number based on a horizontal length scale \(L\) is
+\begin{equation}
+\boxed{
+\mathrm{Pe}_L
+=
+\frac{L\lvert\boldsymbol{c}\rvert}{K}
+=
+\frac{L\lvert\nabla\mathfrak A_i\rvert}{K}
+}.
+\end{equation}
+Consequently,
+\begin{equation}
+\boxed{0\leq \mathrm{Pe}_L<\infty}.
+\end{equation}
+In particular, \(\mathrm{Pe}_L=0\) whenever \(\mathfrak A_i\) is spatially
+uniform. This occurs, for example, when both \(H\) and \(f\) are horizontally
+uniform. There is no universal finite upper bound because
+\(\lvert\nabla\mathfrak A_i\rvert\) may be arbitrarily large.
+
+To examine the coefficient dependence, define
+\begin{equation}
+\alpha
+=
+\sqrt{\frac{|f|}{2\nu\,\mathrm{Ek}}},
+\qquad
+s=\alpha H.
+\end{equation}
+The positive diffusivity is
+\begin{equation}
+K
+=
+\frac{\sinh(2s)-\sin(2s)}
+{
+2\alpha |f|
+\left[\cosh(2s)+\cos(2s)\right]
+},
+\end{equation}
+and the imaginary part of the transport coefficient is
+\begin{equation}
+\mathfrak A_i
+=
+\frac{\operatorname{sgn}(f)}{\alpha |f|}
+\left[
+s
+-
+\frac{\sinh(2s)+\sin(2s)}
+{
+2\left[\cosh(2s)+\cos(2s)\right]
+}
+\right].
+\end{equation}
+
+If \(\mathfrak A_i\) varies by an amount comparable to
+\(\lvert\mathfrak A_i\rvert\) over the horizontal scale \(L\), then
+\begin{equation}
+L\lvert\nabla\mathfrak A_i\rvert
+\sim
+\lvert\mathfrak A_i\rvert,
+\end{equation}
+and hence
+\begin{equation}
+\mathrm{Pe}_L
+\sim
+\frac{\lvert\mathfrak A_i\rvert}{K}.
+\end{equation}
+The corresponding coefficient ratio is
+\begin{equation}
+\frac{\lvert\mathfrak A_i\rvert}{K}
+=
+\frac{
+\left|
+2s\left[\cosh(2s)+\cos(2s)\right]
+-\sinh(2s)-\sin(2s)
+\right|
+}{
+\sinh(2s)-\sin(2s)
+}.
+\end{equation}
+
+In the shallow or strongly frictional limit,
+\begin{equation}
+s\ll1,
+\end{equation}
+Taylor expansion gives
+\begin{equation}
+\frac{\lvert\mathfrak A_i\rvert}{K}
+=
+\frac{4}{5}s^2+O(s^6).
+\end{equation}
+Thus,
+\begin{equation}
+\mathrm{Pe}_L
+\sim
+\frac{4}{5}s^2
+\ll1.
+\end{equation}
+
+In the deep or weakly frictional limit,
+\begin{equation}
+s\gg1,
+\end{equation}
+the coefficient ratio satisfies
+\begin{equation}
+\frac{\lvert\mathfrak A_i\rvert}{K}
+=
+2s-1+O\left(e^{-2s}\right).
+\end{equation}
+Therefore,
+\begin{equation}
+\mathrm{Pe}_L
+\sim
+2s
+=
+H\sqrt{\frac{2|f|}{\nu\,\mathrm{Ek}}},
+\qquad s\gg1,
+\end{equation}
+provided that \(\mathfrak A_i\) has order-one relative variation over \(L\).
+Hence the effective P\'eclet number can become very large when the water
+depth is large compared with the rotational viscous boundary-layer scale:
+\begin{equation}
+\boxed{
+\mathrm{Pe}_L
+\sim
+\frac{H}{\sqrt{\nu\,\mathrm{Ek}/(2|f|)}}
+\gg1
+}.
+\end{equation}
+
+Large depth alone, however, does not imply large advection. If \(H\) and \(f\)
+are horizontally uniform, then
+\begin{equation}
+\nabla\mathfrak A_i=0,
+\qquad
+\boldsymbol{c}=0,
+\qquad
+\mathrm{Pe}_L=0,
+\end{equation}
+regardless of the value of \(s\).
+
+
+\section{Inferred surface pressure velocity and diffusivity fields: redimensionalization}
+
+%------------------------------------------------------------
+% Nondimensional coefficient
+%------------------------------------------------------------
+
+Let
+\begin{equation}
+\widehat q
+=
+\sqrt{
+\frac{i\widehat f}
+{\widehat\nu\,\mathrm{Ek}}
+},
+\qquad
+\widehat{\mathfrak A}
+=
+\frac{
+\widehat q^{-1}\tanh(\widehat q\widehat H)-\widehat H
+}{
+\widehat\nu\,\widehat q^{\,2}\mathrm{Ek}
+}.
+\end{equation}
+
+Define
+\begin{equation}
+\sigma=\operatorname{sgn}(\widehat f),
+\qquad
+\widehat\alpha
+=
+\sqrt{
+\frac{|\widehat f|}
+{2\widehat\nu\,\mathrm{Ek}}
+},
+\qquad
+s=\widehat\alpha\widehat H,
+\qquad
+D(s)=\cosh(2s)+\cos(2s).
+\end{equation}
+
+Then
+\begin{equation}
+\widehat q
+=
+\widehat\alpha(1+i\sigma),
+\qquad
+\widehat\nu\,\widehat q^{\,2}\mathrm{Ek}
+=
+i\widehat f.
+\end{equation}
+
+Writing
+\begin{equation}
+\widehat{\mathfrak A}
+=
+\widehat{\mathfrak A}_r
++i\widehat{\mathfrak A}_i,
+\end{equation}
+the real and imaginary parts are
+\begin{subequations}
+\label{eq:A-real-imag-nd}
+\begin{align}
+\widehat{\mathfrak A}_r
+&=
+\frac{
+\sin(2s)-\sinh(2s)
+}{
+2\widehat\alpha\,|\widehat f|\,D(s)
+},
+\label{eq:A-real-nd}
+\\[1ex]
+\widehat{\mathfrak A}_i
+&=
+\frac{
+2sD(s)-\sinh(2s)-\sin(2s)
+}{
+2\widehat\alpha\,\widehat f\,D(s)
+}.
+\label{eq:A-imag-nd}
+\end{align}
+\end{subequations}
+
+Equivalently,
+\begin{equation}
+\boxed{
+\widehat{\mathfrak A}_r
+=
+\frac{
+\sin(2s)-\sinh(2s)
+}{
+2\widehat\alpha\,|\widehat f|
+\left[\cosh(2s)+\cos(2s)\right]
+}
+}
+\end{equation}
+and
+\begin{equation}
+\boxed{
+\widehat{\mathfrak A}_i
+=
+\frac{
+2s\left[\cosh(2s)+\cos(2s)\right]
+-\sinh(2s)-\sin(2s)
+}{
+2\widehat\alpha\,\widehat f
+\left[\cosh(2s)+\cos(2s)\right]
+}
+}.
+\end{equation}
+
+In particular,
+\begin{equation}
+\widehat{\mathfrak A}_r<0
+\qquad
+\text{for}
+\qquad
+\widehat H>0,\quad
+\widehat\nu>0,\quad
+\mathrm{Ek}>0,\quad
+\widehat f\neq0.
+\end{equation}
+
+The positive nondimensional diffusivity is therefore
+\begin{equation}
+\widehat K
+\equiv
+-\widehat{\mathfrak A}_r
+=
+\frac{
+\sinh(2s)-\sin(2s)
+}{
+2\widehat\alpha\,|\widehat f|
+\left[\cosh(2s)+\cos(2s)\right]
+}
+>0.
+\end{equation}
+
+
+%------------------------------------------------------------
+% Redimensionalization
+%------------------------------------------------------------
+
+Use the dimensional scales
+\begin{equation}
+x_d=L\widehat x,
+\qquad
+z_d=H_0\widehat z,
+\qquad
+H_d=H_0\widehat H,
+\end{equation}
+\begin{equation}
+f_d=f_0\widehat f,
+\qquad
+\nu_d=\nu_0\widehat\nu,
+\qquad
+\mathrm{Ek}
+=
+\frac{\nu_0}{f_0H_0^2},
+\end{equation}
+and
+\begin{equation}
+p_{s,d}
+=
+\rho_0 f_0 L U_0\,\widehat p_s,
+\qquad
+\boldsymbol{\mathcal U}_d
+=
+H_0U_0\,\widehat{\boldsymbol{\mathcal U}},
+\end{equation}
+where \(\boldsymbol{\mathcal U}_d\) is the dimensional
+depth-integrated velocity transport.
+
+If
+\begin{equation}
+\widehat{\boldsymbol{\mathcal U}}_p
+=
+\widehat{\mathfrak A}\,
+\widehat\nabla\widehat p_s,
+\end{equation}
+then
+\begin{equation}
+\boldsymbol{\mathcal U}_{p,d}
+=
+\mathfrak A_d\,\nabla_d p_{s,d},
+\qquad
+\mathfrak A_d
+=
+\frac{H_0}{\rho_0 f_0}
+\widehat{\mathfrak A}.
+\end{equation}
+
+Define 
+\begin{equation}
+q_d
+=
+\sqrt{\frac{if_d}{\nu_d}},
+\end{equation}
+and introduce
+\begin{equation}
+\sigma_d=\operatorname{sgn}(f_d),
+\qquad
+\alpha_d
+=
+\sqrt{\frac{|f_d|}{2\nu_d}},
+\qquad
+s_d=\alpha_dH_d.
+\end{equation}
+The dimensional Ekman depth is $1/\alpha_d$, so $s_d$ is the fluid depth divided by the Ekman depth.
+
+
+The parameter \(s\) is invariant under the redimensionalization:
+\begin{equation}
+s
+=
+\widehat\alpha\widehat H
+=
+\alpha_dH_d
+=
+s_d.
+\end{equation}
+
+The dimensional complex coefficient is
+\begin{equation}
+\mathfrak A_d
+=
+\frac{
+q_d^{-1}\tanh(q_dH_d)-H_d
+}{
+\rho_0\nu_d q_d^{\,2}
+}
+=
+\frac{
+q_d^{-1}\tanh(q_dH_d)-H_d
+}{
+i\rho_0 f_d
+}.
+\end{equation}
+
+Writing
+\begin{equation}
+\mathfrak A_d
+=
+\mathfrak A_{r,d}
++i\mathfrak A_{i,d},
+\end{equation}
+its dimensional real and imaginary parts are
+\begin{subequations}
+\label{eq:A-real-imag-dimensional}
+\begin{align}
+\mathfrak A_{r,d}
+&=
+\frac{
+\sin(2s_d)-\sinh(2s_d)
+}{
+2\rho_0\alpha_d\,|f_d|
+\left[\cosh(2s_d)+\cos(2s_d)\right]
+},
+\label{eq:A-real-dimensional}
+\\[1ex]
+\mathfrak A_{i,d}
+&=
+\frac{
+2s_d\left[\cosh(2s_d)+\cos(2s_d)\right]
+-\sinh(2s_d)-\sin(2s_d)
+}{
+2\rho_0\alpha_d\,f_d
+\left[\cosh(2s_d)+\cos(2s_d)\right]
+}.
+\label{eq:A-imag-dimensional}
+\end{align}
+\end{subequations}
+
+Equivalently,
+\begin{equation}
+\boxed{
+\mathfrak A_{r,d}
+=
+\frac{
+\sin(2s_d)-\sinh(2s_d)
+}{
+2\rho_0\alpha_d\,|f_d|
+\left[\cosh(2s_d)+\cos(2s_d)\right]
+}
+<0
+}
+\end{equation}
+and
+\begin{equation}
+\boxed{
+\mathfrak A_{i,d}
+=
+\frac{
+2s_d\left[\cosh(2s_d)+\cos(2s_d)\right]
+-\sinh(2s_d)-\sin(2s_d)
+}{
+2\rho_0\alpha_d\,f_d
+\left[\cosh(2s_d)+\cos(2s_d)\right]
+}
+}.
+\end{equation}
+
+The positive dimensional diffusivity coefficient is
+\begin{equation}
+K_d
+\equiv
+-\mathfrak A_{r,d}
+=
+\frac{
+\sinh(2s_d)-\sin(2s_d)
+}{
+2\rho_0\alpha_d\,|f_d|
+\left[\cosh(2s_d)+\cos(2s_d)\right]
+}
+>0.
+\end{equation}
+
+Thus the pressure-driven dimensional transport is
+\begin{equation}
+\boldsymbol{\mathcal U}_{p,d}
+=
+-K_d\nabla_d p_{s,d}
++
+\mathfrak A_{i,d}\,
+\boldsymbol{k}\times\nabla_d p_{s,d}.
+\end{equation}
+
+\subsection{Advecting velocity streamfunction decomposition}
+
+The dimensional advecting streamfunction is the imaginary part of
+\(\mathfrak A_d\). It separates naturally into inviscid and frictional
+parts:
+\begin{equation}
+\mathfrak A_{i,d}
+=
+\mathfrak A_{i,d}^{(0)}
++
+\mathfrak A_{i,d}^{(\mathrm{fr})},
+\end{equation}
+where
+\begin{equation}
+\boxed{
+\mathfrak A_{i,d}^{(0)}
+=
+\frac{H_d}{\rho_0 f_d}
+}
+\end{equation}
+is the classical inviscid result, and
+\begin{equation}
+\boxed{
+\mathfrak A_{i,d}^{(\mathrm{fr})}
+=
+-
+\frac{
+\sinh(2s_d)+\sin(2s_d)
+}{
+2\rho_0\alpha_d f_d
+\left[\cosh(2s_d)+\cos(2s_d)\right]
+}
+}
+\end{equation}
+is the frictional correction, with
+\begin{equation}
+\alpha_d
+=
+\sqrt{\frac{|f_d|}{2\nu_0}},
+\qquad
+s_d=\alpha_dH_d.
+\end{equation}
+Thus,
+\begin{equation}
+\boxed{
+\mathfrak A_{i,d}
+=
+\frac{H_d}{\rho_0 f_d}
+-
+\frac{
+\sinh(2s_d)+\sin(2s_d)
+}{
+2\rho_0\alpha_d f_d
+\left[\cosh(2s_d)+\cos(2s_d)\right]
+}
+}.
+\end{equation}
+
+The corresponding advecting velocity is
+\begin{equation}
+\boldsymbol c_d
+=
+\nabla_d^\perp\mathfrak A_{i,d}
+=
+\boldsymbol c_d^{(0)}
++
+\boldsymbol c_d^{(\mathrm{fr})},
+\end{equation}
+where
+\begin{align}
+\boldsymbol c_d^{(0)}
+&=
+\nabla_d^\perp
+\left(
+\frac{H_d}{\rho_0f_d}
+\right),
+\\
+\boldsymbol c_d^{(\mathrm{fr})}
+&=
+-
+\nabla_d^\perp
+\left\{
+\frac{
+\sinh(2s_d)+\sin(2s_d)
+}{
+2\rho_0\alpha_d f_d
+\left[\cosh(2s_d)+\cos(2s_d)\right]
+}
+\right\}.
+\end{align}
+Here
+\begin{equation}
+\nabla_d^\perp\psi
+\equiv
+\left(
+\partial_{y_d}\psi,
+-\partial_{x_d}\psi
+\right).
+\end{equation}
+
+Because the frictional correction to the advecting streamfunction is a function of depth $H_d$, it can only increase or decrease the flow along $f_d/H_d$ contours (not $H_d$ contours). 
+For shallow depths, friction opposes the tendency to flow around $f_d/H_d$ contours: it retards the flow.
+
+\end{document}  
