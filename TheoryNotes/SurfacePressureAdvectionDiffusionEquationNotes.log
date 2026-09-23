@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.29 (TeX Live 2026) (preloaded format=pdflatex 2026.8.24)  23 SEP 2026 09:37
+This is pdfTeX, Version 3.141592653-2.6-1.40.29 (TeX Live 2026) (preloaded format=pdflatex 2026.8.24)  23 SEP 2026 09:50
 entering extended mode
  restricted \write18 enabled.
  file:line:error style messages enabled.
@@ -325,7 +325,7 @@ exlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb></usr/local/te
 xlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy7.pfb></usr/local/texl
 ive/2026/texmf-dist/fonts/type1/public/amsfonts/euler/eufm10.pfb>
 Output written on SurfacePressureAdvectionDiffusionEquationNotes.pdf (6 pages, 
-172706 bytes).
+172772 bytes).
 PDF statistics:
  93 PDF objects out of 1000 (max. 8388607)
  56 compressed objects within 1 object stream
