@@ -2267,6 +2267,7 @@ function vector_diagnostic_plot(
     arrowhead_size=0.08,
     contours=nothing,
     magnitude_scale=nothing,
+    color=:inferno,
 )
     arrow_scale > 0 || throw(ArgumentError("arrow_scale must be positive"))
     arrowhead_size > 0 || throw(ArgumentError("arrowhead_size must be positive"))
@@ -2275,6 +2276,7 @@ function vector_diagnostic_plot(
         diagnostics.x, diagnostics.y, magnitude';
         xlabel="x", ylabel="y", title, colorbar_title="magnitude",
         clims=isnothing(magnitude_scale) ? :auto : (0, magnitude_scale),
+        color,
         aspect_ratio=:equal,
     )
     if !isnothing(contours)
