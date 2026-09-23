@@ -278,12 +278,23 @@ The surface-pressure coefficient diagnostic evaluates the fields in equation
 ```
 
 It reports the advection velocity
-$(\partial_y\mathfrak A_i,-\partial_x\mathfrak A_i)$, diffusivity
-$\mathfrak A_r$, and source
+$(\partial_y\mathfrak A_i,-\partial_x\mathfrak A_i)$ as inviscid,
+frictional, and total fields on a common plot scale. The coefficient split is
+$\mathfrak A_i^{(0)}=H/f$ and
+
+```math
+\mathfrak A_i^{(\mathrm{fr})}
+=-\frac{\sinh(2s)+\sin(2s)}
+{2\alpha f[\cosh(2s)+\cos(2s)]},
+\qquad
+\alpha=\sqrt{\frac{|f|}{2\nu\mathrm{Ek}}},\quad s=\alpha H.
+```
+
+The diagnostic also reports diffusivity $\mathfrak A_r$ and source
 $-\partial_x\mathfrak B_r-\partial_y\mathfrak B_i$. Because the advecting
-velocity depends only on $\mathfrak A(H,f,\mathrm{Ek},\nu)$, it does not have
-buoyancy- and stress-driven components. The source is split using
-$\mathfrak B=\mathfrak B_b+\mathfrak B_\tau$ into separate baroclinic and
+velocity depends only on $\mathfrak A(H,f,\mathrm{Ek},\nu)$, its split is
+distinct from the buoyancy- and stress-driven source split. The decomposition
+$\mathfrak B=\mathfrak B_b+\mathfrak B_\tau$ gives separate baroclinic and
 surface-stress contributions, which share a color scale in the plot.
 
 The complex coefficients $\mathfrak A$ and $\mathfrak B$ are exactly those

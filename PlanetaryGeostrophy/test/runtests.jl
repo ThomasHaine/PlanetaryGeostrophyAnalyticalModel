@@ -42,6 +42,48 @@ end
     @test Btransport ≈
         (exp(q * H) - 1)^2 /
         (p.ν * q^2 * (1 + exp(2q * H))) * τ(0.0, 0.0)
+
+    for signed_f in (-f, f)
+        problem = (
+            depth=(x, y) -> H,
+            coriolis=(x, y) -> signed_f,
+            parameters=(; viscosity=p.ν, Ek=p.Ek),
+        )
+        components =
+            PlanetaryGeostrophy.surface_pressure_imaginary_coefficient_components(
+                problem, 0.0, 0.0,
+            )
+        @test components.inviscid == H / signed_f
+        @test components.inviscid + components.frictional ≈ imag(
+            PlanetaryGeostrophy.pressure_coefficient(
+                p, H, signed_f,
+            ),
+        )
+    end
+
+    small_s_problem = (
+        depth=(x, y) -> 1e-6,
+        coriolis=(x, y) -> -1.0,
+        parameters=(; viscosity=1.0, Ek=1.0),
+    )
+    small_s_components =
+        PlanetaryGeostrophy.surface_pressure_imaginary_coefficient_components(
+            small_s_problem, 0.0, 0.0,
+        )
+    @test all(isfinite, small_s_components)
+    @test small_s_components.frictional ≈
+        -small_s_components.inviscid rtol=1e-12
+
+    large_s_problem = (
+        depth=(x, y) -> 1.0,
+        coriolis=(x, y) -> 1.0,
+        parameters=(; viscosity=1.0, Ek=1e-8),
+    )
+    large_s_components =
+        PlanetaryGeostrophy.surface_pressure_imaginary_coefficient_components(
+            large_s_problem, 0.0, 0.0,
+        )
+    @test all(isfinite, large_s_components)
 end
 
 @testset "Green-function velocity formulations" begin
@@ -291,6 +333,12 @@ end
         ) / (2coefficient_step)
         @test pressure_coefficients.advection_velocity_x ≈ imag(A_y)
         @test pressure_coefficients.advection_velocity_y ≈ 0 atol=1e-10
+        @test pressure_coefficients.advection_velocity_x ≈
+            pressure_coefficients.inviscid_advection_velocity_x +
+            pressure_coefficients.frictional_advection_velocity_x
+        @test pressure_coefficients.advection_velocity_y ≈
+            pressure_coefficients.inviscid_advection_velocity_y +
+            pressure_coefficients.frictional_advection_velocity_y atol=1e-10
         @test pressure_coefficients.diffusivity ≈
             real(solution.pressure.A_fn((x, y)))
         @test pressure_coefficients.baroclinic_source ≈
@@ -520,6 +568,8 @@ end
         @test performance_summary(tdvb) == tdvb.timings
         @test isfinite(tdvb.timings.relative_l2_residual)
         @test size(pressure_equation.advection_velocity_x) == shape
+        @test size(pressure_equation.inviscid_advection_velocity_x) == shape
+        @test size(pressure_equation.frictional_advection_velocity_x) == shape
         @test count(pressure_equation.wet) == 1
         @test all(
             isnan,
@@ -563,6 +613,12 @@ end
             imag(center_A_y)
         @test pressure_equation.advection_velocity_y[center] ≈
             -imag(center_A_x)
+        @test pressure_equation.advection_velocity_x[center] ≈
+            pressure_equation.inviscid_advection_velocity_x[center] +
+            pressure_equation.frictional_advection_velocity_x[center]
+        @test pressure_equation.advection_velocity_y[center] ≈
+            pressure_equation.inviscid_advection_velocity_y[center] +
+            pressure_equation.frictional_advection_velocity_y[center]
         @test pressure_equation.diffusivity[center] ≈
             real(solution.pressure.A_fn((coordinates[2], coordinates[2])))
         @test pressure_equation.source[center] ≈
@@ -650,7 +706,7 @@ end
         @test all(
             all(isapprox.(size, panel_size(pressure_equation_figure, 1)))
             for size in (
-                panel_size(pressure_equation_figure, index) for index in 1:4
+                panel_size(pressure_equation_figure, index) for index in 1:6
             )
         )
         @test isfile(balance_path)
@@ -827,6 +883,12 @@ end
             imag(variable_A_y)
         @test variable_pressure_coefficients.advection_velocity_y ≈
             -imag(variable_A_x)
+        @test variable_pressure_coefficients.advection_velocity_x ≈
+            variable_pressure_coefficients.inviscid_advection_velocity_x +
+            variable_pressure_coefficients.frictional_advection_velocity_x
+        @test variable_pressure_coefficients.advection_velocity_y ≈
+            variable_pressure_coefficients.inviscid_advection_velocity_y +
+            variable_pressure_coefficients.frictional_advection_velocity_y
         @test !isapprox(
             variable_pressure_coefficients.advection_velocity_y,
             0.0;
