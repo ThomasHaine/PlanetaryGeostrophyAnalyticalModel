@@ -702,4 +702,520 @@ Here
 Because the frictional correction to the advecting streamfunction is a function of depth $H_d$ and Coriolis parameter $f_d$, it can only increase or decrease the flow along $f_d/H_d$ contours (not $H_d$ contours). 
 For shallow depths, friction opposes the tendency to flow around $f_d/H_d$ contours: it retards the flow.
 
+\subsection{Physical interpretation}
+
+\subsection{Advection and diffusion in the surface-pressure equation}
+
+For uniform dimensional vertical viscosity \(\nu_0\), define
+\begin{equation}
+q_d
+=
+\sqrt{\frac{i f_d}{\nu_0}},
+\end{equation}
+and write the dimensional depth-integrated pressure-driven transport as
+\begin{equation}
+\mathcal U_{p,d}
+=
+\mathfrak A_d
+\left(
+\partial_{x_d}+i\partial_{y_d}
+\right)p_{s,d},
+\end{equation}
+where
+\begin{equation}
+\mathfrak A_d
+=
+\frac{1}{i\rho_0f_d}
+\left[
+\frac{\tanh(q_dH_d)}{q_d}-H_d
+\right].
+\end{equation}
+Here \(p_{s,d}\) is dynamic pressure, measured in Pa. If kinematic
+pressure is used instead, the factors of \(\rho_0\) should be omitted.
+
+Introduce
+\begin{equation}
+\alpha_d
+=
+\sqrt{\frac{|f_d|}{2\nu_0}},
+\qquad
+\sigma_d
+=
+\operatorname{sgn}(f_d),
+\qquad
+s_d
+=
+\alpha_dH_d.
+\end{equation}
+Then
+\begin{equation}
+q_d
+=
+\alpha_d(1+i\sigma_d).
+\end{equation}
+
+Writing
+\begin{equation}
+\mathfrak A_d
+=
+\mathfrak A_{r,d}
++i\mathfrak A_{i,d},
+\end{equation}
+the real and imaginary parts are
+\begin{subequations}
+\begin{align}
+\mathfrak A_{r,d}
+&=
+\frac{
+\sin(2s_d)-\sinh(2s_d)
+}{
+2\rho_0\alpha_d|f_d|
+\left[
+\cosh(2s_d)+\cos(2s_d)
+\right]
+},
+\\[1ex]
+\mathfrak A_{i,d}
+&=
+\frac{
+2s_d
+\left[
+\cosh(2s_d)+\cos(2s_d)
+\right]
+-\sinh(2s_d)-\sin(2s_d)
+}{
+2\rho_0\alpha_df_d
+\left[
+\cosh(2s_d)+\cos(2s_d)
+\right]
+}.
+\end{align}
+\end{subequations}
+
+
+\subsubsection{Advection--diffusion form}
+
+The dimensional surface-pressure equation can be written schematically as
+\begin{equation}
+-\nabla_d\cdot
+\left(
+K_d\nabla_d p_{s,d}
+\right)
++
+\boldsymbol c_d\cdot\nabla_d p_{s,d}
+=
+S_d,
+\end{equation}
+where
+\begin{equation}
+K_d
+\equiv
+-\mathfrak A_{r,d}>0
+\end{equation}
+is the positive pressure-diffusivity coefficient, and
+\begin{equation}
+\boldsymbol c_d
+=
+\nabla_d^\perp\mathfrak A_{i,d}
+\end{equation}
+is the advecting velocity. We use the convention
+\begin{equation}
+\nabla_d^\perp\psi
+\equiv
+\left(
+\partial_{y_d}\psi,
+-\partial_{x_d}\psi
+\right).
+\end{equation}
+
+Because \(\boldsymbol c_d\) is the perpendicular gradient of a scalar,
+it is non-divergent:
+\begin{equation}
+\nabla_d\cdot\boldsymbol c_d
+=
+\partial_{x_d}\partial_{y_d}\mathfrak A_{i,d}
+-
+\partial_{y_d}\partial_{x_d}\mathfrak A_{i,d}
+=
+0.
+\end{equation}
+Moreover,
+\begin{equation}
+\boldsymbol c_d\cdot\nabla_d\mathfrak A_{i,d}=0,
+\end{equation}
+so the advecting trajectories follow contours of
+\(\mathfrak A_{i,d}\).
+
+
+\subsubsection{Inviscid and frictional advection}
+
+The advecting streamfunction separates naturally into inviscid and
+frictional parts:
+\begin{equation}
+\mathfrak A_{i,d}
+=
+\mathfrak A_{i,d}^{(0)}
++
+\mathfrak A_{i,d}^{(\mathrm{fr})},
+\end{equation}
+where
+\begin{equation}
+\boxed{
+\mathfrak A_{i,d}^{(0)}
+=
+\frac{H_d}{\rho_0f_d}
+}
+\end{equation}
+is the classical inviscid contribution, and
+\begin{equation}
+\boxed{
+\mathfrak A_{i,d}^{(\mathrm{fr})}
+=
+-
+\frac{
+\sinh(2s_d)+\sin(2s_d)
+}{
+2\rho_0\alpha_df_d
+\left[
+\cosh(2s_d)+\cos(2s_d)
+\right]
+}
+}
+\end{equation}
+is the frictional correction.
+
+The corresponding velocity decomposition is
+\begin{equation}
+\boldsymbol c_d
+=
+\boldsymbol c_d^{(0)}
++
+\boldsymbol c_d^{(\mathrm{fr})},
+\end{equation}
+with
+\begin{subequations}
+\begin{align}
+\boldsymbol c_d^{(0)}
+&=
+\nabla_d^\perp
+\left(
+\frac{H_d}{\rho_0f_d}
+\right),
+\\
+\boldsymbol c_d^{(\mathrm{fr})}
+&=
+\nabla_d^\perp
+\mathfrak A_{i,d}^{(\mathrm{fr})}.
+\end{align}
+\end{subequations}
+
+The inviscid velocity follows contours of \(H_d/f_d\), or,
+equivalently, contours of \(f_d/H_d\). These are the usual
+geostrophic contours.
+
+It is useful to define
+\begin{equation}
+G(s)
+=
+\frac{
+\sinh(2s)+\sin(2s)
+}{
+2\left[
+\cosh(2s)+\cos(2s)
+\right]
+}.
+\end{equation}
+The magnitude of the frictional streamfunction is then
+\begin{equation}
+\left|
+\mathfrak A_{i,d}^{(\mathrm{fr})}
+\right|
+=
+\frac{G(s_d)}
+{\rho_0\alpha_d|f_d|}.
+\end{equation}
+The function \(G\) reaches a maximum of approximately
+\begin{equation}
+G_{\max}\simeq0.681
+\qquad\text{at}\qquad
+s_d\simeq0.94,
+\end{equation}
+and satisfies
+\begin{equation}
+G(s_d)\longrightarrow\frac{1}{2}
+\qquad\text{as}\qquad
+s_d\longrightarrow\infty.
+\end{equation}
+
+On an \(f\)-plane with uniform viscosity,
+\(\mathfrak A_{i,d}^{(\mathrm{fr})}\) depends on horizontal position
+only through \(H_d\). Consequently, its advecting velocity follows
+isobaths and circulates around topographic features rather than
+toward or away from them.
+
+In shallow, friction-dominated water,
+\begin{equation}
+G(s_d)\sim s_d,
+\qquad
+s_d\ll1,
+\end{equation}
+and hence
+\begin{equation}
+\mathfrak A_{i,d}^{(\mathrm{fr})}
+\sim
+-\frac{H_d}{\rho_0f_d}.
+\end{equation}
+The frictional contribution therefore cancels the inviscid
+streamfunction to leading order:
+\begin{equation}
+\mathfrak A_{i,d}
+=
+\mathfrak A_{i,d}^{(0)}
++
+\mathfrak A_{i,d}^{(\mathrm{fr})}
+\longrightarrow0
+\qquad
+\text{as}
+\qquad
+s_d\longrightarrow0.
+\end{equation}
+A shallow, friction-dominated water column therefore cannot sustain
+the full inviscid depth-integrated geostrophic transport.
+
+For a seamount, the frictional correction modifies the azimuthal
+advection around the topography. It does not itself produce radial
+advection toward or away from the summit. In shallow water it opposes
+and nearly cancels the inviscid advection. In sufficiently deep water
+the frictional streamfunction becomes nearly independent of depth,
+so its associated advecting velocity becomes small.
+
+
+\subsubsection{Sign-definite pressure diffusion}
+
+The positive pressure-diffusivity coefficient is
+\begin{equation}
+\boxed{
+K_d
+=
+-\mathfrak A_{r,d}
+=
+\frac{
+\sinh(2s_d)-\sin(2s_d)
+}{
+2\rho_0\alpha_d|f_d|
+\left[
+\cosh(2s_d)+\cos(2s_d)
+\right]
+}
+}.
+\end{equation}
+
+For \(s_d>0\),
+\begin{equation}
+\cosh(2s_d)+\cos(2s_d)>0,
+\end{equation}
+and
+\begin{equation}
+\sinh(2s_d)-\sin(2s_d)
+=
+\int_0^{2s_d}
+\left(
+\cosh r-\cos r
+\right)\,dr
+>0.
+\end{equation}
+It follows that
+\begin{equation}
+\boxed{K_d>0},
+\end{equation}
+or, equivalently,
+\begin{equation}
+\boxed{\mathfrak A_{r,d}<0}.
+\end{equation}
+
+The pressure-driven diffusive transport is therefore
+\begin{equation}
+\boxed{
+\boldsymbol{\mathcal U}_{p,d}^{(\mathrm{diff})}
+=
+-K_d\nabla_d p_{s,d}
+},
+\end{equation}
+which is everywhere down the surface-pressure gradient. There is no
+up-gradient pressure diffusion in this model.
+
+
+\subsubsection{Dependence of the diffusivity on depth}
+
+Define the universal normalized diffusivity function
+\begin{equation}
+F(s)
+=
+\frac{
+\sinh(2s)-\sin(2s)
+}{
+2\left[
+\cosh(2s)+\cos(2s)
+\right]
+}.
+\end{equation}
+Then
+\begin{equation}
+\rho_0\alpha_d|f_d|K_d
+=
+F(s_d).
+\end{equation}
+
+In shallow or strongly frictional water,
+\begin{equation}
+F(s_d)
+=
+\frac{2}{3}s_d^3+O(s_d^7),
+\qquad
+s_d\ll1.
+\end{equation}
+Therefore,
+\begin{equation}
+\boxed{
+K_d
+\sim
+\frac{H_d^3}{3\rho_0\nu_0}
+},
+\qquad
+s_d\ll1.
+\end{equation}
+The pressure-transport capacity decreases rapidly as the water column
+becomes shallow. Pressure diffusion is consequently weak over a
+shallow seamount summit and vanishes as \(H_d\to0\).
+
+At intermediate depth, the normalized diffusivity reaches a modest
+maximum:
+\begin{equation}
+F_{\max}\simeq0.545
+\qquad\text{at}\qquad
+s_d\simeq1.57.
+\end{equation}
+The cross-pressure-contour transport can therefore be most effective
+on the intermediate-depth flanks of a seamount.
+
+In deep water,
+\begin{equation}
+F(s_d)\longrightarrow\frac{1}{2},
+\qquad
+s_d\longrightarrow\infty,
+\end{equation}
+and
+\begin{equation}
+\boxed{
+K_d
+\longrightarrow
+\frac{1}{2\rho_0\alpha_d|f_d|}
+=
+\frac{1}{\rho_0|f_d|}
+\sqrt{\frac{\nu_0}{2|f_d|}}
+}.
+\end{equation}
+The diffusivity then becomes independent of total depth. Physically,
+only the bottom Ekman layer participates in the cross-isobar
+frictional transport, so adding more inviscid water above the bottom
+boundary layer does not increase the diffusive response.
+
+
+\subsubsection{Dependence of the diffusivity on the Coriolis parameter}
+
+The dimensional diffusivity can be written explicitly as
+\begin{equation}
+\boxed{
+K_d(H_d,f_d)
+=
+\frac{\sqrt{2\nu_0}}
+{\rho_0|f_d|^{3/2}}
+F\left(
+H_d\sqrt{\frac{|f_d|}{2\nu_0}}
+\right)
+}.
+\end{equation}
+
+Thus \(f_d\) enters both through the prefactor
+\(|f_d|^{-3/2}\) and through the depth parameter
+\begin{equation}
+s_d
+=
+H_d\sqrt{\frac{|f_d|}{2\nu_0}}.
+\end{equation}
+The diffusivity is therefore not a function of \(f_d/H_d\) alone.
+
+In the shallow or weak-rotation limit,
+\begin{equation}
+K_d
+\sim
+\frac{H_d^3}{3\rho_0\nu_0},
+\end{equation}
+so its leading-order value is independent of \(f_d\). Rotation is too
+weak, or the column too shallow, for a distinct bottom Ekman layer to
+form.
+
+In the deep or strongly rotating limit,
+\begin{equation}
+K_d
+\sim
+\frac{\sqrt{2\nu_0}}
+{2\rho_0|f_d|^{3/2}},
+\end{equation}
+so
+\begin{equation}
+K_d\propto |f_d|^{-3/2}.
+\end{equation}
+Pressure diffusion is therefore weaker at large \(|f_d|\) and stronger
+at small \(|f_d|\). Strong rotation turns more of the pressure-driven
+transport along pressure contours and confines the cross-contour
+response to a thinner bottom Ekman layer.
+
+An identical deep seamount will therefore have stronger
+pressure-diffusive transport at lower latitude than at higher
+latitude, provided the planetary-geostrophic approximation remains
+valid and \(f_d\neq0\).
+
+
+\subsubsection{Physical interpretation over a seamount}
+
+Diffusion does not have an intrinsically inward or outward direction
+relative to topography. Its direction is set by the surface-pressure
+gradient:
+\begin{equation}
+\boldsymbol{\mathcal U}_{p,d}^{(\mathrm{diff})}
+=
+-K_d\nabla_d p_{s,d}.
+\end{equation}
+Therefore,
+\begin{itemize}
+\item a pressure maximum over a seamount drives outward,
+      down-gradient transport;
+\item a pressure minimum over a seamount drives inward,
+      down-gradient transport;
+\item the shallow summit suppresses either transport because
+      \(K_d\propto H_d^3\);
+\item intermediate-depth flanks can support the strongest normalized
+      diffusive transport;
+\item the deep-water diffusivity becomes independent of depth but
+      varies as \(|f_d|^{-3/2}\).
+\end{itemize}
+
+The distinction between advection and diffusion may be summarized as
+\begin{equation}
+\boxed{
+\begin{aligned}
+&\text{Advection follows contours of }
+\mathfrak A_{i,d}(H_d,f_d),
+\\
+&\text{diffusion crosses pressure contours with local strength }
+K_d(H_d,f_d).
+\end{aligned}
+}
+\end{equation}
+The classical inviscid advection follows \(f_d/H_d\) contours, whereas
+the frictionally modified advection and the diffusivity are not
+functions of \(f_d/H_d\) alone.
+
+
 \end{document}  
