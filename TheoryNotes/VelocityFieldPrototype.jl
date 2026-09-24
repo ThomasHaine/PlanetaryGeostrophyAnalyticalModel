@@ -16,6 +16,7 @@ export VelocityParameters,
        buoyancy_from_forcing,
        buoyancy_bottom_stress_b23,
        buoyancy_transport_b23,
+       buoyancy_transport_sensitivity_coefficients,
        buoyancy_column_integral,
        load_symbolic_kernels,
        velocity_b10,
@@ -259,6 +260,144 @@ function buoyancy_transport_b23(kernels, p, Hfun, ffun, f_x, f_y, B, bs, H_x, H_
         ),
         -H, 0.0,
     )
+end
+
+"""
+    buoyancy_transport_sensitivity_coefficients(
+        kernels, p, H, f, f_x, f_y, H_x, H_y, x, y, ξ,
+    )
+
+Return the local coefficients that map interior and surface buoyancy values
+and horizontal gradients to the complex depth-integrated transport forcing.
+For an interior level `ξ`,
+
+`δB_transport = value * δB + gradient * (δB_x + im * δB_y)`.
+
+The `surface` entry has the analogous coefficients for `δb_s`. For sloping
+topography, integrating the interior coefficients over `ξ` also requires the
+bottom-boundary contribution
+`interior.gradient(ξ=-H) * (H_x + im * H_y) * δB(x,y,-H)`.
+"""
+function buoyancy_transport_sensitivity_coefficients(
+    kernels,
+    p,
+    Hfun,
+    ffun,
+    f_x,
+    f_y,
+    H_x,
+    H_y,
+    x,
+    y,
+    ξ,
+    ;
+    gradient_step=1e-5,
+)
+    H = Hfun(x, y)
+    checked_depth(H, ξ)
+    fvalue = ffun(x, y)
+    fvalue != 0 || throw(ArgumentError("f(x, y) must be nonzero; got $fvalue"))
+    φvalue, ψvalue = φ_from_f(p, fvalue), ψ(p)
+    Hx, Hy = H_x(x, y), H_y(x, y)
+    fx, fy = f_x(x, y), f_y(x, y)
+
+    integrated_Guvb = split_quadgk(
+        z -> kernels.Guvb(
+            H, z, ξ, φvalue, ψvalue, p.κ, p.ν,
+        ),
+        -H, 0.0, (ξ,),
+    )
+    integrated_Guvb_xi = split_quadgk(
+        z -> kernels.Guvb_xi(
+            H, z, φvalue, ψvalue, p.κ, p.ν,
+        ),
+        -H, 0.0, (),
+    )
+    function interior_gradient_coefficient(xx, yy)
+        local_H = Hfun(xx, yy)
+        local_φ = φ_from_f(p, ffun(xx, yy))
+        return p.Γ / p.Ek^2 * split_quadgk(
+            z -> kernels.Guvb(
+                local_H, z, ξ, local_φ, ψvalue, p.κ, p.ν,
+            ),
+            -local_H, 0.0, (ξ,),
+        )
+    end
+    function surface_gradient_coefficient(xx, yy)
+        local_H = Hfun(xx, yy)
+        local_φ = φ_from_f(p, ffun(xx, yy))
+        return -split_quadgk(
+            z -> kernels.Guvb_xi(
+                local_H, z, local_φ, ψvalue, p.κ, p.ν,
+            ),
+            -local_H, 0.0, (),
+        ) / p.Ek
+    end
+    interior_coefficient_gradient = finite_complex_gradient(
+        interior_gradient_coefficient, x, y; step=gradient_step,
+    )
+    surface_coefficient_gradient = finite_complex_gradient(
+        surface_gradient_coefficient, x, y; step=gradient_step,
+    )
+    integrated_bottom_velocity = split_quadgk(
+        z -> Gu(z, -H, H, p.ν, φvalue),
+        -H, 0.0, (),
+    )
+
+    function integrated_directional_kernel(
+        H_derivative,
+        f_derivative,
+    )
+        return split_quadgk(
+            z -> kernels.Guv_y_b(
+                H, z, ξ, φvalue, ψvalue, p.κ, p.ν,
+                f_derivative, fvalue, H_derivative,
+            ),
+            -H, 0.0, (ξ,),
+        )
+    end
+    function integrated_directional_surface_kernel(
+        H_derivative,
+        f_derivative,
+    )
+        return split_quadgk(
+            z -> kernels.Guv_y_b_xi(
+                H, z, φvalue, ψvalue, p.κ, p.ν,
+                f_derivative, fvalue, H_derivative,
+            ),
+            -H, 0.0, (),
+        )
+    end
+
+    column = -p.Γ / p.Ek *
+        kernels.inner_Gb(-H, ξ, H, ψvalue, p.κ)
+    surface_column =
+        kernels.inner_Gb_xi(-H, H, ψvalue, p.κ)
+    bottom_factor =
+        (Hx + im * Hy) * integrated_bottom_velocity / p.Ek
+    interior = (
+        value=(
+            interior_coefficient_gradient +
+            bottom_factor * column -
+            p.Γ / p.Ek^2 * (
+                integrated_directional_kernel(Hx, fx) +
+                im * integrated_directional_kernel(Hy, fy)
+            )
+        ),
+        gradient=p.Γ / p.Ek^2 * integrated_Guvb,
+    )
+    surface = (
+        value=(
+            surface_coefficient_gradient +
+            bottom_factor * surface_column +
+            (
+                integrated_directional_surface_kernel(Hx, fx) +
+                im * integrated_directional_surface_kernel(Hy, fy)
+            ) / p.Ek
+        ),
+        gradient=-integrated_Guvb_xi / p.Ek,
+    )
+    return (; interior, surface)
 end
 
 """

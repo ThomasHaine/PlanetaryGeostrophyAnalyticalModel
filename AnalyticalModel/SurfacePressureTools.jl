@@ -238,6 +238,104 @@ function solve_surface_pressure(
 end
 
 """
+    solve_surface_pressure_adjoint(
+        pressure, target_x, target_y;
+        component=:U, target_radius,
+    )
+
+Solve the discrete adjoint of the surface-pressure equation for a normalized
+Gaussian average of one depth-integrated-current component. Conjugating the
+complex transport coefficient reverses the pressure operator's advecting
+velocity. `component` may be `:U` or `:V`.
+"""
+function solve_surface_pressure_adjoint(
+    pressure,
+    target_x,
+    target_y;
+    component=:U,
+    target_radius,
+)
+    component in (:U, :V) ||
+        throw(ArgumentError("component must be :U or :V"))
+    target_radius > 0 ||
+        throw(ArgumentError("target_radius must be positive"))
+    solve_started = time()
+    order = pressure.order
+    spaces, space_timing = pressure_timed_stage(
+        "constructing adjoint pressure finite-element spaces",
+    ) do
+        Ω = Triangulation(pressure.model)
+        dΩ = Measure(Ω, 2 * order)
+        reffe = ReferenceFE(lagrangian, Float64, order)
+        V = TestFESpace(
+            pressure.model,
+            reffe;
+            conformity=:H1,
+            dirichlet_tags="boundary",
+        )
+        U = TrialFESpace(V)
+        (; Ω, dΩ, V, U)
+    end
+    Ω, dΩ, V, U = spaces.Ω, spaces.dΩ, spaces.V, spaces.U
+    unnormalized_target(x) = exp(
+        -(
+            (x[1] - target_x)^2 +
+            (x[2] - target_y)^2
+        ) / (2target_radius^2),
+    )
+    normalization = sum(∫(unnormalized_target)dΩ)
+    normalization > 0 ||
+        throw(ArgumentError("target averaging kernel does not overlap the basin"))
+    target_weight(x) = unnormalized_target(x) / normalization
+    adjoint_A(x) = conj(pressure.A_fn(x))
+    a(u, v) = ∫(
+        real(
+            (∇(v) ⋅ VectorValue(1.0, -im)) *
+            (adjoint_A * (∇(u) ⋅ VectorValue(1.0, im))),
+        )
+    )dΩ
+    l(v) = if component === :U
+        ∫(
+            target_weight *
+            real(pressure.A_fn * (∇(v) ⋅ VectorValue(1.0, im)))
+        )dΩ
+    else
+        ∫(
+            target_weight *
+            imag(pressure.A_fn * (∇(v) ⋅ VectorValue(1.0, im)))
+        )dΩ
+    end
+    operator, assembly_timing = pressure_timed_stage(
+        "assembling adjoint surface-pressure operator",
+    ) do
+        AffineFEOperator(a, l, U, V)
+    end
+    finite_element, linear_solve_timing = pressure_timed_stage(
+        "solving adjoint surface-pressure linear system",
+    ) do
+        Gridap.solve(operator)
+    end
+    finite_element_gradient = ∇(finite_element)
+    gradient = (x, y) -> evaluate(finite_element_gradient, Point(x, y))
+    weight = (x, y) -> target_weight(Point(x, y))
+    timings = (
+        finite_element_setup=space_timing,
+        operator_assembly=assembly_timing,
+        linear_solve=linear_solve_timing,
+        total_seconds=time() - solve_started,
+    )
+    return (;
+        finite_element,
+        gradient,
+        weight,
+        component,
+        target=(x=float(target_x), y=float(target_y)),
+        target_radius=float(target_radius),
+        timings,
+    )
+end
+
+"""
     solve_transport_streamfunction(pressure; order=2)
 
 Solve for the streamfunction of the depth-integrated horizontal current

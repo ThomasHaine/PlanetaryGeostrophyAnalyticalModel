@@ -1,4 +1,5 @@
 using PlanetaryGeostrophy
+using Gridap: Measure, Triangulation, ∫
 using Test
 
 @testset "PG problem specification" begin
@@ -115,6 +116,38 @@ end
             H_x, H_y, x, y, z,
         )
     end
+
+    test_B(xx, yy, z) = exp(z) * (1 + 0.2xx - 0.1yy)
+    test_bs(xx, yy) = 0.03 + 0.01xx + 0.02yy
+    coefficients = prototype.buoyancy_transport_sensitivity_coefficients(
+        kernels, p, H, f, f_x, f_y, H_x, H_y, x, y, -H(x, y) / 2,
+    )
+    coefficient_transport = prototype.split_quadgk(
+        ξ -> begin
+            local_coefficients =
+                prototype.buoyancy_transport_sensitivity_coefficients(
+                    kernels, p, H, f, f_x, f_y, H_x, H_y, x, y, ξ,
+                ).interior
+            local_coefficients.value * test_B(x, y, ξ) +
+                local_coefficients.gradient * exp(ξ) * (0.2 - 0.1im)
+        end,
+        -H(x, y),
+        0.0,
+    )
+    bottom_coefficients =
+        prototype.buoyancy_transport_sensitivity_coefficients(
+            kernels, p, H, f, f_x, f_y, H_x, H_y, x, y, -H(x, y),
+        ).interior
+    coefficient_transport += (
+        bottom_coefficients.gradient *
+        complex(H_x(x, y), H_y(x, y)) *
+        test_B(x, y, -H(x, y))
+    ) + coefficients.surface.value * test_bs(x, y) +
+        coefficients.surface.gradient * (0.01 + 0.02im)
+    direct_transport = prototype.buoyancy_transport_b23(
+        kernels, p, H, f, f_x, f_y, test_B, test_bs, H_x, H_y, x, y,
+    )
+    @test coefficient_transport ≈ direct_transport rtol=2e-7
 end
 
 @testset "Vertical velocity reconstruction" begin
@@ -939,10 +972,67 @@ end
         ) > 0
         @test performance_summary(sensitivity) == sensitivity.timings
 
+        Ω = Triangulation(solution.pressure.model)
+        dΩ = Measure(Ω, 2solution.pressure.order)
+        transport_field(point) = (
+            solution.pressure.A_fn(point) *
+            solution.pressure.gradps(point[1], point[2]) +
+            solution.pressure.B_fn(point)
+        )
+        for component in (:U, :V)
+            adjoint = PlanetaryGeostrophy.solve_surface_pressure_adjoint(
+                solution.pressure,
+                x,
+                y;
+                component,
+                target_radius=0.15,
+            )
+            select_component(value) =
+                component === :U ? real(value) : imag(value)
+            averaged_transport = sum(∫(
+                point -> adjoint.weight(point[1], point[2]) *
+                    select_component(transport_field(point))
+            )dΩ)
+            adjoint_transport = sum(∫(
+                point -> begin
+                    forcing = solution.pressure.B_fn(point)
+                    gradient = adjoint.gradient(point[1], point[2])
+                    (
+                        adjoint.weight(point[1], point[2]) *
+                        select_component(forcing) -
+                        gradient[1] * real(forcing) -
+                        gradient[2] * imag(forcing)
+                    )
+                end
+            )dΩ)
+            @test adjoint_transport ≈ averaged_transport rtol=1e-10
+        end
+
+        adjoint_sensitivity = compute_transport_adjoint_sensitivity(
+            solution,
+            range(-0.75, 0.15; length=7),
+            range(-0.45, 0.45; length=7),
+            [-0.75, -0.5, -0.25];
+            target=(x, y),
+            component=:U,
+            target_radius=0.15,
+        )
+        @test size(adjoint_sensitivity.wind_stress_x) == (7, 7)
+        @test size(adjoint_sensitivity.surface_buoyancy) == (7, 7)
+        @test size(adjoint_sensitivity.restoring_buoyancy) == (7, 7, 3)
+        @test any(isfinite, adjoint_sensitivity.wind_stress_x)
+        @test any(isfinite, adjoint_sensitivity.wind_stress_y)
+        @test any(isfinite, adjoint_sensitivity.surface_buoyancy)
+        @test any(isfinite, adjoint_sensitivity.restoring_buoyancy)
+        @test performance_summary(adjoint_sensitivity) ==
+            adjoint_sensitivity.timings
+
         velocity_sensitivity_path =
             joinpath(directory, "velocity_sensitivity.png")
         transport_sensitivity_path =
             joinpath(directory, "transport_sensitivity.png")
+        adjoint_sensitivity_path =
+            joinpath(directory, "transport_adjoint_sensitivity.png")
         plot_velocity_sensitivity(
             sensitivity,
             x,
@@ -953,7 +1043,12 @@ end
         plot_transport_sensitivity(
             sensitivity, x, y; output=transport_sensitivity_path,
         )
+        plot_transport_adjoint_sensitivity(
+            adjoint_sensitivity;
+            output=adjoint_sensitivity_path,
+        )
         @test isfile(velocity_sensitivity_path)
         @test isfile(transport_sensitivity_path)
+        @test isfile(adjoint_sensitivity_path)
     end
 end
