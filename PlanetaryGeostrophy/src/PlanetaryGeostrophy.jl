@@ -36,6 +36,7 @@ export PGParameters,
        PGGeostrophicContourVorticityDiagnostics,
        PGTransportDivergenceVorticityDiagnostics,
        PGSurfacePressureEquationDiagnostics,
+       PGForcingSensitivities,
        rectangle_boundary,
        ellipse_boundary,
        solve_pg,
@@ -46,6 +47,9 @@ export PGParameters,
        bottom_pressure,
        baroclinic_potential_energy,
        depth_integrated_current,
+       solve_forcing_sensitivities,
+       horizontal_velocity_sensitivity,
+       depth_integrated_current_sensitivity,
        depth_integrated_momentum_terms,
        barotropic_vorticity_terms,
        depth_integrated_vorticity_terms,
@@ -78,6 +82,8 @@ export PGParameters,
        plot_surface_pressure_equation_diagnostics,
        plot_baroclinic_potential_energy,
        plot_bottom_pressure,
+       plot_velocity_sensitivity,
+       plot_transport_sensitivity,
        performance_summary
 
 """
@@ -443,6 +449,163 @@ function depth_integrated_current(solution::PGSolution, x, y)
     current = A * solution.pressure.gradps(x, y) +
               solution.pressure.B_fn(Point(x, y))
     return (U=real(current), V=imag(current))
+end
+
+struct PGForcingSensitivities{B,BS,TX,TY,T}
+    restoring_buoyancy::B
+    surface_buoyancy::BS
+    wind_stress_x::TX
+    wind_stress_y::TY
+    timings::T
+end
+
+function forcing_component_problem(
+    problem::PGProblem;
+    restoring_buoyancy=(x, y, z) -> 0.0,
+    surface_buoyancy=(x, y) -> 0.0,
+    wind_stress=(x, y) -> 0.0 + 0.0im,
+)
+    return PGProblem(
+        parameters=problem.parameters,
+        depth=problem.depth,
+        depth_x=problem.depth_x,
+        depth_y=problem.depth_y,
+        coriolis=problem.coriolis,
+        coriolis_x=problem.coriolis_x,
+        coriolis_y=problem.coriolis_y,
+        wind_stress=wind_stress,
+        restoring_buoyancy=restoring_buoyancy,
+        surface_buoyancy=surface_buoyancy,
+        boundary=problem.boundary,
+        inside=problem.inside,
+        derivative_step=problem.derivative_step,
+    )
+end
+
+"""
+    solve_forcing_sensitivities(problem; restoring_buoyancy, surface_buoyancy,
+                                wind_stress_x, wind_stress_y, solve keywords...)
+
+Solve the exact linear response to four independently scaled forcing patterns.
+Each returned solution is the derivative with respect to the scalar multiplier
+of its pattern, with all other forcing terms set to zero. By default the
+patterns are the corresponding components of `problem`; pass a nonzero
+`wind_stress_y` pattern when the base problem has no meridional stress.
+Geometry and dynamical parameters are held fixed.
+"""
+function solve_forcing_sensitivities(
+    problem::PGProblem;
+    restoring_buoyancy=problem.restoring_buoyancy,
+    surface_buoyancy=problem.surface_buoyancy,
+    wind_stress_x=(x, y) -> real(problem.wind_stress(x, y)),
+    wind_stress_y=(x, y) -> imag(problem.wind_stress(x, y)),
+    mesh_file=tempname() * ".msh",
+    mesh_resolution=0.1,
+    pressure_order=2,
+    overwrite_mesh=false,
+)
+    started = time()
+    specifications = (
+        restoring_buoyancy=forcing_component_problem(
+            problem; restoring_buoyancy,
+        ),
+        surface_buoyancy=forcing_component_problem(
+            problem; surface_buoyancy,
+        ),
+        wind_stress_x=forcing_component_problem(
+            problem;
+            wind_stress=(x, y) -> complex(wind_stress_x(x, y), 0.0),
+        ),
+        wind_stress_y=forcing_component_problem(
+            problem;
+            wind_stress=(x, y) -> complex(0.0, wind_stress_y(x, y)),
+        ),
+    )
+    function solve_component(name, specification; overwrite=false)
+        @info "Solving forcing sensitivity" forcing=name
+        return solve_pg(
+            specification;
+            mesh_file,
+            mesh_resolution,
+            pressure_order,
+            overwrite_mesh=overwrite,
+        )
+    end
+    named_solutions = (
+        restoring_buoyancy=solve_component(
+            :restoring_buoyancy,
+            specifications.restoring_buoyancy;
+            overwrite=overwrite_mesh,
+        ),
+        surface_buoyancy=solve_component(
+            :surface_buoyancy,
+            specifications.surface_buoyancy,
+        ),
+        wind_stress_x=solve_component(
+            :wind_stress_x,
+            specifications.wind_stress_x,
+        ),
+        wind_stress_y=solve_component(
+            :wind_stress_y,
+            specifications.wind_stress_y,
+        ),
+    )
+    timings = (
+        restoring_buoyancy=named_solutions.restoring_buoyancy.timings,
+        surface_buoyancy=named_solutions.surface_buoyancy.timings,
+        wind_stress_x=named_solutions.wind_stress_x.timings,
+        wind_stress_y=named_solutions.wind_stress_y.timings,
+        total_seconds=time() - started,
+    )
+    return PGForcingSensitivities(
+        named_solutions.restoring_buoyancy,
+        named_solutions.surface_buoyancy,
+        named_solutions.wind_stress_x,
+        named_solutions.wind_stress_y,
+        timings,
+    )
+end
+
+forcing_sensitivity_pairs(sensitivity::PGForcingSensitivities) = (
+    restoring_buoyancy=sensitivity.restoring_buoyancy,
+    surface_buoyancy=sensitivity.surface_buoyancy,
+    wind_stress_x=sensitivity.wind_stress_x,
+    wind_stress_y=sensitivity.wind_stress_y,
+)
+
+"""
+    horizontal_velocity_sensitivity(sensitivity, x, y, z)
+
+Return the exact `(u, v)` derivatives at `(x, y, z)` with respect to the four
+forcing-pattern multipliers.
+"""
+function horizontal_velocity_sensitivity(
+    sensitivity::PGForcingSensitivities,
+    x,
+    y,
+    z,
+)
+    return map(
+        solution -> horizontal_velocity(solution, x, y, z),
+        forcing_sensitivity_pairs(sensitivity),
+    )
+end
+
+"""
+    depth_integrated_current_sensitivity(sensitivity, x, y)
+
+Return the exact `(U, V)` depth-integrated-current derivatives at `(x, y)`
+with respect to the four forcing-pattern multipliers.
+"""
+function depth_integrated_current_sensitivity(
+    sensitivity::PGForcingSensitivities,
+    x,
+    y,
+)
+    return map(
+        solution -> depth_integrated_current(solution, x, y),
+        forcing_sensitivity_pairs(sensitivity),
+    )
 end
 
 """
@@ -2906,6 +3069,113 @@ function plot_transport_divergence_vorticity_balance(
     )
 end
 
+forcing_sensitivity_labels() = ("B", "bₛ", "τˣ", "τʸ")
+
+"""
+    plot_velocity_sensitivity(sensitivity, x, y, z; output=nothing)
+
+Plot vertical profiles of the `u` and `v` derivatives with respect to each
+forcing-pattern multiplier. `z` must be an increasing collection of levels
+within the local water column.
+"""
+function plot_velocity_sensitivity(
+    sensitivity::PGForcingSensitivities,
+    x,
+    y,
+    z_values;
+    output=nothing,
+)
+    z = collect(float.(z_values))
+    !isempty(z) || throw(ArgumentError("z must contain at least one level"))
+    issorted(z) && all(diff(z) .> 0) ||
+        throw(ArgumentError("z must be strictly increasing"))
+    responses = [
+        [horizontal_velocity(solution, x, y, zz) for zz in z]
+        for solution in values(forcing_sensitivity_pairs(sensitivity))
+    ]
+    labels = forcing_sensitivity_labels()
+    @info "Plotting velocity forcing sensitivity" x y levels=length(z) output
+    figure, _ = timed_stage("rendering velocity sensitivity plot") do
+        u = plot(
+            xlabel="∂u / ∂ amplitude",
+            ylabel="z",
+            title="zonal velocity sensitivity",
+            legend=:best,
+        )
+        v = plot(
+            xlabel="∂v / ∂ amplitude",
+            ylabel="z",
+            title="meridional velocity sensitivity",
+            legend=:best,
+        )
+        for (response, label) in zip(responses, labels)
+            plot!(u, getproperty.(response, :u), z; label, linewidth=2)
+            plot!(v, getproperty.(response, :v), z; label, linewidth=2)
+        end
+        plot(
+            u,
+            v;
+            layout=(1, 2),
+            size=(1000, 430),
+            plot_title="forcing sensitivity at (x, y) = ($(x), $(y))",
+            plot_titlefontsize=15,
+            margin=3Plots.mm,
+        )
+    end
+    return save_diagnostic_plot(
+        figure, output, "velocity forcing sensitivity plot",
+    )
+end
+
+"""
+    plot_transport_sensitivity(sensitivity, x, y; output=nothing)
+
+Plot the `U` and `V` depth-integrated-current derivatives with respect to each
+forcing-pattern multiplier at `(x, y)`.
+"""
+function plot_transport_sensitivity(
+    sensitivity::PGForcingSensitivities,
+    x,
+    y;
+    output=nothing,
+)
+    response = depth_integrated_current_sensitivity(sensitivity, x, y)
+    labels = collect(forcing_sensitivity_labels())
+    U = [current.U for current in values(response)]
+    V = [current.V for current in values(response)]
+    scale = max(maximum(abs, U), maximum(abs, V), eps())
+    @info "Plotting transport forcing sensitivity" x y output
+    figure, _ = timed_stage("rendering transport sensitivity plot") do
+        panels = [
+            bar(
+                labels,
+                values;
+                xlabel="forcing pattern",
+                ylabel="derivative",
+                title,
+                color=:steelblue,
+                legend=false,
+                ylims=(-1.05scale, 1.05scale),
+            )
+            for (title, values) in (
+                ("zonal transport sensitivity ∂U/∂a", U),
+                ("meridional transport sensitivity ∂V/∂a", V),
+            )
+        ]
+        plot(
+            panels...;
+            layout=(1, 2),
+            size=(1000, 430),
+            plot_title="forcing sensitivity at (x, y) = ($(x), $(y))",
+            plot_titlefontsize=15,
+            margin=3Plots.mm,
+        )
+    end
+    return save_diagnostic_plot(
+        figure, output, "transport forcing sensitivity plot",
+    )
+end
+
 performance_summary(solution::PGSolution) = solution.timings
 performance_summary(fields::PGFields) = fields.timings
 performance_summary(solution::PGStreamfunction) = solution.timings
@@ -2923,5 +3193,7 @@ performance_summary(
 performance_summary(
     diagnostics::PGSurfacePressureEquationDiagnostics,
 ) = diagnostics.timings
+performance_summary(sensitivity::PGForcingSensitivities) =
+    sensitivity.timings
 
 end
