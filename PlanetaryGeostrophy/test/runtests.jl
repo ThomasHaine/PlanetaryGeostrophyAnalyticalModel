@@ -894,5 +894,66 @@ end
             0.0;
             atol=1e-8,
         )
+
+        sensitivity = solve_forcing_sensitivities(
+            problem;
+            wind_stress_y=(x, y) -> 1e-3cos(pi * y / Ly),
+            mesh_file=joinpath(directory, "pressure.msh"),
+            pressure_order=1,
+        )
+        velocity_response =
+            horizontal_velocity_sensitivity(sensitivity, x, y, z)
+        transport_response =
+            depth_integrated_current_sensitivity(sensitivity, x, y)
+        reconstructed_velocity = (
+            u=velocity_response.restoring_buoyancy.u +
+                velocity_response.surface_buoyancy.u +
+                velocity_response.wind_stress_x.u,
+            v=velocity_response.restoring_buoyancy.v +
+                velocity_response.surface_buoyancy.v +
+                velocity_response.wind_stress_x.v,
+        )
+        reconstructed_transport = (
+            U=transport_response.restoring_buoyancy.U +
+                transport_response.surface_buoyancy.U +
+                transport_response.wind_stress_x.U,
+            V=transport_response.restoring_buoyancy.V +
+                transport_response.surface_buoyancy.V +
+                transport_response.wind_stress_x.V,
+        )
+        @test reconstructed_velocity.u ≈ horizontal_velocity(
+            solution, x, y, z,
+        ).u rtol=1e-7
+        @test reconstructed_velocity.v ≈ horizontal_velocity(
+            solution, x, y, z,
+        ).v rtol=1e-7
+        @test reconstructed_transport.U ≈ depth_integrated_current(
+            solution, x, y,
+        ).U rtol=1e-7
+        @test reconstructed_transport.V ≈ depth_integrated_current(
+            solution, x, y,
+        ).V rtol=1e-7
+        @test hypot(
+            transport_response.wind_stress_y.U,
+            transport_response.wind_stress_y.V,
+        ) > 0
+        @test performance_summary(sensitivity) == sensitivity.timings
+
+        velocity_sensitivity_path =
+            joinpath(directory, "velocity_sensitivity.png")
+        transport_sensitivity_path =
+            joinpath(directory, "transport_sensitivity.png")
+        plot_velocity_sensitivity(
+            sensitivity,
+            x,
+            y,
+            range(-problem.depth(x, y), 0.0; length=9);
+            output=velocity_sensitivity_path,
+        )
+        plot_transport_sensitivity(
+            sensitivity, x, y; output=transport_sensitivity_path,
+        )
+        @test isfile(velocity_sensitivity_path)
+        @test isfile(transport_sensitivity_path)
     end
 end

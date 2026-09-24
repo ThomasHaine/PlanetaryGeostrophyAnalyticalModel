@@ -16,6 +16,7 @@ Questions/comments welcome.
   - [Problem specification and field output](#problem-specification-and-field-output)
   - [Performance metrics](#performance-metrics)
 - [Transport diagnostics](#transport-diagnostics)
+- [Forcing sensitivity](#forcing-sensitivity)
 - [Dynamical-balance diagnostics](#dynamical-balance-diagnostics)
   - [Depth-integrated momentum](#depth-integrated-momentum)
   - [Barotropic vorticity](#barotropic-vorticity)
@@ -138,6 +139,53 @@ are tangent to the streamfunction contours, which are overlaid on transport
 plots. The direct pointwise values remain
 available as `analytical_transport_U` and `analytical_transport_V`; their
 relative projection difference is reported in the performance summary.
+
+## Forcing sensitivity
+
+The steady PG problem is linear in the restoring buoyancy $B$, surface
+buoyancy $b_s$, and surface-stress components $(\tau^x,\tau^y)$. For fixed
+geometry and parameters, write each forcing as a spatial pattern multiplied
+by an amplitude $a_j$. Superposition gives
+
+```math
+\mathbf{u}=\sum_j a_j\mathbf{u}_j,\qquad
+\frac{\partial\mathbf{u}}{\partial a_j}=\mathbf{u}_j,
+```
+
+so the sensitivity is an exact linear response rather than a finite-difference
+estimate. Because this derivative is with respect to a pattern amplitude, its
+meaning remains well defined for spatially varying forcing.
+
+```julia
+sensitivities = solve_forcing_sensitivities(
+    problem;
+    # Use a chosen meridional-stress pattern even when the base τʸ is zero.
+    wind_stress_y=(x, y) -> 1e-3 * cos(pi * y / Ly),
+    mesh_file="sample_pressure.msh",
+)
+
+velocity_derivatives =
+    horizontal_velocity_sensitivity(sensitivities, x0, y0, z0)
+transport_derivatives =
+    depth_integrated_current_sensitivity(sensitivities, x0, y0)
+
+plot_velocity_sensitivity(
+    sensitivities, x0, y0, range(-problem.depth(x0, y0), 0; length=64);
+    output="velocity_sensitivity.png",
+)
+plot_transport_sensitivity(
+    sensitivities, x0, y0;
+    output="transport_sensitivity.png",
+)
+```
+
+The four returned fields are named `restoring_buoyancy`,
+`surface_buoyancy`, `wind_stress_x`, and `wind_stress_y`. Their default
+patterns are the corresponding components of `problem`; override any keyword
+to diagnose another forcing direction. The velocity plot shows vertical
+profiles of $\partial u/\partial a_j$ and $\partial v/\partial a_j$. The
+transport plot compares $\partial U/\partial a_j$ and
+$\partial V/\partial a_j$ at the selected location.
 
 ## Dynamical-balance diagnostics
 
