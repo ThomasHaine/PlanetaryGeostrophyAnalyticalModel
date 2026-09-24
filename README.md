@@ -143,49 +143,53 @@ relative projection difference is reported in the performance summary.
 ## Forcing sensitivity
 
 The steady PG problem is linear in the restoring buoyancy $B$, surface
-buoyancy $b_s$, and surface-stress components $(\tau^x,\tau^y)$. For fixed
-geometry and parameters, write each forcing as a spatial pattern multiplied
-by an amplitude $a_j$. Superposition gives
+buoyancy $b_s$, and surface-stress components $(\tau^x,\tau^y)$. The adjoint
+diagnostic computes the spatial functional derivatives of one scalar
+depth-integrated-current observable:
 
 ```math
-\mathbf{u}=\sum_j a_j\mathbf{u}_j,\qquad
-\frac{\partial\mathbf{u}}{\partial a_j}=\mathbf{u}_j,
+\delta J
+=\iint K_{\tau^x}\delta\tau^x\,dx\,dy
++\iint K_{\tau^y}\delta\tau^y\,dx\,dy
++\iint K_{b_s}\delta b_s\,dx\,dy
++\iiint K_B\delta B\,dx\,dy\,dz.
 ```
 
-so the sensitivity is an exact linear response rather than a finite-difference
-estimate. Because this derivative is with respect to a pattern amplitude, its
-meaning remains well defined for spatially varying forcing.
+It solves the transpose of the surface-pressure system by conjugating its
+complex transport coefficient, which reverses the pressure operator's
+advecting velocity. One adjoint solve therefore provides the sensitivity to
+forcing at every sampled location. The nominal point observation is a
+normalized Gaussian average with radius `target_radius`; this avoids a
+mesh-dependent point delta and converges toward a point query as the pressure
+mesh and radius are refined together.
 
 ```julia
-sensitivities = solve_forcing_sensitivities(
-    problem;
-    # Use a chosen meridional-stress pattern even when the base τʸ is zero.
-    wind_stress_y=(x, y) -> 1e-3 * cos(pi * y / Ly),
-    mesh_file="sample_pressure.msh",
+adjoint_sensitivity = compute_transport_adjoint_sensitivity(
+    solution,
+    range(-0.9, 0.9; length=25),
+    range(-0.65, 0.65; length=25),
+    [-0.75, -0.5, -0.25];
+    target=(0.4, -0.15),
+    component=:V,
+    target_radius=0.06,
 )
 
-velocity_derivatives =
-    horizontal_velocity_sensitivity(sensitivities, x0, y0, z0)
-transport_derivatives =
-    depth_integrated_current_sensitivity(sensitivities, x0, y0)
-
-plot_velocity_sensitivity(
-    sensitivities, x0, y0, range(-problem.depth(x0, y0), 0; length=64);
-    output="velocity_sensitivity.png",
-)
-plot_transport_sensitivity(
-    sensitivities, x0, y0;
-    output="transport_sensitivity.png",
+plot_transport_adjoint_sensitivity(
+    adjoint_sensitivity;
+    output="transport_adjoint_sensitivity.png",
 )
 ```
 
-The four returned fields are named `restoring_buoyancy`,
-`surface_buoyancy`, `wind_stress_x`, and `wind_stress_y`. Their default
-patterns are the corresponding components of `problem`; override any keyword
-to diagnose another forcing direction. The velocity plot shows vertical
-profiles of $\partial u/\partial a_j$ and $\partial v/\partial a_j$. The
-transport plot compares $\partial U/\partial a_j$ and
-$\partial V/\partial a_j$ at the selected location.
+The result contains 2D `wind_stress_x`, `wind_stress_y`, and
+`surface_buoyancy` kernels, plus the 3D `restoring_buoyancy` kernel sampled at
+the requested depths. Variable topography introduces an additional
+distributional contribution where the restoring field meets the seabed; this
+is retained separately as `bottom_restoring_buoyancy`.
+
+The earlier `solve_forcing_sensitivities` API remains available for
+directional derivatives with respect to the amplitude of a complete,
+user-supplied forcing pattern. Those scalar-amplitude responses are distinct
+from the spatial functional derivatives returned by the adjoint API.
 
 ## Dynamical-balance diagnostics
 

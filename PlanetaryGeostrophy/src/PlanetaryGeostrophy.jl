@@ -37,6 +37,7 @@ export PGParameters,
        PGTransportDivergenceVorticityDiagnostics,
        PGSurfacePressureEquationDiagnostics,
        PGForcingSensitivities,
+       PGTransportAdjointSensitivity,
        rectangle_boundary,
        ellipse_boundary,
        solve_pg,
@@ -50,6 +51,7 @@ export PGParameters,
        solve_forcing_sensitivities,
        horizontal_velocity_sensitivity,
        depth_integrated_current_sensitivity,
+       compute_transport_adjoint_sensitivity,
        depth_integrated_momentum_terms,
        barotropic_vorticity_terms,
        depth_integrated_vorticity_terms,
@@ -84,6 +86,7 @@ export PGParameters,
        plot_bottom_pressure,
        plot_velocity_sensitivity,
        plot_transport_sensitivity,
+       plot_transport_adjoint_sensitivity,
        performance_summary
 
 """
@@ -605,6 +608,296 @@ function depth_integrated_current_sensitivity(
     return map(
         solution -> depth_integrated_current(solution, x, y),
         forcing_sensitivity_pairs(sensitivity),
+    )
+end
+
+struct PGTransportAdjointSensitivity{
+    TX<:AbstractVector,TY<:AbstractVector,TZ<:AbstractVector,T
+}
+    x::TX
+    y::TY
+    z::TZ
+    wind_stress_x::Matrix{Float64}
+    wind_stress_y::Matrix{Float64}
+    surface_buoyancy::Matrix{Float64}
+    restoring_buoyancy::Array{Float64,3}
+    bottom_restoring_buoyancy::Matrix{Float64}
+    transport_forcing_x::Matrix{Float64}
+    transport_forcing_y::Matrix{Float64}
+    wet::BitMatrix
+    wet_3d::BitArray{3}
+    target::NamedTuple
+    component::Symbol
+    target_radius::Float64
+    timings::T
+end
+
+adjoint_pairing(weight, coefficient) =
+    real(conj(weight) * coefficient)
+
+function forcing_kernel_from_local_operator(
+    local_values::AbstractMatrix,
+    gradient_x::AbstractMatrix,
+    gradient_y::AbstractMatrix,
+    wet,
+    x,
+    y
+)
+    kernel = fill(NaN, size(local_values))
+    for j in eachindex(y), i in eachindex(x)
+        centered_stencil_is_wet(wet, i, j) || continue
+        kernel[i, j] = (
+            local_values[i, j] -
+            centered_horizontal_derivative(
+                gradient_x, wet, x, i, j, 1,
+            ) -
+            centered_horizontal_derivative(
+                gradient_y, wet, y, i, j, 2,
+            )
+        )
+    end
+    return kernel
+end
+
+function forcing_kernel_from_local_operator(
+    local_values::AbstractArray{<:Real,3},
+    gradient_x::AbstractArray{<:Real,3},
+    gradient_y::AbstractArray{<:Real,3},
+    wet,
+    x,
+    y
+)
+    kernel = fill(NaN, size(local_values))
+    for k in axes(local_values, 3), j in eachindex(y), i in eachindex(x)
+        wet2 = @view wet[:, :, k]
+        centered_stencil_is_wet(wet2, i, j) || continue
+        local2 = @view local_values[:, :, k]
+        gradient_x2 = @view gradient_x[:, :, k]
+        gradient_y2 = @view gradient_y[:, :, k]
+        kernel[i, j, k] = (
+            local2[i, j] -
+            centered_horizontal_derivative(
+                gradient_x2, wet2, x, i, j, 1,
+            ) -
+            centered_horizontal_derivative(
+                gradient_y2, wet2, y, i, j, 2,
+            )
+        )
+    end
+    return kernel
+end
+
+"""
+    compute_transport_adjoint_sensitivity(
+        solution, x, y, z;
+        target, component=:U, target_radius,
+    )
+
+Compute spatial functional-derivative kernels for a normalized Gaussian
+average of `U` or `V` centered at `target=(x, y)`. The surface-pressure
+adjoint reverses the pressure operator's advecting velocity. The returned
+2D fields are derivatives with respect to local `τx`, `τy`, and `bs`; the
+3D field is the derivative with respect to local restoring buoyancy `B`.
+"""
+function compute_transport_adjoint_sensitivity(
+    solution::PGSolution,
+    x_values,
+    y_values,
+    z_values;
+    target,
+    component=:U,
+    target_radius,
+)
+    started = time()
+    x = collect(float.(x_values))
+    y = collect(float.(y_values))
+    z = collect(float.(z_values))
+    length(x) >= 3 && length(y) >= 3 ||
+        throw(ArgumentError("x and y must each contain at least three points"))
+    !isempty(z) || throw(ArgumentError("z must contain at least one level"))
+    issorted(x) && all(diff(x) .> 0) ||
+        throw(ArgumentError("x must be strictly increasing"))
+    issorted(y) && all(diff(y) .> 0) ||
+        throw(ArgumentError("y must be strictly increasing"))
+    issorted(z) && all(diff(z) .> 0) ||
+        throw(ArgumentError("z must be strictly increasing"))
+    target_x, target_y = target
+    require_water(solution, target_x, target_y)
+    adjoint, adjoint_timing = timed_stage(
+        "solving transport adjoint",
+    ) do
+        solve_surface_pressure_adjoint(
+            solution.pressure,
+            target_x,
+            target_y;
+            component,
+            target_radius,
+        )
+    end
+
+    shape = (length(x), length(y))
+    shape3 = (length(x), length(y), length(z))
+    transport_x = fill(NaN, shape)
+    transport_y = fill(NaN, shape)
+    stress_x = fill(NaN, shape)
+    stress_y = fill(NaN, shape)
+    surface_local = fill(NaN, shape)
+    surface_gradient_x = fill(NaN, shape)
+    surface_gradient_y = fill(NaN, shape)
+    bottom_buoyancy = fill(NaN, shape)
+    interior_local = fill(NaN, shape3)
+    interior_gradient_x = fill(NaN, shape3)
+    interior_gradient_y = fill(NaN, shape3)
+    wet = falses(shape)
+    wet_3d = falses(shape3)
+    problem = solution.problem
+    p = internal_parameters(problem.parameters)
+
+    _, sampling_timing = timed_stage(
+        "sampling adjoint forcing kernels",
+    ) do
+        for j in eachindex(y), i in eachindex(x)
+            xx, yy = x[i], y[j]
+            problem.inside(xx, yy) || continue
+            H = problem.depth(xx, yy)
+            H > 0 || continue
+            adjoint_gradient = adjoint.gradient(xx, yy)
+            λx, λy = adjoint_gradient[1], adjoint_gradient[2]
+            ρ = adjoint.weight(xx, yy)
+            transport_kernel = component === :U ?
+                complex(ρ - λx, -λy) :
+                complex(-λx, ρ - λy)
+            transport_x[i, j] = real(transport_kernel)
+            transport_y[i, j] = imag(transport_kernel)
+
+            wind_coefficient = wind_transport_coefficient(
+                p, H, problem.coriolis(xx, yy), 1.0 + 0.0im,
+            )
+            stress_x[i, j] =
+                adjoint_pairing(transport_kernel, wind_coefficient)
+            stress_y[i, j] = adjoint_pairing(
+                transport_kernel, im * wind_coefficient,
+            )
+
+            coefficients =
+                buoyancy_transport_sensitivity_coefficients(
+                    solution.kernels,
+                    p,
+                    problem.depth,
+                    problem.coriolis,
+                    problem.coriolis_x,
+                    problem.coriolis_y,
+                    problem.depth_x,
+                    problem.depth_y,
+                    xx,
+                    yy,
+                    -H / 2,
+                    gradient_step=problem.derivative_step,
+                )
+            surface_local[i, j] = adjoint_pairing(
+                transport_kernel, coefficients.surface.value,
+            )
+            surface_gradient_x[i, j] = adjoint_pairing(
+                transport_kernel, coefficients.surface.gradient,
+            )
+            surface_gradient_y[i, j] = adjoint_pairing(
+                transport_kernel, im * coefficients.surface.gradient,
+            )
+            wet[i, j] = true
+            bottom_coefficients =
+                buoyancy_transport_sensitivity_coefficients(
+                    solution.kernels,
+                    p,
+                    problem.depth,
+                    problem.coriolis,
+                    problem.coriolis_x,
+                    problem.coriolis_y,
+                    problem.depth_x,
+                    problem.depth_y,
+                    xx,
+                    yy,
+                    -H,
+                    gradient_step=problem.derivative_step,
+                ).interior
+            bottom_transport_coefficient =
+                bottom_coefficients.gradient *
+                complex(
+                    problem.depth_x(xx, yy),
+                    problem.depth_y(xx, yy),
+                )
+            bottom_buoyancy[i, j] = adjoint_pairing(
+                transport_kernel, bottom_transport_coefficient,
+            )
+
+            for k in eachindex(z)
+                -H <= z[k] <= 0 || continue
+                interior =
+                    buoyancy_transport_sensitivity_coefficients(
+                        solution.kernels,
+                        p,
+                        problem.depth,
+                        problem.coriolis,
+                        problem.coriolis_x,
+                        problem.coriolis_y,
+                        problem.depth_x,
+                        problem.depth_y,
+                        xx,
+                        yy,
+                        z[k],
+                        gradient_step=problem.derivative_step,
+                    ).interior
+                interior_local[i, j, k] =
+                    adjoint_pairing(transport_kernel, interior.value)
+                interior_gradient_x[i, j, k] =
+                    adjoint_pairing(transport_kernel, interior.gradient)
+                interior_gradient_y[i, j, k] =
+                    adjoint_pairing(
+                        transport_kernel, im * interior.gradient,
+                    )
+                wet_3d[i, j, k] = true
+            end
+        end
+    end
+
+    surface_kernel = forcing_kernel_from_local_operator(
+        surface_local,
+        surface_gradient_x,
+        surface_gradient_y,
+        wet,
+        x,
+        y,
+    )
+    interior_kernel = forcing_kernel_from_local_operator(
+        interior_local,
+        interior_gradient_x,
+        interior_gradient_y,
+        wet_3d,
+        x,
+        y,
+    )
+    kernel_wet_3d = isfinite.(interior_kernel)
+    timings = (
+        adjoint=adjoint_timing,
+        sampling=sampling_timing,
+        total_seconds=time() - started,
+    )
+    return PGTransportAdjointSensitivity(
+        x,
+        y,
+        z,
+        stress_x,
+        stress_y,
+        surface_kernel,
+        interior_kernel,
+        bottom_buoyancy,
+        transport_x,
+        transport_y,
+        BitMatrix(wet),
+        BitArray(kernel_wet_3d),
+        (x=float(target_x), y=float(target_y)),
+        component,
+        float(target_radius),
+        timings,
     )
 end
 
@@ -3176,6 +3469,104 @@ function plot_transport_sensitivity(
     )
 end
 
+function adjoint_kernel_plot(
+    sensitivity::PGTransportAdjointSensitivity,
+    values,
+    title,
+)
+    scale = finite_absmax(values)
+    return heatmap(
+        sensitivity.x,
+        sensitivity.y,
+        values';
+        xlabel="forcing x",
+        ylabel="forcing y",
+        title,
+        color=:balance,
+        clims=(-scale, scale),
+        colorbar_title="functional derivative",
+        aspect_ratio=:equal,
+    )
+end
+
+"""
+    plot_transport_adjoint_sensitivity(
+        sensitivity; buoyancy_levels=eachindex(sensitivity.z), output=nothing,
+    )
+
+Plot the spatial sensitivity maps for surface stress and surface buoyancy,
+together with selected horizontal slices through the three-dimensional
+restoring-buoyancy sensitivity kernel.
+"""
+function plot_transport_adjoint_sensitivity(
+    sensitivity::PGTransportAdjointSensitivity;
+    buoyancy_levels=eachindex(sensitivity.z),
+    output=nothing,
+)
+    levels = collect(buoyancy_levels)
+    all(level -> checkbounds(Bool, sensitivity.z, level), levels) ||
+        throw(BoundsError(sensitivity.z, levels))
+    component = sensitivity.component
+    target = sensitivity.target
+    @info "Plotting transport adjoint sensitivity" component target levels output
+    figure, _ = timed_stage(
+        "rendering transport adjoint sensitivity plot",
+    ) do
+        panels = [
+            adjoint_kernel_plot(
+                sensitivity,
+                sensitivity.wind_stress_x,
+                "δ$(component) / δτˣ(x,y)",
+            ),
+            adjoint_kernel_plot(
+                sensitivity,
+                sensitivity.wind_stress_y,
+                "δ$(component) / δτʸ(x,y)",
+            ),
+            adjoint_kernel_plot(
+                sensitivity,
+                sensitivity.surface_buoyancy,
+                "δ$(component) / δbₛ(x,y)",
+            ),
+            adjoint_kernel_plot(
+                sensitivity,
+                sensitivity.bottom_restoring_buoyancy,
+                "bottom-boundary δ$(component) / δB(x,y,-H)",
+            ),
+        ]
+        append!(
+            panels,
+            [
+                adjoint_kernel_plot(
+                    sensitivity,
+                    sensitivity.restoring_buoyancy[:, :, level],
+                    "δ$(component) / δB(x,y,z), z=$(round(
+                        sensitivity.z[level]; digits=3,
+                    ))",
+                )
+                for level in levels
+            ],
+        )
+        columns = min(3, length(panels))
+        rows = cld(length(panels), columns)
+        plot(
+            panels...;
+            layout=(rows, columns),
+            size=(450columns, 390rows),
+            plot_title=(
+                "$(component) adjoint sensitivity near " *
+                "($(round(target.x; digits=3)), " *
+                "$(round(target.y; digits=3)))"
+            ),
+            plot_titlefontsize=15,
+            margin=2Plots.mm,
+        )
+    end
+    return save_diagnostic_plot(
+        figure, output, "transport adjoint sensitivity plot",
+    )
+end
+
 performance_summary(solution::PGSolution) = solution.timings
 performance_summary(fields::PGFields) = fields.timings
 performance_summary(solution::PGStreamfunction) = solution.timings
@@ -3194,6 +3585,8 @@ performance_summary(
     diagnostics::PGSurfacePressureEquationDiagnostics,
 ) = diagnostics.timings
 performance_summary(sensitivity::PGForcingSensitivities) =
+    sensitivity.timings
+performance_summary(sensitivity::PGTransportAdjointSensitivity) =
     sensitivity.timings
 
 end
