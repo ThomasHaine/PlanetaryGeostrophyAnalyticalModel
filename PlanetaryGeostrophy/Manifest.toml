@@ -2,7 +2,7 @@
 
 julia_version = "1.13.0"
 manifest_format = "2.1"
-project_hash = "5d3951d8aa02358791d2dccc6e6ac52137e2a34b"
+project_hash = "ac4188b36f64ea1d9016c2ee4a4a34ce883c25e1"
 
 [[deps.ADTypes]]
 deps = ["PrecompileTools"]
@@ -1341,7 +1341,7 @@ uuid = "eebad327-c553-4316-9ea0-9fa01ccd7688"
 version = "0.3.3"
 
 [[deps.PlanetaryGeostrophy]]
-deps = ["ForwardDiff", "Gmsh", "Gridap", "GridapGmsh", "Plots", "Printf", "QuadGK", "Statistics", "WriteVTK"]
+deps = ["Contour", "ForwardDiff", "Gmsh", "Gridap", "GridapGmsh", "Plots", "Printf", "QuadGK", "Statistics", "WriteVTK"]
 path = "."
 uuid = "4d772d21-e32a-4f5b-8b31-6af30e65e99d"
 version = "0.1.1"
