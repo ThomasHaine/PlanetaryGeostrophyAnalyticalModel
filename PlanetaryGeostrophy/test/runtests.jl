@@ -1043,10 +1043,30 @@ end
         @test size(adjoint_sensitivity.wind_stress_x) == (7, 7)
         @test size(adjoint_sensitivity.surface_buoyancy) == (7, 7)
         @test size(adjoint_sensitivity.restoring_buoyancy) == (7, 7, 3)
+        @test size(adjoint_sensitivity.surface_buoyancy_local) == (7, 7)
+        @test size(adjoint_sensitivity.surface_buoyancy_gradient_x) == (7, 7)
+        @test size(adjoint_sensitivity.surface_buoyancy_gradient_y) == (7, 7)
+        @test size(adjoint_sensitivity.restoring_buoyancy_local) == (7, 7, 3)
+        @test size(adjoint_sensitivity.restoring_buoyancy_gradient_x) ==
+            (7, 7, 3)
+        @test size(adjoint_sensitivity.restoring_buoyancy_gradient_y) ==
+            (7, 7, 3)
         @test any(isfinite, adjoint_sensitivity.wind_stress_x)
         @test any(isfinite, adjoint_sensitivity.wind_stress_y)
         @test any(isfinite, adjoint_sensitivity.surface_buoyancy)
         @test any(isfinite, adjoint_sensitivity.restoring_buoyancy)
+        @test any(isfinite, adjoint_sensitivity.surface_buoyancy_local)
+        @test any(isfinite, adjoint_sensitivity.surface_buoyancy_gradient_x)
+        @test any(isfinite, adjoint_sensitivity.surface_buoyancy_gradient_y)
+        @test any(isfinite, adjoint_sensitivity.restoring_buoyancy_local)
+        @test any(
+            isfinite,
+            adjoint_sensitivity.restoring_buoyancy_gradient_x,
+        )
+        @test any(
+            isfinite,
+            adjoint_sensitivity.restoring_buoyancy_gradient_y,
+        )
         @test adjoint_sensitivity.cost_label == "transport speed"
         @test isfinite(adjoint_sensitivity.cost_value)
         @test performance_summary(adjoint_sensitivity) ==

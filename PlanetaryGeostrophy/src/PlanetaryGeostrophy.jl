@@ -622,6 +622,12 @@ struct PGTransportAdjointSensitivity{
     surface_buoyancy::Matrix{Float64}
     restoring_buoyancy::Array{Float64,3}
     bottom_restoring_buoyancy::Matrix{Float64}
+    surface_buoyancy_local::Matrix{Float64}
+    surface_buoyancy_gradient_x::Matrix{Float64}
+    surface_buoyancy_gradient_y::Matrix{Float64}
+    restoring_buoyancy_local::Array{Float64,3}
+    restoring_buoyancy_gradient_x::Array{Float64,3}
+    restoring_buoyancy_gradient_y::Array{Float64,3}
     transport_forcing_x::Matrix{Float64}
     transport_forcing_y::Matrix{Float64}
     wet::BitMatrix
@@ -700,7 +706,10 @@ Nonlinear costs are linearized about the solved transport. The
 surface-pressure adjoint reverses the pressure operator's advecting velocity.
 The returned 2D fields are derivatives with respect to local `τx`, `τy`, and
 `bs`; the 3D field is the derivative with respect to local restoring
-buoyancy `B`. `cost_label` is used in plot annotations.
+buoyancy `B`. The corresponding `*_local` and `*_gradient_*` fields retain
+the coefficients before horizontal integration by parts, allowing direct
+directional-derivative checks without differentiating the sampled kernels.
+`cost_label` is used in plot annotations.
 """
 function compute_transport_adjoint_sensitivity(
     solution::PGSolution,
@@ -896,6 +905,12 @@ function compute_transport_adjoint_sensitivity(
         surface_kernel,
         interior_kernel,
         bottom_buoyancy,
+        surface_local,
+        surface_gradient_x,
+        surface_gradient_y,
+        interior_local,
+        interior_gradient_x,
+        interior_gradient_y,
         transport_x,
         transport_y,
         BitMatrix(wet),
