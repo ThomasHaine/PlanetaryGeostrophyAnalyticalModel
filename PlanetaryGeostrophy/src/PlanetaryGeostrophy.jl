@@ -627,7 +627,8 @@ struct PGTransportAdjointSensitivity{
     wet::BitMatrix
     wet_3d::BitArray{3}
     target::NamedTuple
-    component::Symbol
+    cost_label::String
+    cost_value::Float64
     target_radius::Float64
     timings::T
 end
@@ -690,14 +691,16 @@ end
 """
     compute_transport_adjoint_sensitivity(
         solution, x, y, z;
-        target, component=:U, target_radius,
+        target, cost, cost_label="J", target_radius,
     )
 
 Compute spatial functional-derivative kernels for a normalized Gaussian
-average of `U` or `V` centered at `target=(x, y)`. The surface-pressure
-adjoint reverses the pressure operator's advecting velocity. The returned
-2D fields are derivatives with respect to local `τx`, `τy`, and `bs`; the
-3D field is the derivative with respect to local restoring buoyancy `B`.
+average of the real scalar `cost(U, V)` centered at `target=(x, y)`.
+Nonlinear costs are linearized about the solved transport. The
+surface-pressure adjoint reverses the pressure operator's advecting velocity.
+The returned 2D fields are derivatives with respect to local `τx`, `τy`, and
+`bs`; the 3D field is the derivative with respect to local restoring
+buoyancy `B`. `cost_label` is used in plot annotations.
 """
 function compute_transport_adjoint_sensitivity(
     solution::PGSolution,
@@ -705,7 +708,8 @@ function compute_transport_adjoint_sensitivity(
     y_values,
     z_values;
     target,
-    component=:U,
+    cost,
+    cost_label="J",
     target_radius,
 )
     started = time()
@@ -730,7 +734,7 @@ function compute_transport_adjoint_sensitivity(
             solution.pressure,
             target_x,
             target_y;
-            component,
+            cost,
             target_radius,
         )
     end
@@ -764,9 +768,11 @@ function compute_transport_adjoint_sensitivity(
             adjoint_gradient = adjoint.gradient(xx, yy)
             λx, λy = adjoint_gradient[1], adjoint_gradient[2]
             ρ = adjoint.weight(xx, yy)
-            transport_kernel = component === :U ?
-                complex(ρ - λx, -λy) :
-                complex(-λx, ρ - λy)
+            derivatives = adjoint.cost_derivatives(xx, yy)
+            transport_kernel = complex(
+                ρ * derivatives.cost_U - λx,
+                ρ * derivatives.cost_V - λy,
+            )
             transport_x[i, j] = real(transport_kernel)
             transport_y[i, j] = imag(transport_kernel)
 
@@ -895,7 +901,8 @@ function compute_transport_adjoint_sensitivity(
         BitMatrix(wet),
         BitArray(kernel_wet_3d),
         (x=float(target_x), y=float(target_y)),
-        component,
+        string(cost_label),
+        adjoint.cost_value,
         float(target_radius),
         timings,
     )
@@ -3475,7 +3482,7 @@ function adjoint_kernel_plot(
     title,
 )
     scale = finite_absmax(values)
-    return heatmap(
+    figure = heatmap(
         sensitivity.x,
         sensitivity.y,
         values';
@@ -3487,6 +3494,29 @@ function adjoint_kernel_plot(
         colorbar_title="functional derivative",
         aspect_ratio=:equal,
     )
+    θ = range(0, 2π; length=181)
+    target = sensitivity.target
+    radius = sensitivity.target_radius
+    plot!(
+        figure,
+        target.x .+ radius .* cos.(θ),
+        target.y .+ radius .* sin.(θ);
+        color=:black,
+        linestyle=:dash,
+        linewidth=2,
+        label=false,
+    )
+    scatter!(
+        figure,
+        [target.x],
+        [target.y];
+        marker=:xcross,
+        markersize=7,
+        markerstrokewidth=2,
+        color=:black,
+        label=false,
+    )
+    return figure
 end
 
 """
@@ -3506,9 +3536,10 @@ function plot_transport_adjoint_sensitivity(
     levels = collect(buoyancy_levels)
     all(level -> checkbounds(Bool, sensitivity.z, level), levels) ||
         throw(BoundsError(sensitivity.z, levels))
-    component = sensitivity.component
+    cost_label = sensitivity.cost_label
     target = sensitivity.target
-    @info "Plotting transport adjoint sensitivity" component target levels output
+    radius = sensitivity.target_radius
+    @info "Plotting transport adjoint sensitivity" cost_label target radius levels output
     figure, _ = timed_stage(
         "rendering transport adjoint sensitivity plot",
     ) do
@@ -3516,22 +3547,22 @@ function plot_transport_adjoint_sensitivity(
             adjoint_kernel_plot(
                 sensitivity,
                 sensitivity.wind_stress_x,
-                "δ$(component) / δτˣ(x,y)",
+                "δ$(cost_label) / δτˣ(x,y)",
             ),
             adjoint_kernel_plot(
                 sensitivity,
                 sensitivity.wind_stress_y,
-                "δ$(component) / δτʸ(x,y)",
+                "δ$(cost_label) / δτʸ(x,y)",
             ),
             adjoint_kernel_plot(
                 sensitivity,
                 sensitivity.surface_buoyancy,
-                "δ$(component) / δbₛ(x,y)",
+                "δ$(cost_label) / δbₛ(x,y)",
             ),
             adjoint_kernel_plot(
                 sensitivity,
                 sensitivity.bottom_restoring_buoyancy,
-                "bottom-boundary δ$(component) / δB(x,y,-H)",
+                "bottom-boundary δ$(cost_label) / δB(x,y,-H)",
             ),
         ]
         append!(
@@ -3540,7 +3571,7 @@ function plot_transport_adjoint_sensitivity(
                 adjoint_kernel_plot(
                     sensitivity,
                     sensitivity.restoring_buoyancy[:, :, level],
-                    "δ$(component) / δB(x,y,z), z=$(round(
+                    "δ$(cost_label) / δB(x,y,z), z=$(round(
                         sensitivity.z[level]; digits=3,
                     ))",
                 )
@@ -3554,9 +3585,10 @@ function plot_transport_adjoint_sensitivity(
             layout=(rows, columns),
             size=(450columns, 390rows),
             plot_title=(
-                "$(component) adjoint sensitivity near " *
+                "$(cost_label) adjoint sensitivity; target=" *
                 "($(round(target.x; digits=3)), " *
-                "$(round(target.y; digits=3)))"
+                "$(round(target.y; digits=3))), " *
+                "radius=$(round(radius; digits=3))"
             ),
             plot_titlefontsize=15,
             margin=2Plots.mm,

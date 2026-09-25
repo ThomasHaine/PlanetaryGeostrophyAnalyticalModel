@@ -240,23 +240,23 @@ end
 """
     solve_surface_pressure_adjoint(
         pressure, target_x, target_y;
-        component=:U, target_radius,
+        cost, target_radius,
     )
 
 Solve the discrete adjoint of the surface-pressure equation for a normalized
-Gaussian average of one depth-integrated-current component. Conjugating the
+Gaussian average of the user-defined scalar `cost(U, V)`. The adjoint source
+uses the first derivatives of `cost` at the solved transport, so nonlinear
+costs produce a first-order sensitivity about the base state. Conjugating the
 complex transport coefficient reverses the pressure operator's advecting
-velocity. `component` may be `:U` or `:V`.
+velocity.
 """
 function solve_surface_pressure_adjoint(
     pressure,
     target_x,
     target_y;
-    component=:U,
+    cost,
     target_radius,
 )
-    component in (:U, :V) ||
-        throw(ArgumentError("component must be :U or :V"))
     target_radius > 0 ||
         throw(ArgumentError("target_radius must be positive"))
     solve_started = time()
@@ -287,6 +287,31 @@ function solve_surface_pressure_adjoint(
     normalization > 0 ||
         throw(ArgumentError("target averaging kernel does not overlap the basin"))
     target_weight(x) = unnormalized_target(x) / normalization
+    transport(x) = (
+        pressure.A_fn(x) * pressure.gradps(x[1], x[2]) +
+        pressure.B_fn(x)
+    )
+    function cost_derivatives(x)
+        current = transport(x)
+        transport_U, transport_V = real(current), imag(current)
+        value = cost(transport_U, transport_V)
+        value isa Real ||
+            throw(ArgumentError("cost(U, V) must return a real scalar"))
+        cost_U = ForwardDiff.derivative(
+            u -> cost(u, transport_V),
+            transport_U,
+        )
+        cost_V = ForwardDiff.derivative(
+            v -> cost(transport_U, v),
+            transport_V,
+        )
+        return (; value, U=transport_U, V=transport_V, cost_U, cost_V)
+    end
+    cost_value = sum(∫(
+        x -> target_weight(x) * cost_derivatives(x).value
+    )dΩ)
+    cost_U(x) = cost_derivatives(x).cost_U
+    cost_V(x) = cost_derivatives(x).cost_V
     adjoint_A(x) = conj(pressure.A_fn(x))
     a(u, v) = ∫(
         real(
@@ -294,17 +319,14 @@ function solve_surface_pressure_adjoint(
             (adjoint_A * (∇(u) ⋅ VectorValue(1.0, im))),
         )
     )dΩ
-    l(v) = if component === :U
-        ∫(
-            target_weight *
-            real(pressure.A_fn * (∇(v) ⋅ VectorValue(1.0, im)))
-        )dΩ
-    else
-        ∫(
-            target_weight *
+    l(v) = ∫(
+        target_weight * (
+            cost_U *
+            real(pressure.A_fn * (∇(v) ⋅ VectorValue(1.0, im))) +
+            cost_V *
             imag(pressure.A_fn * (∇(v) ⋅ VectorValue(1.0, im)))
-        )dΩ
-    end
+        )
+    )dΩ
     operator, assembly_timing = pressure_timed_stage(
         "assembling adjoint surface-pressure operator",
     ) do
@@ -328,7 +350,8 @@ function solve_surface_pressure_adjoint(
         finite_element,
         gradient,
         weight,
-        component,
+        cost_derivatives=(x, y) -> cost_derivatives(Point(x, y)),
+        cost_value=float(cost_value),
         target=(x=float(target_x), y=float(target_y)),
         target_radius=float(target_radius),
         timings,
