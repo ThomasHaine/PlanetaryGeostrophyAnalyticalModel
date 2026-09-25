@@ -1,4 +1,5 @@
 *.vt?
+.venv/
 *.nc
 *.key
 *.msh
