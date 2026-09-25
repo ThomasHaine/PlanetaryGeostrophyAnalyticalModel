@@ -52,6 +52,7 @@ export PGParameters,
        horizontal_velocity_sensitivity,
        depth_integrated_current_sensitivity,
        compute_transport_adjoint_sensitivity,
+       transport_adjoint_identity,
        depth_integrated_momentum_terms,
        barotropic_vorticity_terms,
        depth_integrated_vorticity_terms,
@@ -612,7 +613,7 @@ function depth_integrated_current_sensitivity(
 end
 
 struct PGTransportAdjointSensitivity{
-    TX<:AbstractVector,TY<:AbstractVector,TZ<:AbstractVector,T
+    TX<:AbstractVector,TY<:AbstractVector,TZ<:AbstractVector,TA,T
 }
     x::TX
     y::TY
@@ -636,11 +637,65 @@ struct PGTransportAdjointSensitivity{
     cost_label::String
     cost_value::Float64
     target_radius::Float64
+    adjoint::TA
     timings::T
 end
 
 adjoint_pairing(weight, coefficient) =
     real(conj(weight) * coefficient)
+
+"""
+    transport_adjoint_identity(sensitivity, response)
+
+Compare the exact finite-element directional derivative of the transport cost
+with its adjoint pairing for a linear forward `response`. This bypasses the
+sampled plotting grids, so `relative_error` tests the pressure adjoint itself
+rather than horizontal or vertical post-processing quadrature.
+"""
+function transport_adjoint_identity(
+    sensitivity::PGTransportAdjointSensitivity,
+    response::PGSolution,
+)
+    adjoint = sensitivity.adjoint
+    pressure = response.pressure
+    Ω = Triangulation(pressure.model)
+    dΩ = Measure(Ω, 2 * pressure.order)
+    components = sum(∫(
+        point -> begin
+            x, y = point[1], point[2]
+            ρ = adjoint.weight(x, y)
+            derivatives = adjoint.cost_derivatives(x, y)
+            forcing = pressure.B_fn(point)
+            pressure_transport =
+                pressure.A_fn(point) * pressure.gradps(x, y)
+            λ = adjoint.gradient(x, y)
+            direct = ρ * (
+                derivatives.cost_U * real(forcing) +
+                derivatives.cost_V * imag(forcing)
+            )
+            forward_pressure = ρ * (
+                derivatives.cost_U * real(pressure_transport) +
+                derivatives.cost_V * imag(pressure_transport)
+            )
+            adjoint_pressure =
+                -λ[1] * real(forcing) - λ[2] * imag(forcing)
+            VectorValue(direct, forward_pressure, adjoint_pressure)
+        end
+    )dΩ)
+    direct, forward_pressure, adjoint_pressure = Tuple(components)
+    forward = direct + forward_pressure
+    adjoint_value = direct + adjoint_pressure
+    relative_error = abs(forward - adjoint_value) /
+        max(abs(forward), abs(adjoint_value), eps(Float64))
+    return (;
+        forward,
+        adjoint=adjoint_value,
+        direct,
+        forward_pressure,
+        adjoint_pressure,
+        relative_error,
+    )
+end
 
 function forcing_kernel_from_local_operator(
     local_values::AbstractMatrix,
@@ -919,6 +974,7 @@ function compute_transport_adjoint_sensitivity(
         string(cost_label),
         adjoint.cost_value,
         float(target_radius),
+        adjoint,
         timings,
     )
 end

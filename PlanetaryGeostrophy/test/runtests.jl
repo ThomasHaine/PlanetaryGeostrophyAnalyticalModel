@@ -1069,6 +1069,10 @@ end
         )
         @test adjoint_sensitivity.cost_label == "transport speed"
         @test isfinite(adjoint_sensitivity.cost_value)
+        identity = transport_adjoint_identity(adjoint_sensitivity, solution)
+        @test identity.forward ≈ identity.adjoint rtol=1e-10
+        @test identity.forward_pressure ≈ identity.adjoint_pressure rtol=1e-10
+        @test identity.relative_error < 1e-10
         @test performance_summary(adjoint_sensitivity) ==
             adjoint_sensitivity.timings
 
