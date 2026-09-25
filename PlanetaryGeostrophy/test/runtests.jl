@@ -979,33 +979,55 @@ end
             solution.pressure.gradps(point[1], point[2]) +
             solution.pressure.B_fn(point)
         )
-        for component in (:U, :V)
+        for cost in (
+            (U, V) -> U,
+            (U, V) -> V,
+            (U, V) -> 0.5 * (U^2 + V^2),
+        )
             adjoint = PlanetaryGeostrophy.solve_surface_pressure_adjoint(
                 solution.pressure,
                 x,
                 y;
-                component,
+                cost,
                 target_radius=0.15,
             )
-            select_component(value) =
-                component === :U ? real(value) : imag(value)
             averaged_transport = sum(∫(
-                point -> adjoint.weight(point[1], point[2]) *
-                    select_component(transport_field(point))
+                point -> begin
+                    transport = transport_field(point)
+                    derivatives =
+                        adjoint.cost_derivatives(point[1], point[2])
+                    adjoint.weight(point[1], point[2]) * (
+                        derivatives.cost_U * real(transport) +
+                        derivatives.cost_V * imag(transport)
+                    )
+                end
             )dΩ)
             adjoint_transport = sum(∫(
                 point -> begin
                     forcing = solution.pressure.B_fn(point)
                     gradient = adjoint.gradient(point[1], point[2])
+                    derivatives =
+                        adjoint.cost_derivatives(point[1], point[2])
                     (
                         adjoint.weight(point[1], point[2]) *
-                        select_component(forcing) -
+                        (
+                            derivatives.cost_U * real(forcing) +
+                            derivatives.cost_V * imag(forcing)
+                        ) -
                         gradient[1] * real(forcing) -
                         gradient[2] * imag(forcing)
                     )
                 end
             )dΩ)
+            expected_cost = sum(∫(
+                point -> begin
+                    transport = transport_field(point)
+                    adjoint.weight(point[1], point[2]) *
+                    cost(real(transport), imag(transport))
+                end
+            )dΩ)
             @test adjoint_transport ≈ averaged_transport rtol=1e-10
+            @test adjoint.cost_value ≈ expected_cost rtol=1e-10
         end
 
         adjoint_sensitivity = compute_transport_adjoint_sensitivity(
@@ -1014,7 +1036,8 @@ end
             range(-0.45, 0.45; length=7),
             [-0.75, -0.5, -0.25];
             target=(x, y),
-            component=:U,
+            cost=(U, V) -> hypot(U, V),
+            cost_label="transport speed",
             target_radius=0.15,
         )
         @test size(adjoint_sensitivity.wind_stress_x) == (7, 7)
@@ -1024,6 +1047,8 @@ end
         @test any(isfinite, adjoint_sensitivity.wind_stress_y)
         @test any(isfinite, adjoint_sensitivity.surface_buoyancy)
         @test any(isfinite, adjoint_sensitivity.restoring_buoyancy)
+        @test adjoint_sensitivity.cost_label == "transport speed"
+        @test isfinite(adjoint_sensitivity.cost_value)
         @test performance_summary(adjoint_sensitivity) ==
             adjoint_sensitivity.timings
 

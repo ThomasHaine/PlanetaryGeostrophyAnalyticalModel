@@ -145,7 +145,13 @@ relative projection difference is reported in the performance summary.
 The steady PG problem is linear in the restoring buoyancy $B$, surface
 buoyancy $b_s$, and surface-stress components $(\tau^x,\tau^y)$. The adjoint
 diagnostic computes the spatial functional derivatives of one scalar
-depth-integrated-current observable:
+cost built from the depth-integrated current:
+
+```math
+J=\iint \rho(x,y)\,c(U,V)\,dx\,dy,
+```
+
+and
 
 ```math
 \delta J
@@ -163,6 +169,12 @@ normalized Gaussian average with radius `target_radius`; this avoids a
 mesh-dependent point delta and converges toward a point query as the pressure
 mesh and radius are refined together.
 
+The user supplies `cost(U, V)`, which must return one real scalar. The API
+uses automatic differentiation to evaluate `∂cost/∂U` and `∂cost/∂V` at the
+solved transport. Linear costs such as `(U, V) -> V` recover component
+sensitivities; nonlinear costs such as transport speed produce the
+first-order sensitivity about the base solution.
+
 ```julia
 adjoint_sensitivity = compute_transport_adjoint_sensitivity(
     solution,
@@ -170,7 +182,8 @@ adjoint_sensitivity = compute_transport_adjoint_sensitivity(
     range(-0.65, 0.65; length=25),
     [-0.75, -0.5, -0.25];
     target=(0.4, -0.15),
-    component=:V,
+    cost=(U, V) -> hypot(U, V),
+    cost_label="transport speed",
     target_radius=0.06,
 )
 
@@ -185,6 +198,9 @@ The result contains 2D `wind_stress_x`, `wind_stress_y`, and
 the requested depths. Variable topography introduces an additional
 distributional contribution where the restoring field meets the seabed; this
 is retained separately as `bottom_restoring_buoyancy`.
+Every plot panel marks the target center with a cross and the Gaussian target
+radius with a dashed circle; the same coordinates and radius appear in the
+figure title.
 
 The earlier `solve_forcing_sensitivities` API remains available for
 directional derivatives with respect to the amplitude of a complete,
