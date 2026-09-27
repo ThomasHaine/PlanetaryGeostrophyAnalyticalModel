@@ -979,18 +979,27 @@ end
             solution.pressure.gradps(point[1], point[2]) +
             solution.pressure.B_fn(point)
         )
-        for cost in (
-            (U, V) -> U,
-            (U, V) -> V,
-            (U, V) -> 0.5 * (U^2 + V^2),
+        adjoints = Dict{Symbol,Any}()
+        for (name, cost, cost_gradient, expected_mode) in (
+            (:linear_u, (U, V) -> U, (1.0, 0.0), :constant),
+            (:linear_v, (U, V) -> V, nothing, :forwarddiff),
+            (
+                :quadratic,
+                (U, V) -> 0.5 * (U^2 + V^2),
+                (U, V) -> (U, V),
+                :analytic,
+            ),
         )
             adjoint = PlanetaryGeostrophy.solve_surface_pressure_adjoint(
                 solution.pressure,
                 x,
                 y;
                 cost,
+                cost_gradient,
                 target_radius=0.15,
             )
+            adjoints[name] = adjoint
+            @test adjoint.cost_gradient_mode == expected_mode
             averaged_transport = sum(∫(
                 point -> begin
                     transport = transport_field(point)
@@ -1029,6 +1038,20 @@ end
             @test adjoint_transport ≈ averaged_transport rtol=1e-10
             @test adjoint.cost_value ≈ expected_cost rtol=1e-10
         end
+        explicit_v_adjoint =
+            PlanetaryGeostrophy.solve_surface_pressure_adjoint(
+                solution.pressure,
+                x,
+                y;
+                cost=(U, V) -> V,
+                cost_gradient=(0.0, 1.0),
+                cost_value=adjoints[:linear_v].cost_value,
+                target_radius=0.15,
+            )
+        @test explicit_v_adjoint.cost_gradient_mode == :constant
+        @test explicit_v_adjoint.cost_value == adjoints[:linear_v].cost_value
+        @test explicit_v_adjoint.gradient(x, y) ≈
+            adjoints[:linear_v].gradient(x, y) rtol=1e-10
 
         adjoint_sensitivity = compute_transport_adjoint_sensitivity(
             solution,
@@ -1037,6 +1060,7 @@ end
             [-0.75, -0.5, -0.25];
             target=(x, y),
             cost=(U, V) -> hypot(U, V),
+            cost_gradient=(U, V) -> (U, V) ./ hypot(U, V),
             cost_label="transport speed",
             target_radius=0.15,
         )

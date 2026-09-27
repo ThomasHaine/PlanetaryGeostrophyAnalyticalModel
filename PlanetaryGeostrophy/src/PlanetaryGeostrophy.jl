@@ -752,13 +752,18 @@ end
 """
     compute_transport_adjoint_sensitivity(
         solution, x, y, z;
-        target, cost, cost_label="J", target_radius,
+        target, cost, cost_gradient=nothing, cost_value=nothing,
+        transport=nothing, cost_label="J", target_radius,
     )
 
 Compute spatial functional-derivative kernels for a normalized Gaussian
 average of the real scalar `cost(U, V)` centered at `target=(x, y)`.
 Nonlinear costs are linearized about the solved transport. The
 surface-pressure adjoint reverses the pressure operator's advecting velocity.
+Supply an analytical `cost_gradient(U, V)` when available; omitting it uses
+`ForwardDiff`. A constant two-entry tuple is the efficient path for linear
+costs. `cost_value` and `transport` can reuse sampled or projected base-state
+data instead of reevaluating analytical transport during adjoint assembly.
 The returned 2D fields are derivatives with respect to local `τx`, `τy`, and
 `bs`; the 3D field is the derivative with respect to local restoring
 buoyancy `B`. The corresponding `*_local` and `*_gradient_*` fields retain
@@ -773,6 +778,9 @@ function compute_transport_adjoint_sensitivity(
     z_values;
     target,
     cost,
+    cost_gradient=nothing,
+    cost_value=nothing,
+    transport=nothing,
     cost_label="J",
     target_radius,
 )
@@ -799,6 +807,9 @@ function compute_transport_adjoint_sensitivity(
             target_x,
             target_y;
             cost,
+            cost_gradient,
+            cost_value,
+            transport,
             target_radius,
         )
     end

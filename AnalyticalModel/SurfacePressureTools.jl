@@ -240,21 +240,26 @@ end
 """
     solve_surface_pressure_adjoint(
         pressure, target_x, target_y;
-        cost, target_radius,
+        cost, cost_gradient=nothing, cost_value=nothing,
+        transport=nothing, target_radius,
     )
 
 Solve the discrete adjoint of the surface-pressure equation for a normalized
 Gaussian average of the user-defined scalar `cost(U, V)`. The adjoint source
-uses the first derivatives of `cost` at the solved transport, so nonlinear
-costs produce a first-order sensitivity about the base state. Conjugating the
-complex transport coefficient reverses the pressure operator's advecting
-velocity.
+uses `cost_gradient(U, V)` when supplied and otherwise falls back to
+`ForwardDiff`. A constant `(cost_U, cost_V)` tuple avoids evaluating transport
+during assembly for linear costs. `transport` can provide a cached transport
+evaluator for nonlinear costs. Supplying a previously sampled `cost_value`
+avoids a separate mesh-wide cost integration.
 """
 function solve_surface_pressure_adjoint(
     pressure,
     target_x,
     target_y;
     cost,
+    cost_gradient=nothing,
+    cost_value=nothing,
+    transport=nothing,
     target_radius,
 )
     target_radius > 0 ||
@@ -287,29 +292,71 @@ function solve_surface_pressure_adjoint(
     normalization > 0 ||
         throw(ArgumentError("target averaging kernel does not overlap the basin"))
     target_weight(x) = unnormalized_target(x) / normalization
-    transport(x) = (
+    raw_transport(x) = (
         pressure.A_fn(x) * pressure.gradps(x[1], x[2]) +
         pressure.B_fn(x)
     )
+    transport_at = isnothing(transport) ? raw_transport : transport
+    constant_gradient = cost_gradient isa Tuple
+    if constant_gradient
+        length(cost_gradient) == 2 ||
+            throw(ArgumentError("constant cost_gradient must have two entries"))
+        all(value -> value isa Real, cost_gradient) ||
+            throw(ArgumentError("constant cost_gradient entries must be real"))
+    elseif !isnothing(cost_gradient) && !applicable(cost_gradient, 0.0, 0.0)
+        throw(ArgumentError("cost_gradient must accept (U, V)"))
+    end
     function cost_derivatives(x)
-        current = transport(x)
+        if constant_gradient
+            return (;
+                value=NaN,
+                U=NaN,
+                V=NaN,
+                cost_U=float(cost_gradient[1]),
+                cost_V=float(cost_gradient[2]),
+            )
+        end
+        current = transport_at(x)
         transport_U, transport_V = real(current), imag(current)
         value = cost(transport_U, transport_V)
         value isa Real ||
             throw(ArgumentError("cost(U, V) must return a real scalar"))
-        cost_U = ForwardDiff.derivative(
-            u -> cost(u, transport_V),
-            transport_U,
-        )
-        cost_V = ForwardDiff.derivative(
-            v -> cost(transport_U, v),
-            transport_V,
-        )
+        cost_U, cost_V = if isnothing(cost_gradient)
+            (
+                ForwardDiff.derivative(
+                    u -> cost(u, transport_V),
+                    transport_U,
+                ),
+                ForwardDiff.derivative(
+                    v -> cost(transport_U, v),
+                    transport_V,
+                ),
+            )
+        else
+            gradient = cost_gradient(transport_U, transport_V)
+            length(gradient) == 2 ||
+                throw(ArgumentError("cost_gradient must return two entries"))
+            gradient
+        end
+        cost_U isa Real && cost_V isa Real ||
+            throw(ArgumentError("cost_gradient entries must be real"))
         return (; value, U=transport_U, V=transport_V, cost_U, cost_V)
     end
-    cost_value = sum(∫(
-        x -> target_weight(x) * cost_derivatives(x).value
-    )dΩ)
+    evaluated_cost_value = if isnothing(cost_value)
+        sum(∫(
+            x -> begin
+                current = transport_at(x)
+                value = cost(real(current), imag(current))
+                value isa Real ||
+                    throw(ArgumentError("cost(U, V) must return a real scalar"))
+                target_weight(x) * value
+            end
+        )dΩ)
+    else
+        cost_value isa Real ||
+            throw(ArgumentError("cost_value must be a real scalar"))
+        float(cost_value)
+    end
     cost_U(x) = cost_derivatives(x).cost_U
     cost_V(x) = cost_derivatives(x).cost_V
     adjoint_A(x) = conj(pressure.A_fn(x))
@@ -351,7 +398,9 @@ function solve_surface_pressure_adjoint(
         gradient,
         weight,
         cost_derivatives=(x, y) -> cost_derivatives(Point(x, y)),
-        cost_value=float(cost_value),
+        cost_value=float(evaluated_cost_value),
+        cost_gradient_mode=constant_gradient ? :constant :
+            isnothing(cost_gradient) ? :forwarddiff : :analytic,
         target=(x=float(target_x), y=float(target_y)),
         target_radius=float(target_radius),
         timings,

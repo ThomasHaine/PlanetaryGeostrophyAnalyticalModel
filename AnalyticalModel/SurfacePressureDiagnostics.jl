@@ -9,6 +9,28 @@ export compute_pressure_equation_diagnostics,
 
 finite_extrema(values) = extrema(filter(isfinite, vec(values)))
 
+function sampled_target_cost(x, y, sampled_transport, target, target_radius, cost)
+    size(sampled_transport.U) == (length(x), length(y)) ||
+        throw(ArgumentError("transport U must match the sensitivity grid"))
+    size(sampled_transport.V) == (length(x), length(y)) ||
+        throw(ArgumentError("transport V must match the sensitivity grid"))
+    target_x, target_y = target
+    weighted_cost = 0.0
+    weight_sum = 0.0
+    for j in eachindex(y), i in eachindex(x)
+        U, V = sampled_transport.U[i, j], sampled_transport.V[i, j]
+        isfinite(U) && isfinite(V) || continue
+        weight = exp(-(
+            (x[i] - target_x)^2 + (y[j] - target_y)^2
+        ) / (2target_radius^2))
+        weighted_cost += weight * cost(U, V)
+        weight_sum += weight
+    end
+    weight_sum > 0 ||
+        throw(ArgumentError("target averaging kernel has no sampled transport"))
+    return weighted_cost / weight_sum
+end
+
 """
     compute_pressure_equation_diagnostics(solution, diagnostics;
                                           rtol=1e-10, atol=1e-12)
@@ -61,11 +83,16 @@ end
 
 """
     compute_adjoint_sensitivity_diagnostics(
-        solution, x, y, z; target, cost, cost_label="J", target_radius,
+        solution, x, y, z;
+        target, cost, cost_gradient, sampled_transport,
+        cost_label="J", target_radius,
     )
 
 Compute spatial forcing-sensitivity kernels and summarize the finite range of
-each kernel for compact notebook reporting.
+each kernel for compact notebook reporting. `sampled_transport` contains sampled
+base-state `U` and `V` arrays used to report the target cost without another
+mesh-wide analytical transport integration. The reported cost is therefore a
+diagnostic-grid approximation to the Gaussian-weighted target average.
 """
 function compute_adjoint_sensitivity_diagnostics(
     solution,
@@ -74,9 +101,19 @@ function compute_adjoint_sensitivity_diagnostics(
     z;
     target,
     cost,
+    cost_gradient,
+    sampled_transport,
     cost_label="J",
     target_radius,
 )
+    cost_value = sampled_target_cost(
+        x,
+        y,
+        sampled_transport,
+        target,
+        target_radius,
+        cost,
+    )
     result = PlanetaryGeostrophy.compute_transport_adjoint_sensitivity(
         solution,
         x,
@@ -84,6 +121,8 @@ function compute_adjoint_sensitivity_diagnostics(
         z;
         target,
         cost,
+        cost_gradient,
+        cost_value,
         cost_label,
         target_radius,
     )
