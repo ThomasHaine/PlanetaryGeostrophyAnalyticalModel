@@ -753,7 +753,8 @@ end
     compute_transport_adjoint_sensitivity(
         solution, x, y, z;
         target, cost, cost_gradient=nothing, cost_value=nothing,
-        transport=nothing, cost_label="J", target_radius,
+        transport=nothing, target_weight=nothing, target_metadata=nothing,
+        cost_label="J", target_radius,
     )
 
 Compute spatial functional-derivative kernels for a normalized Gaussian
@@ -764,6 +765,9 @@ Supply an analytical `cost_gradient(U, V)` when available; omitting it uses
 `ForwardDiff`. A constant two-entry tuple is the efficient path for linear
 costs. `cost_value` and `transport` can reuse sampled or projected base-state
 data instead of reevaluating analytical transport during adjoint assembly.
+`target_weight(x, y)` replaces the default normalized Gaussian when supplied;
+it is used without further normalization. `target_metadata` controls how that
+region is described in sensitivity plots.
 The returned 2D fields are derivatives with respect to local `τx`, `τy`, and
 `bs`; the 3D field is the derivative with respect to local restoring
 buoyancy `B`. The corresponding `*_local` and `*_gradient_*` fields retain
@@ -781,6 +785,8 @@ function compute_transport_adjoint_sensitivity(
     cost_gradient=nothing,
     cost_value=nothing,
     transport=nothing,
+    target_weight=nothing,
+    target_metadata=nothing,
     cost_label="J",
     target_radius,
 )
@@ -810,6 +816,7 @@ function compute_transport_adjoint_sensitivity(
             cost_gradient,
             cost_value,
             transport,
+            target_weight,
             target_radius,
         )
     end
@@ -962,6 +969,9 @@ function compute_transport_adjoint_sensitivity(
         sampling=sampling_timing,
         total_seconds=time() - started,
     )
+    diagnostic_target = isnothing(target_metadata) ?
+        (kind=:point, x=float(target_x), y=float(target_y)) :
+        target_metadata
     return PGTransportAdjointSensitivity(
         x,
         y,
@@ -981,7 +991,7 @@ function compute_transport_adjoint_sensitivity(
         transport_y,
         BitMatrix(wet),
         BitArray(kernel_wet_3d),
-        (x=float(target_x), y=float(target_y)),
+        diagnostic_target,
         string(cost_label),
         adjoint.cost_value,
         float(target_radius),
@@ -3576,28 +3586,39 @@ function adjoint_kernel_plot(
         colorbar_title="functional derivative",
         aspect_ratio=:equal,
     )
-    θ = range(0, 2π; length=181)
     target = sensitivity.target
-    radius = sensitivity.target_radius
-    plot!(
-        figure,
-        target.x .+ radius .* cos.(θ),
-        target.y .+ radius .* sin.(θ);
-        color=:black,
-        linestyle=:dash,
-        linewidth=2,
-        label=false,
-    )
-    scatter!(
-        figure,
-        [target.x],
-        [target.y];
-        marker=:xcross,
-        markersize=7,
-        markerstrokewidth=2,
-        color=:black,
-        label=false,
-    )
+    if hasproperty(target, :kind) && target.kind === :zonal_section
+        plot!(
+            figure,
+            collect(target.x_limits),
+            fill(target.y, 2);
+            color=:black,
+            linewidth=4,
+            label=false,
+        )
+    else
+        θ = range(0, 2π; length=181)
+        radius = sensitivity.target_radius
+        plot!(
+            figure,
+            target.x .+ radius .* cos.(θ),
+            target.y .+ radius .* sin.(θ);
+            color=:black,
+            linestyle=:dash,
+            linewidth=2,
+            label=false,
+        )
+        scatter!(
+            figure,
+            [target.x],
+            [target.y];
+            marker=:xcross,
+            markersize=7,
+            markerstrokewidth=2,
+            color=:black,
+            label=false,
+        )
+    end
     return figure
 end
 
@@ -3621,6 +3642,18 @@ function plot_transport_adjoint_sensitivity(
     cost_label = sensitivity.cost_label
     target = sensitivity.target
     radius = sensitivity.target_radius
+    target_description =
+        hasproperty(target, :kind) && target.kind === :zonal_section ?
+        (
+            "section x=($(round(target.x_limits[1]; digits=3)), " *
+            "$(round(target.x_limits[2]; digits=3))) at " *
+            "y=$(round(target.y; digits=3))"
+        ) :
+        (
+            "target=($(round(target.x; digits=3)), " *
+            "$(round(target.y; digits=3))), " *
+            "radius=$(round(radius; digits=3))"
+        )
     @info "Plotting transport adjoint sensitivity" cost_label target radius levels output
     figure, _ = timed_stage(
         "rendering transport adjoint sensitivity plot",
@@ -3667,10 +3700,7 @@ function plot_transport_adjoint_sensitivity(
             layout=(rows, columns),
             size=(450columns, 390rows),
             plot_title=(
-                "$(cost_label) adjoint sensitivity; target=" *
-                "($(round(target.x; digits=3)), " *
-                "$(round(target.y; digits=3))), " *
-                "radius=$(round(radius; digits=3))"
+                "$(cost_label) adjoint sensitivity; $target_description"
             ),
             plot_titlefontsize=15,
             margin=2Plots.mm,

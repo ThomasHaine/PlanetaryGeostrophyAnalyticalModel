@@ -84,15 +84,17 @@ end
 """
     compute_adjoint_sensitivity_diagnostics(
         solution, x, y, z;
-        target, cost, cost_gradient, sampled_transport,
+        target, cost, cost_gradient, sampled_transport=nothing,
+        cost_value=nothing, target_weight=nothing, target_metadata=nothing,
         cost_label="J", target_radius,
     )
 
 Compute spatial forcing-sensitivity kernels and summarize the finite range of
-each kernel for compact notebook reporting. `sampled_transport` contains sampled
-base-state `U` and `V` arrays used to report the target cost without another
-mesh-wide analytical transport integration. The reported cost is therefore a
-diagnostic-grid approximation to the Gaussian-weighted target average.
+each kernel for compact notebook reporting. For the default Gaussian target,
+`sampled_transport` contains sampled base-state `U` and `V` arrays used to
+report the target cost without another mesh-wide analytical transport
+integration. Alternatively, `cost_value` can supply a separately evaluated
+section or regional transport.
 """
 function compute_adjoint_sensitivity_diagnostics(
     solution,
@@ -102,18 +104,27 @@ function compute_adjoint_sensitivity_diagnostics(
     target,
     cost,
     cost_gradient,
-    sampled_transport,
+    sampled_transport=nothing,
+    cost_value=nothing,
+    target_weight=nothing,
+    target_metadata=nothing,
     cost_label="J",
     target_radius,
 )
-    cost_value = sampled_target_cost(
-        x,
-        y,
-        sampled_transport,
-        target,
-        target_radius,
-        cost,
-    )
+    evaluated_cost_value = if isnothing(cost_value)
+        isnothing(sampled_transport) &&
+            throw(ArgumentError("sampled_transport or cost_value is required"))
+        sampled_target_cost(
+            x,
+            y,
+            sampled_transport,
+            target,
+            target_radius,
+            cost,
+        )
+    else
+        cost_value
+    end
     result = PlanetaryGeostrophy.compute_transport_adjoint_sensitivity(
         solution,
         x,
@@ -122,7 +133,9 @@ function compute_adjoint_sensitivity_diagnostics(
         target,
         cost,
         cost_gradient,
-        cost_value,
+        cost_value=evaluated_cost_value,
+        target_weight,
+        target_metadata,
         cost_label,
         target_radius,
     )

@@ -241,16 +241,20 @@ end
     solve_surface_pressure_adjoint(
         pressure, target_x, target_y;
         cost, cost_gradient=nothing, cost_value=nothing,
-        transport=nothing, target_radius,
+        transport=nothing, target_weight=nothing, target_radius,
     )
 
-Solve the discrete adjoint of the surface-pressure equation for a normalized
-Gaussian average of the user-defined scalar `cost(U, V)`. The adjoint source
-uses `cost_gradient(U, V)` when supplied and otherwise falls back to
-`ForwardDiff`. A constant `(cost_U, cost_V)` tuple avoids evaluating transport
-during assembly for linear costs. `transport` can provide a cached transport
-evaluator for nonlinear costs. Supplying a previously sampled `cost_value`
-avoids a separate mesh-wide cost integration.
+Solve the discrete adjoint of the surface-pressure equation for the
+user-defined scalar `cost(U, V)`. By default, the objective uses a normalized
+Gaussian spatial weight centered on `(target_x, target_y)`. A supplied
+`target_weight(x, y)` replaces that Gaussian and is used without additional
+normalization, allowing objectives such as regularized section integrals.
+
+The adjoint source uses `cost_gradient(U, V)` when supplied and otherwise falls
+back to `ForwardDiff`. A constant `(cost_U, cost_V)` tuple avoids evaluating
+transport during assembly for linear costs. `transport` can provide a cached
+transport evaluator for nonlinear costs. Supplying a previously sampled
+`cost_value` avoids a separate mesh-wide cost integration.
 """
 function solve_surface_pressure_adjoint(
     pressure,
@@ -260,9 +264,10 @@ function solve_surface_pressure_adjoint(
     cost_gradient=nothing,
     cost_value=nothing,
     transport=nothing,
+    target_weight=nothing,
     target_radius,
 )
-    target_radius > 0 ||
+    isnothing(target_weight) && target_radius <= 0 &&
         throw(ArgumentError("target_radius must be positive"))
     solve_started = time()
     order = pressure.order
@@ -282,16 +287,30 @@ function solve_surface_pressure_adjoint(
         (; Ω, dΩ, V, U)
     end
     Ω, dΩ, V, U = spaces.Ω, spaces.dΩ, spaces.V, spaces.U
-    unnormalized_target(x) = exp(
-        -(
-            (x[1] - target_x)^2 +
-            (x[2] - target_y)^2
-        ) / (2target_radius^2),
-    )
-    normalization = sum(∫(unnormalized_target)dΩ)
-    normalization > 0 ||
-        throw(ArgumentError("target averaging kernel does not overlap the basin"))
-    target_weight(x) = unnormalized_target(x) / normalization
+    spatial_weight = if isnothing(target_weight)
+        unnormalized_target(x) = exp(
+            -(
+                (x[1] - target_x)^2 +
+                (x[2] - target_y)^2
+            ) / (2target_radius^2),
+        )
+        normalization = sum(∫(unnormalized_target)dΩ)
+        normalization > 0 ||
+            throw(ArgumentError("target averaging kernel does not overlap the basin"))
+        x -> unnormalized_target(x) / normalization
+    else
+        applicable(target_weight, target_x, target_y) ||
+            throw(ArgumentError("target_weight must accept (x, y)"))
+        center_weight = target_weight(target_x, target_y)
+        center_weight isa Real ||
+            throw(ArgumentError("target_weight must return real values"))
+        x -> begin
+            value = target_weight(x[1], x[2])
+            value isa Real ||
+                throw(ArgumentError("target_weight must return real values"))
+            value
+        end
+    end
     raw_transport(x) = (
         pressure.A_fn(x) * pressure.gradps(x[1], x[2]) +
         pressure.B_fn(x)
@@ -349,7 +368,7 @@ function solve_surface_pressure_adjoint(
                 value = cost(real(current), imag(current))
                 value isa Real ||
                     throw(ArgumentError("cost(U, V) must return a real scalar"))
-                target_weight(x) * value
+                spatial_weight(x) * value
             end
         )dΩ)
     else
@@ -367,7 +386,7 @@ function solve_surface_pressure_adjoint(
         )
     )dΩ
     l(v) = ∫(
-        target_weight * (
+        spatial_weight * (
             cost_U *
             real(pressure.A_fn * (∇(v) ⋅ VectorValue(1.0, im))) +
             cost_V *
@@ -386,7 +405,7 @@ function solve_surface_pressure_adjoint(
     end
     finite_element_gradient = ∇(finite_element)
     gradient = (x, y) -> evaluate(finite_element_gradient, Point(x, y))
-    weight = (x, y) -> target_weight(Point(x, y))
+    weight = (x, y) -> spatial_weight(Point(x, y))
     timings = (
         finite_element_setup=space_timing,
         operator_assembly=assembly_timing,

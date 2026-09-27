@@ -1052,6 +1052,26 @@ end
         @test explicit_v_adjoint.cost_value == adjoints[:linear_v].cost_value
         @test explicit_v_adjoint.gradient(x, y) ≈
             adjoints[:linear_v].gradient(x, y) rtol=1e-10
+        section_width = 0.1
+        section_weight(xx, yy) =
+            -0.5 <= xx <= 0.0 ?
+            exp(-(yy / section_width)^2 / 2) /
+                (sqrt(2π) * section_width) : 0.0
+        section_adjoint =
+            PlanetaryGeostrophy.solve_surface_pressure_adjoint(
+                solution.pressure,
+                -0.25,
+                0.0;
+                cost=(U, V) -> V,
+                cost_gradient=(0.0, 1.0),
+                cost_value=1.25,
+                target_weight=section_weight,
+                target_radius=section_width,
+            )
+        @test section_adjoint.weight(-0.25, 0.0) ≈
+            1 / (sqrt(2π) * section_width)
+        @test section_adjoint.weight(0.25, 0.0) == 0.0
+        @test section_adjoint.cost_value == 1.25
 
         adjoint_sensitivity = compute_transport_adjoint_sensitivity(
             solution,
@@ -1061,6 +1081,14 @@ end
             target=(x, y),
             cost=(U, V) -> hypot(U, V),
             cost_gradient=(U, V) -> (U, V) ./ hypot(U, V),
+            target_weight=section_weight,
+            target_metadata=(
+                kind=:zonal_section,
+                x=-0.25,
+                y=0.0,
+                x_limits=(-0.5, 0.0),
+                width=section_width,
+            ),
             cost_label="transport speed",
             target_radius=0.15,
         )
@@ -1083,6 +1111,7 @@ end
         @test any(isfinite, adjoint_sensitivity.surface_buoyancy_gradient_x)
         @test any(isfinite, adjoint_sensitivity.surface_buoyancy_gradient_y)
         @test any(isfinite, adjoint_sensitivity.restoring_buoyancy_local)
+        @test adjoint_sensitivity.target.kind == :zonal_section
         @test any(
             isfinite,
             adjoint_sensitivity.restoring_buoyancy_gradient_x,
