@@ -81,6 +81,7 @@ export PGParameters,
        write_solution,
        plot_solution,
        plot_trajectories,
+       animate_trajectories,
        plot_surface_pressure,
        plot_bottom_stress,
        plot_depth_integrated_current,
@@ -2153,6 +2154,7 @@ function plot_trajectories(
 )
     field = trajectories.field
     colors = palette(:tab10, max(length(trajectories.trajectories), 1))
+    show_legend = length(trajectories.trajectories) <= 12
     three_dimensional = surface(
         field.x,
         field.y,
@@ -2182,11 +2184,11 @@ function plot_trajectories(
         xlabel="time",
         ylabel="z",
         title="Particle depth",
-        legend=:outerright,
+        legend=show_legend ? :outerright : false,
     )
     for (index, trajectory) in enumerate(trajectories.trajectories)
         color = colors[index]
-        label = "particle $index"
+        label = show_legend ? "particle $index" : false
         plot!(
             three_dimensional,
             trajectory.x,
@@ -2242,6 +2244,126 @@ function plot_trajectories(
         @info "Lagrangian trajectory plot saved" path=string(output)
     end
     return figure
+end
+
+function trajectory_frame(
+    trajectories::PGLagrangianTrajectories,
+    time,
+    colors,
+)
+    field = trajectories.field
+    three_dimensional = surface(
+        field.x,
+        field.y,
+        -field.depth';
+        color=:gray,
+        alpha=0.3,
+        colorbar=false,
+        label=false,
+        xlabel="x",
+        ylabel="y",
+        zlabel="z",
+        title="3D trajectories, t=$(round(time; digits=1))",
+    )
+    horizontal = contourf(
+        field.x,
+        field.y,
+        field.depth';
+        color=:blues,
+        colorbar_title="H",
+        xlabel="x",
+        ylabel="y",
+        aspect_ratio=:equal,
+        title="Horizontal paths",
+    )
+    for (index, trajectory) in enumerate(trajectories.trajectories)
+        point_index = searchsortedlast(trajectory.t, time)
+        point_index == 0 && continue
+        path = 1:point_index
+        color = colors[index]
+        plot!(
+            three_dimensional,
+            trajectory.x[path],
+            trajectory.y[path],
+            trajectory.z[path];
+            color,
+            linewidth=1.5,
+            label=false,
+        )
+        scatter!(
+            three_dimensional,
+            [trajectory.x[point_index]],
+            [trajectory.y[point_index]],
+            [trajectory.z[point_index]];
+            color,
+            markersize=3,
+            label=false,
+        )
+        plot!(
+            horizontal,
+            trajectory.x[path],
+            trajectory.y[path];
+            color,
+            linewidth=1.5,
+            label=false,
+        )
+        scatter!(
+            horizontal,
+            [trajectory.x[point_index]],
+            [trajectory.y[point_index]];
+            color,
+            markersize=3,
+            label=false,
+        )
+    end
+    return plot(
+        three_dimensional,
+        horizontal;
+        layout=(1, 2),
+        size=(1000, 450),
+    )
+end
+
+"""
+    animate_trajectories(
+        trajectories;
+        output="trajectories.gif",
+        frame_stride=1,
+        fps=20,
+    )
+
+Animate accumulated three-dimensional and horizontal particle paths. Frames
+follow the longest trajectory's saved times, retaining every `frame_stride`th
+sample, and the animation is written to `output`.
+"""
+function animate_trajectories(
+    trajectories::PGLagrangianTrajectories;
+    output="trajectories.gif",
+    frame_stride=1,
+    fps=20,
+)
+    isempty(trajectories.trajectories) &&
+        throw(ArgumentError("at least one trajectory is required"))
+    frame_stride > 0 || throw(ArgumentError("frame_stride must be positive"))
+    fps > 0 || throw(ArgumentError("fps must be positive"))
+    all(trajectory -> issorted(trajectory.t), trajectories.trajectories) ||
+        throw(ArgumentError("animation requires forward trajectories"))
+
+    reference = trajectories.trajectories[
+        argmax(length(trajectory.t) for trajectory in trajectories.trajectories)
+    ]
+    frame_indices = collect(1:frame_stride:length(reference.t))
+    last(frame_indices) == length(reference.t) ||
+        push!(frame_indices, length(reference.t))
+    frame_times = reference.t[frame_indices]
+    colors = palette(:tab20, length(trajectories.trajectories))
+    animation = Animation()
+    for time in frame_times
+        frame(animation, trajectory_frame(trajectories, time, colors))
+    end
+    gif(animation, output; fps)
+    @info "Lagrangian trajectory animation saved" path=string(output) frames=length(frame_times) fps
+    return string(output)
 end
 
 """
