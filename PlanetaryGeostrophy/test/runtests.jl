@@ -195,6 +195,117 @@ end
     )
 end
 
+@testset "Terrain-following Lagrangian trajectories" begin
+    x = [-1.0, 0.0, 1.0]
+    y = [-1.0, 0.0, 1.0]
+    sigma = [0.0, 0.5, 1.0]
+    depth = ones(length(x), length(y))
+
+    divergent_u = [
+        x[i] * sigma[k]
+        for i in eachindex(x), j in eachindex(y), k in eachindex(sigma)
+    ]
+    zero_velocity = zeros(size(divergent_u))
+    reconstructed_sigma_velocity =
+        PlanetaryGeostrophy.reconstruct_sigma_velocity(
+            divergent_u,
+            zero_velocity,
+            depth,
+            x,
+            y,
+            sigma,
+        )
+    @test all(iszero, reconstructed_sigma_velocity[:, :, 1])
+    @test all(iszero, reconstructed_sigma_velocity[:, :, end])
+    @test reconstructed_sigma_velocity[2, 2, 2] ≈ 0.125
+
+    affine_u = [
+        1 + 2x[i] - 3y[j] + 4sigma[k]
+        for i in eachindex(x), j in eachindex(y), k in eachindex(sigma)
+    ]
+    affine_v = [
+        -2 + x[i] + 2y[j] - sigma[k]
+        for i in eachindex(x), j in eachindex(y), k in eachindex(sigma)
+    ]
+    affine_sigma_velocity = [
+        0.5sigma[k]
+        for i in eachindex(x), j in eachindex(y), k in eachindex(sigma)
+    ]
+    affine_field = PlanetaryGeostrophy.build_lagrangian_velocity_field(
+        x,
+        y,
+        sigma,
+        affine_u,
+        affine_v,
+        affine_sigma_velocity,
+        depth,
+    )
+    point = (0.25, -0.4, 0.3)
+    interpolated = lagrangian_velocity(affine_field, point...)
+    @test interpolated.u ≈ 1 + 2point[1] - 3point[2] + 4point[3]
+    @test interpolated.v ≈ -2 + point[1] + 2point[2] - point[3]
+    @test interpolated.sigma_velocity ≈ 0.5point[3]
+    @test interpolated.w ≈ -0.5point[3]
+    @test_throws DomainError lagrangian_velocity(
+        affine_field, 1.1, 0.0, 0.5,
+    )
+
+    rotation_u = [
+        -y[j]
+        for i in eachindex(x), j in eachindex(y), k in eachindex(sigma)
+    ]
+    rotation_v = [
+        x[i]
+        for i in eachindex(x), j in eachindex(y), k in eachindex(sigma)
+    ]
+    rotation_field = PlanetaryGeostrophy.build_lagrangian_velocity_field(
+        x,
+        y,
+        sigma,
+        rotation_u,
+        rotation_v,
+        zero_velocity,
+        depth,
+    )
+    rotation = compute_trajectories(
+        rotation_field,
+        [(0.4, 0.0, -0.5)],
+        (0.0, 2pi);
+        saveat=range(0.0, 2pi; length=101),
+        reltol=1e-9,
+        abstol=1e-11,
+    ).trajectories[1]
+    @test rotation.termination == :completed
+    @test hypot(last(rotation.x) - 0.4, last(rotation.y)) < 1e-7
+    @test maximum(abs.(rotation.z .+ 0.5)) < 1e-12
+
+    boundary_x = [0.0, 0.5, 1.0]
+    eastward_u = ones(3, 3, 3)
+    boundary_field = PlanetaryGeostrophy.build_lagrangian_velocity_field(
+        boundary_x,
+        y,
+        sigma,
+        eastward_u,
+        zeros(3, 3, 3),
+        zeros(3, 3, 3),
+        ones(3, 3),
+    )
+    exiting = compute_trajectories(
+        boundary_field,
+        [(0.25, 0.0, -0.5)],
+        (0.0, 2.0);
+        saveat=range(0.0, 2.0; length=21),
+    ).trajectories[1]
+    @test exiting.termination == :x_max
+    @test last(exiting.t) ≈ 0.75 atol=1e-8
+    @test last(exiting.x) ≈ 1.0 atol=1e-8
+    @test_throws DomainError compute_trajectories(
+        boundary_field,
+        [(0.25, 0.0, 0.0)],
+        (0.0, 1.0),
+    )
+end
+
 @testset "Diagnostic arrow geometry" begin
     vectors = (
         x=[0.0],
@@ -263,6 +374,33 @@ end
             mesh_resolution=0.3,
             pressure_order=1,
             overwrite_mesh=true,
+        )
+        lagrangian_field = sample_lagrangian_velocity(
+            solution,
+            [-0.3, 0.0, 0.3],
+            [-0.3, 0.0, 0.3],
+            [0.0, 0.5, 1.0],
+        )
+        @test all(iszero, lagrangian_field.sigma_velocity[:, :, 1])
+        @test all(iszero, lagrangian_field.sigma_velocity[:, :, end])
+        initial_depth = -0.5problem.depth(0.0, 0.0)
+        pg_trajectory = compute_trajectories(
+            lagrangian_field,
+            [(0.0, 0.0, initial_depth)],
+            (0.0, 1.0);
+            saveat=range(0.0, 1.0; length=5),
+        ).trajectories[1]
+        @test pg_trajectory.termination == :completed
+        @test all(isfinite, pg_trajectory.x)
+        @test all(isfinite, pg_trajectory.y)
+        @test all(isfinite, pg_trajectory.z)
+        @test all(
+            -problem.depth(xp, yp) <= zp <= 0
+            for (xp, yp, zp) in zip(
+                pg_trajectory.x,
+                pg_trajectory.y,
+                pg_trajectory.z,
+            )
         )
         x, y = -0.3, 0.0
         projected_stress = PlanetaryGeostrophy.project_bottom_stress(

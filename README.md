@@ -14,6 +14,7 @@ Questions/comments welcome.
   - [Installation](#installation)
   - [Quick start](#quick-start)
   - [Problem specification and field output](#problem-specification-and-field-output)
+  - [Three-dimensional Lagrangian trajectories](#three-dimensional-lagrangian-trajectories)
   - [Performance metrics](#performance-metrics)
 - [Transport diagnostics](#transport-diagnostics)
 - [Forcing sensitivity](#forcing-sensitivity)
@@ -94,6 +95,40 @@ divergence with no-normal-flow conditions at the bottom and rigid lid.
 For variable topography, `sigma_level=0.5` plots a terrain-following slice at
 `z/H=-0.5`; a fixed `z_index` intentionally leaves cells below the local
 bottom blank.
+
+### Three-dimensional Lagrangian trajectories
+
+The steady three-dimensional velocity can be sampled in the terrain-following
+coordinate `sigma=-z/H(x,y)` and used to integrate particle paths:
+
+```julia
+lagrangian_field = sample_lagrangian_velocity(
+    solution,
+    range(-0.9, 0.9; length=33),
+    range(-0.65, 0.65; length=33),
+    range(0.0, 1.0; length=33),
+)
+initial_positions = [
+    (-0.4, -0.2, -0.25),
+    (-0.4, -0.2, -0.50),
+    ( 0.3,  0.2, -0.75),
+]
+trajectories = compute_trajectories(
+    lagrangian_field,
+    initial_positions,
+    (0.0, 4000.0);
+    saveat=range(0.0, 4000.0; length=401),
+)
+plot_trajectories(trajectories; output="sample_pg_trajectories.png")
+```
+
+The transformed vertical velocity is reconstructed from
+`∂x(Hu)+∂y(Hv)+∂sigma(H*dsigma/dt)=0` and corrected to vanish at both the
+rigid lid and seabed. Multilinear interpolation and adaptive `Tsit5`
+integration then evolve `(x,y,sigma)`. Seeds must lie strictly inside the
+sampled all-water patch; trajectories terminate cleanly if they reach a
+horizontal edge, the surface, or the seabed. Coordinates, velocity, and time
+remain non-dimensional.
 
 ### Performance metrics
 

@@ -2,6 +2,8 @@ module PlanetaryGeostrophy
 
 using ForwardDiff
 using Gridap
+import Interpolations
+using OrdinaryDiffEqTsit5
 using Plots
 using Printf
 using WriteVTK
@@ -28,6 +30,9 @@ export PGParameters,
        PGProblem,
        PGSolution,
        PGFields,
+       PGLagrangianVelocityField,
+       PGLagrangianTrajectory,
+       PGLagrangianTrajectories,
        PGStreamfunction,
        PGDiagnostics,
        PGDIMDiagnostics,
@@ -63,6 +68,9 @@ export PGParameters,
        streamfunction,
        streamfunction_current,
        sample_solution,
+       sample_lagrangian_velocity,
+       lagrangian_velocity,
+       compute_trajectories,
        compute_diagnostics,
        compute_dim_diagnostics,
        compute_barotropic_vorticity_diagnostics,
@@ -72,6 +80,7 @@ export PGParameters,
        compute_surface_pressure_equation_diagnostics,
        write_solution,
        plot_solution,
+       plot_trajectories,
        plot_surface_pressure,
        plot_bottom_stress,
        plot_depth_integrated_current,
@@ -1754,6 +1763,485 @@ function sample_solution(solution::PGSolution, x_values, y_values, z_values)
     )
     @info "Solution sampling completed" seconds=round(total_seconds; digits=3) wet_points wet_fraction=round(wet_points / prod(shape); digits=3) field_points_per_second=round(timings.wet_points_per_second; digits=1)
     return PGFields(x, y, z, u, v, w, b, ps, depth, wet, timings)
+end
+
+struct PGLagrangianVelocityField{
+    TX<:AbstractVector,TY<:AbstractVector,TS<:AbstractVector,
+    IU,IV,IW,IS,ID,T,
+}
+    x::TX
+    y::TY
+    sigma::TS
+    u::Array{Float64,3}
+    v::Array{Float64,3}
+    w::Array{Float64,3}
+    sigma_velocity::Array{Float64,3}
+    depth::Matrix{Float64}
+    u_interpolant::IU
+    v_interpolant::IV
+    w_interpolant::IW
+    sigma_velocity_interpolant::IS
+    depth_interpolant::ID
+    timings::T
+end
+
+struct PGLagrangianTrajectory
+    t::Vector{Float64}
+    x::Vector{Float64}
+    y::Vector{Float64}
+    z::Vector{Float64}
+    sigma::Vector{Float64}
+    termination::Symbol
+end
+
+struct PGLagrangianTrajectories{F,T}
+    field::F
+    trajectories::Vector{PGLagrangianTrajectory}
+    timings::T
+end
+
+function validate_lagrangian_coordinates(x, y, sigma)
+    length(x) >= 2 && length(y) >= 2 && length(sigma) >= 2 ||
+        throw(ArgumentError("x, y, and sigma must each contain at least two points"))
+    issorted(x) && all(diff(x) .> 0) ||
+        throw(ArgumentError("x must be strictly increasing"))
+    issorted(y) && all(diff(y) .> 0) ||
+        throw(ArgumentError("y must be strictly increasing"))
+    issorted(sigma) && all(diff(sigma) .> 0) ||
+        throw(ArgumentError("sigma must be strictly increasing"))
+    iszero(first(sigma)) && last(sigma) == 1 ||
+        throw(ArgumentError("sigma must span the complete interval from 0 to 1"))
+end
+
+function sampled_depth_derivatives(depth, x, y)
+    wet = trues(size(depth))
+    depth_x = similar(depth)
+    depth_y = similar(depth)
+    for j in eachindex(y), i in eachindex(x)
+        depth_x[i, j] = horizontal_derivative(depth, wet, x, i, j, 1)
+        depth_y[i, j] = horizontal_derivative(depth, wet, y, i, j, 2)
+    end
+    return depth_x, depth_y
+end
+
+function reconstruct_sigma_velocity(u, v, depth, x, y, sigma)
+    shape = size(u)
+    wet = trues(shape)
+    transport_divergence = similar(u)
+    column_depth = reshape(depth, size(depth)..., 1)
+    depth_integrated_u = column_depth .* u
+    depth_integrated_v = column_depth .* v
+    for k in eachindex(sigma), j in eachindex(y), i in eachindex(x)
+        transport_divergence[i, j, k] =
+            horizontal_derivative(
+                depth_integrated_u, wet, x, i, j, k, 1,
+            ) +
+            horizontal_derivative(
+                depth_integrated_v, wet, y, i, j, k, 2,
+            )
+    end
+
+    sigma_transport = zeros(shape)
+    for j in eachindex(y), i in eachindex(x)
+        for k in 2:length(sigma)
+            sigma_transport[i, j, k] =
+                sigma_transport[i, j, k - 1] -
+                0.5 * (sigma[k] - sigma[k - 1]) * (
+                    transport_divergence[i, j, k - 1] +
+                    transport_divergence[i, j, k]
+                )
+        end
+        bottom_residual = sigma_transport[i, j, end]
+        for k in eachindex(sigma)
+            sigma_transport[i, j, k] -= bottom_residual * sigma[k]
+        end
+    end
+    return sigma_transport ./ column_depth
+end
+
+function build_lagrangian_velocity_field(
+    x,
+    y,
+    sigma,
+    u,
+    v,
+    sigma_velocity,
+    depth;
+    timings=(;),
+)
+    depth_x, depth_y = sampled_depth_derivatives(depth, x, y)
+    w = similar(u)
+    for k in eachindex(sigma), j in eachindex(y), i in eachindex(x)
+        w[i, j, k] =
+            -depth[i, j] * sigma_velocity[i, j, k] -
+            sigma[k] * (
+                u[i, j, k] * depth_x[i, j] +
+                v[i, j, k] * depth_y[i, j]
+            )
+    end
+
+    nodes = (x, y, sigma)
+    interpolation_mode = Interpolations.Gridded(Interpolations.Linear())
+    u_interpolant = Interpolations.interpolate(nodes, u, interpolation_mode)
+    v_interpolant = Interpolations.interpolate(nodes, v, interpolation_mode)
+    w_interpolant = Interpolations.interpolate(nodes, w, interpolation_mode)
+    sigma_velocity_interpolant = Interpolations.interpolate(
+        nodes, sigma_velocity, interpolation_mode,
+    )
+    depth_interpolant = Interpolations.interpolate(
+        (x, y), depth, interpolation_mode,
+    )
+    return PGLagrangianVelocityField(
+        x, y, sigma, u, v, w, sigma_velocity, depth,
+        u_interpolant, v_interpolant, w_interpolant,
+        sigma_velocity_interpolant, depth_interpolant, timings,
+    )
+end
+
+"""
+    sample_lagrangian_velocity(solution, x, y, sigma)
+
+Sample the steady three-dimensional velocity on the terrain-following
+coordinate `sigma = -z/H(x,y)`. The horizontal sampling grid must be a
+rectangular all-water patch, and `sigma` must increase from 0 at the rigid lid
+to 1 at the seabed. The contravariant vertical velocity is reconstructed from
+discrete continuity and corrected to vanish at both material boundaries.
+"""
+function sample_lagrangian_velocity(
+    solution::PGSolution,
+    x_values,
+    y_values,
+    sigma_values,
+)
+    started = time()
+    x = collect(float.(x_values))
+    y = collect(float.(y_values))
+    sigma = collect(float.(sigma_values))
+    validate_lagrangian_coordinates(x, y, sigma)
+
+    depth = Matrix{Float64}(undef, length(x), length(y))
+    step = solution.problem.derivative_step
+    for j in eachindex(y), i in eachindex(x)
+        xx, yy = x[i], y[j]
+        stencil = (
+            (xx, yy),
+            (xx - step, yy),
+            (xx + step, yy),
+            (xx, yy - step),
+            (xx, yy + step),
+        )
+        all(point -> solution.problem.inside(point...), stencil) ||
+            throw(DomainError(
+                (xx, yy),
+                "the Lagrangian grid and derivative stencil must lie inside the basin",
+            ))
+        depth[i, j] = solution.problem.depth(xx, yy)
+        depth[i, j] > 0 ||
+            throw(DomainError((xx, yy), "depth must be positive"))
+    end
+
+    shape = (length(x), length(y), length(sigma))
+    u = Array{Float64}(undef, shape)
+    v = Array{Float64}(undef, shape)
+    _, horizontal_timing = timed_stage(
+        "sampling terrain-following horizontal velocity",
+    ) do
+        for j in eachindex(y), i in eachindex(x)
+            column = horizontal_velocity_column(solution, x[i], y[j])
+            for k in eachindex(sigma)
+                velocity = column(-sigma[k] * depth[i, j])
+                u[i, j, k] = float(real(velocity))
+                v[i, j, k] = float(imag(velocity))
+            end
+        end
+    end
+
+    sigma_velocity, vertical_timing = timed_stage(
+        "reconstructing terrain-following vertical velocity",
+    ) do
+        reconstruct_sigma_velocity(u, v, depth, x, y, sigma)
+    end
+    timings = (
+        horizontal_velocity=horizontal_timing,
+        vertical_velocity=vertical_timing,
+        total_seconds=time() - started,
+    )
+    return build_lagrangian_velocity_field(
+        x, y, sigma, u, v, sigma_velocity, depth;
+        timings,
+    )
+end
+
+function require_lagrangian_point(field::PGLagrangianVelocityField, x, y, sigma)
+    first(field.x) <= x <= last(field.x) ||
+        throw(DomainError(x, "x lies outside the Lagrangian velocity grid"))
+    first(field.y) <= y <= last(field.y) ||
+        throw(DomainError(y, "y lies outside the Lagrangian velocity grid"))
+    first(field.sigma) <= sigma <= last(field.sigma) ||
+        throw(DomainError(
+            sigma, "sigma lies outside the Lagrangian velocity grid",
+        ))
+end
+
+"""
+    lagrangian_velocity(field, x, y, sigma)
+
+Interpolate `(u, v, w, sigma_velocity)` at a terrain-following point.
+"""
+function lagrangian_velocity(
+    field::PGLagrangianVelocityField,
+    x,
+    y,
+    sigma,
+)
+    require_lagrangian_point(field, x, y, sigma)
+    return (
+        u=field.u_interpolant(x, y, sigma),
+        v=field.v_interpolant(x, y, sigma),
+        w=field.w_interpolant(x, y, sigma),
+        sigma_velocity=field.sigma_velocity_interpolant(x, y, sigma),
+    )
+end
+
+function trajectory_callback(condition, reason, termination)
+    affect!(integrator) = begin
+        termination[] = reason
+        terminate!(integrator)
+    end
+    return ContinuousCallback(
+        condition, affect!;
+        save_positions=(true, false),
+    )
+end
+
+function integrate_trajectory(
+    field::PGLagrangianVelocityField,
+    initial_position,
+    tspan;
+    saveat,
+    reltol,
+    abstol,
+)
+    x0, y0, z0 = float.(initial_position)
+    first(field.x) < x0 < last(field.x) ||
+        throw(DomainError(x0, "initial x must lie inside the velocity grid"))
+    first(field.y) < y0 < last(field.y) ||
+        throw(DomainError(y0, "initial y must lie inside the velocity grid"))
+    H0 = field.depth_interpolant(x0, y0)
+    sigma0 = -z0 / H0
+    0 < sigma0 < 1 ||
+        throw(DomainError(
+            z0, "initial z must lie strictly between the seabed and rigid lid",
+        ))
+
+    function velocity!(derivative, state, _, _)
+        xx = clamp(state[1], first(field.x), last(field.x))
+        yy = clamp(state[2], first(field.y), last(field.y))
+        ss = clamp(state[3], first(field.sigma), last(field.sigma))
+        derivative[1] = field.u_interpolant(xx, yy, ss)
+        derivative[2] = field.v_interpolant(xx, yy, ss)
+        derivative[3] = field.sigma_velocity_interpolant(xx, yy, ss)
+    end
+
+    termination = Ref(:completed)
+    callbacks = CallbackSet(
+        trajectory_callback(
+            (state, _, _) -> state[1] - first(field.x),
+            :x_min,
+            termination,
+        ),
+        trajectory_callback(
+            (state, _, _) -> last(field.x) - state[1],
+            :x_max,
+            termination,
+        ),
+        trajectory_callback(
+            (state, _, _) -> state[2] - first(field.y),
+            :y_min,
+            termination,
+        ),
+        trajectory_callback(
+            (state, _, _) -> last(field.y) - state[2],
+            :y_max,
+            termination,
+        ),
+        trajectory_callback(
+            (state, _, _) -> state[3] - first(field.sigma),
+            :surface,
+            termination,
+        ),
+        trajectory_callback(
+            (state, _, _) -> last(field.sigma) - state[3],
+            :seabed,
+            termination,
+        ),
+    )
+    problem = ODEProblem(velocity!, [x0, y0, sigma0], float.(tspan))
+    result = OrdinaryDiffEqTsit5.solve(
+        problem,
+        Tsit5();
+        callback=callbacks,
+        saveat,
+        reltol,
+        abstol,
+    )
+    t = collect(float.(result.t))
+    x = [float(state[1]) for state in result.u]
+    y = [float(state[2]) for state in result.u]
+    sigma = [float(state[3]) for state in result.u]
+    z = [
+        -sigma[index] * field.depth_interpolant(x[index], y[index])
+        for index in eachindex(t)
+    ]
+    return PGLagrangianTrajectory(t, x, y, z, sigma, termination[])
+end
+
+"""
+    compute_trajectories(field, initial_positions, tspan; ...)
+
+Integrate steady three-dimensional particle trajectories from `(x, y, z)`
+initial positions. Times and velocities are non-dimensional. Integration uses
+adaptive `Tsit5`; particles stop cleanly if they reach an edge of the sampled
+velocity patch, the rigid lid, or the seabed.
+"""
+function compute_trajectories(
+    field::PGLagrangianVelocityField,
+    initial_positions,
+    tspan;
+    saveat=nothing,
+    reltol=1e-7,
+    abstol=1e-9,
+)
+    length(tspan) == 2 || throw(ArgumentError("tspan must have two endpoints"))
+    tspan[1] != tspan[2] || throw(ArgumentError("tspan endpoints must differ"))
+    reltol > 0 || throw(ArgumentError("reltol must be positive"))
+    abstol > 0 || throw(ArgumentError("abstol must be positive"))
+    isempty(initial_positions) ||
+        all(position -> length(position) == 3, initial_positions) ||
+        throw(ArgumentError("each initial position must contain (x, y, z)"))
+    output_times = isnothing(saveat) ?
+        range(float(tspan[1]), float(tspan[2]); length=201) :
+        saveat
+    started = time()
+    trajectories = [
+        integrate_trajectory(
+            field,
+            initial_position,
+            tspan;
+            saveat=output_times,
+            reltol,
+            abstol,
+        )
+        for initial_position in initial_positions
+    ]
+    timings = (
+        total_seconds=time() - started,
+        particles=length(trajectories),
+    )
+    return PGLagrangianTrajectories(field, trajectories, timings)
+end
+
+"""
+    plot_trajectories(trajectories; output=nothing)
+
+Plot three-dimensional paths above bathymetry, horizontal paths over depth
+contours, and particle depth versus time.
+"""
+function plot_trajectories(
+    trajectories::PGLagrangianTrajectories;
+    output=nothing,
+)
+    field = trajectories.field
+    colors = palette(:tab10, max(length(trajectories.trajectories), 1))
+    three_dimensional = surface(
+        field.x,
+        field.y,
+        -field.depth';
+        color=:gray,
+        alpha=0.3,
+        colorbar=false,
+        label="seabed",
+        xlabel="x",
+        ylabel="y",
+        zlabel="z",
+        title="3D Lagrangian trajectories",
+    )
+    horizontal = contourf(
+        field.x,
+        field.y,
+        field.depth';
+        color=:blues,
+        colorbar_title="H",
+        xlabel="x",
+        ylabel="y",
+        aspect_ratio=:equal,
+        title="Horizontal paths",
+    )
+    vertical = plot(
+        ;
+        xlabel="time",
+        ylabel="z",
+        title="Particle depth",
+        legend=:outerright,
+    )
+    for (index, trajectory) in enumerate(trajectories.trajectories)
+        color = colors[index]
+        label = "particle $index"
+        plot!(
+            three_dimensional,
+            trajectory.x,
+            trajectory.y,
+            trajectory.z;
+            color,
+            linewidth=2,
+            label,
+        )
+        scatter!(
+            three_dimensional,
+            [first(trajectory.x)],
+            [first(trajectory.y)],
+            [first(trajectory.z)];
+            color,
+            markersize=4,
+            label=false,
+        )
+        plot!(
+            horizontal,
+            trajectory.x,
+            trajectory.y;
+            color,
+            linewidth=2,
+            label=false,
+        )
+        scatter!(
+            horizontal,
+            [first(trajectory.x)],
+            [first(trajectory.y)];
+            color,
+            markersize=4,
+            label=false,
+        )
+        plot!(
+            vertical,
+            trajectory.t,
+            trajectory.z;
+            color,
+            linewidth=2,
+            label,
+        )
+    end
+    figure = plot(
+        three_dimensional,
+        horizontal,
+        vertical;
+        layout=(1, 3),
+        size=(1500, 450),
+    )
+    if !isnothing(output)
+        savefig(figure, output)
+        @info "Lagrangian trajectory plot saved" path=string(output)
+    end
+    return figure
 end
 
 """
@@ -3713,6 +4201,9 @@ end
 
 performance_summary(solution::PGSolution) = solution.timings
 performance_summary(fields::PGFields) = fields.timings
+performance_summary(field::PGLagrangianVelocityField) = field.timings
+performance_summary(trajectories::PGLagrangianTrajectories) =
+    trajectories.timings
 performance_summary(solution::PGStreamfunction) = solution.timings
 performance_summary(diagnostics::PGDiagnostics) = diagnostics.timings
 performance_summary(diagnostics::PGDIMDiagnostics) = diagnostics.timings
