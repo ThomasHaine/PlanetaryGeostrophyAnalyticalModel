@@ -9,6 +9,7 @@
 *.blg
 *.log
 *.png
+*.gif
 *.synctex*
 !.gitignore
 Development*

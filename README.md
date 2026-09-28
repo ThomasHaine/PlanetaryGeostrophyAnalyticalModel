@@ -82,6 +82,7 @@ fields = sample_solution(
 )
 write_solution(fields, "sample_pg")
 plot_solution(fields; sigma_level=0.5, output="sample_pg.png")
+plot_solution(fields; z_index=length(fields.z), output="sample_pg_surface.png")
 ```
 
 ### Problem specification and field output
@@ -120,6 +121,12 @@ trajectories = compute_trajectories(
     saveat=range(0.0, 4000.0; length=401),
 )
 plot_trajectories(trajectories; output="sample_pg_trajectories.png")
+animate_trajectories(
+    trajectories;
+    output="sample_pg_trajectories.gif",
+    frame_stride=4,
+    fps=15,
+)
 ```
 
 The transformed vertical velocity is reconstructed from
@@ -128,7 +135,8 @@ rigid lid and seabed. Multilinear interpolation and adaptive `Tsit5`
 integration then evolve `(x,y,sigma)`. Seeds must lie strictly inside the
 sampled all-water patch; trajectories terminate cleanly if they reach a
 horizontal edge, the surface, or the seabed. Coordinates, velocity, and time
-remain non-dimensional.
+remain non-dimensional. The animation shows the accumulated 3D and horizontal
+paths together with each particle's current position.
 
 ### Performance metrics
 
@@ -451,8 +459,11 @@ vector magnitude.
 `AnalyticalModel/PG_API_Example.ipynb` is the main API walkthrough. It uses a
 smooth zonal slope and Gaussian seamount to demonstrate flexible
 two-dimensional bathymetry, solves and plots the full three-dimensional
-fields, and runs every mapped dynamical-balance and surface-pressure
-diagnostic.
+fields at the surface, fixed `z=-0.5`, and terrain-following `z/H=-0.5`
+levels. It also computes and animates 3D Lagrangian trajectories and runs every
+mapped dynamical-balance and surface-pressure diagnostic. Its additional
+forward/adjoint consistency solves are disabled by default; set
+`RUN_ADJOINT_CHECKS = true` in the setup cell to run them.
 
 ### Stommel gyre
 

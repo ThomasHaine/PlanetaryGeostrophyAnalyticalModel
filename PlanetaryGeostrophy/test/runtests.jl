@@ -278,6 +278,24 @@ end
     @test rotation.termination == :completed
     @test hypot(last(rotation.x) - 0.4, last(rotation.y)) < 1e-7
     @test maximum(abs.(rotation.z .+ 0.5)) < 1e-12
+    short_rotation = compute_trajectories(
+        rotation_field,
+        [(0.4, 0.0, -0.5)],
+        (0.0, 1.0);
+        saveat=0.0:0.5:1.0,
+    )
+    mktempdir() do directory
+        animation_path = animate_trajectories(
+            short_rotation;
+            output=joinpath(directory, "trajectories.gif"),
+            fps=2,
+        )
+        @test isfile(animation_path)
+        @test filesize(animation_path) > 0
+    end
+    @test_throws ArgumentError animate_trajectories(
+        short_rotation; frame_stride=0,
+    )
 
     boundary_x = [0.0, 0.5, 1.0]
     eastward_u = ones(3, 3, 3)
