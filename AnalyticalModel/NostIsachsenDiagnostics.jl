@@ -301,7 +301,10 @@ function velocity_panel(result, wet, u, v, title, velocity_scale)
         magnitude_scale=velocity_scale,
         color=:viridis,
     )
-    Plots.plot!(panel; xlabel="", clims=(0.0, velocity_scale))
+    Plots.plot!(
+        panel;
+        xlabel="", clims=(0.0, velocity_scale), colorbar=true,
+    )
     return panel
 end
 
@@ -315,6 +318,7 @@ function error_panel(result, error, title, velocity_error_scale)
         title,
         color=:magma,
         clims=(0.0, velocity_error_scale),
+        colorbar_title="vector error",
         aspect_ratio=:equal,
     )
     Plots.contour!(
@@ -326,7 +330,6 @@ function error_panel(result, error, title, velocity_error_scale)
         color=:white,
         linewidth=0.6,
         alpha=0.65,
-        colorbar=false,
         label="",
     )
     return panel
