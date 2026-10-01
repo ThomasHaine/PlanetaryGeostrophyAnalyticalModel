@@ -4191,9 +4191,13 @@ function adjoint_kernel_plot(
         xlabel="forcing x",
         ylabel="forcing y",
         title,
+        titlefontsize=9,
+        guidefontsize=9,
+        tickfontsize=7,
+        colorbar_title="functional derivative",
+        colorbar_titlefontsize=9,
         color=:balance,
         clims=(-scale, scale),
-        colorbar_title="functional derivative",
         aspect_ratio=:equal,
     )
     target = sensitivity.target
@@ -4308,12 +4312,12 @@ function plot_transport_adjoint_sensitivity(
         plot(
             panels...;
             layout=(rows, columns),
-            size=(450columns, 390rows),
+            size=(500columns, 420rows),
             plot_title=(
                 "$(cost_label) adjoint sensitivity; $target_description"
             ),
-            plot_titlefontsize=15,
-            margin=2Plots.mm,
+            plot_titlefontsize=13,
+            margin=4Plots.mm,
         )
     end
     return save_diagnostic_plot(
