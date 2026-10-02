@@ -25,10 +25,12 @@ function centered_gradient(values, wet, xs, ys)
     return (; x=value_x, y=value_y, wet=stencil_wet)
 end
 
-polygon_area(xs, ys) = 0.5abs(sum(
+signed_polygon_area(xs, ys) = 0.5sum(
     xs[index] * ys[index + 1] - xs[index + 1] * ys[index]
     for index in 1:(length(xs) - 1)
-))
+)
+
+polygon_area(xs, ys) = abs(signed_polygon_area(xs, ys))
 
 function contour_contains(x, y, xs, ys)
     inside = false
@@ -76,15 +78,77 @@ function interpolate_contour_function(q_value, contour_q, values)
 end
 
 """
+    bilinear_interpolate(xs, ys, field, xq, yq)
+
+Bilinearly interpolate the complex-valued `field` sampled on the rectilinear
+grid `xs × ys` at the query point `(xq, yq)`. Returns `NaN + 0im` outside the
+grid or whenever any of the four surrounding samples is non-finite.
+"""
+function bilinear_interpolate(xs, ys, field, xq, yq)
+    (xs[1] <= xq <= xs[end] && ys[1] <= yq <= ys[end]) ||
+        return NaN + 0.0im
+    i = clamp(searchsortedlast(xs, xq), 1, length(xs) - 1)
+    j = clamp(searchsortedlast(ys, yq), 1, length(ys) - 1)
+    tx = (xq - xs[i]) / (xs[i + 1] - xs[i])
+    ty = (yq - ys[j]) / (ys[j + 1] - ys[j])
+    corners = (
+        field[i, j], field[i + 1, j], field[i, j + 1], field[i + 1, j + 1],
+    )
+    all(isfinite, corners) || return NaN + 0.0im
+    return (1 - tx) * (1 - ty) * corners[1] + tx * (1 - ty) * corners[2] +
+           (1 - tx) * ty * corners[3] + tx * ty * corners[4]
+end
+
+"""
+    exact_drag_contour_integrals(problem, p, xs, ys, grid_x, grid_y, T_star_over_f)
+
+Exact (closure-free) contour-integral theory for `G(q) = dp_b/dq`, derived
+from the model's actual Ekman bottom-stress closure `τ_b = S·∇p_b + T*`
+(with `T* = S·∇χ + T` from equations (62)--(64)) rather than a fitted linear
+or quadratic drag law. Stokes' theorem applied to the TDVB identity (46) on a
+closed `q = f/H` contour gives
+`Ek·[G(q)·D(q) + F_T(q)] = -enclosed_forcing(q)`, where
+
+    D(q) = Re[ ∮ conj((S/f)·∇q) dz ]
+    F_T(q) = Re[ ∮ conj(T*/f) dz ]
+
+This returns `(D, FT)` for one closed contour `(xs, ys)`; `S` and `∇q` are
+evaluated analytically at each segment midpoint, while `T*/f` is bilinearly
+interpolated from the precomputed grid field `T_star_over_f`.
+"""
+function exact_drag_contour_integrals(
+    problem, p, xs, ys, grid_x, grid_y, T_star_over_f,
+)
+    D = 0.0
+    FT = 0.0
+    for index in 1:(length(xs) - 1)
+        x = (xs[index] + xs[index + 1]) / 2
+        y = (ys[index] + ys[index + 1]) / 2
+        dz = Complex(xs[index + 1] - xs[index], ys[index + 1] - ys[index])
+        H = problem.depth(x, y)
+        f = problem.coriolis(x, y)
+        q_x = (problem.coriolis_x(x, y) * H - f * problem.depth_x(x, y)) / H^2
+        q_y = (problem.coriolis_y(x, y) * H - f * problem.depth_y(x, y)) / H^2
+        S = PlanetaryGeostrophy.bottom_stress_coefficient(p, H, f)
+        D += real(conj(S / f * Complex(q_x, q_y)) * dz)
+        T_star_f = bilinear_interpolate(grid_x, grid_y, T_star_over_f, x, y)
+        isfinite(T_star_f) && (FT += real(conj(T_star_f) * dz))
+    end
+    return (; D, FT)
+end
+
+"""
     compute_nost_isachsen_diagnostics(solution, diagnostics, dim, tdvb;
                                       contour_levels=20,
                                       q_gradient_floor=1e-10)
 
 Compare the PG bottom-geostrophic flow with the closed-`q` contour
 predictions of Nøst & Isachsen (2003) using globally fitted linear and
-quadratic drag magnitudes. The returned `metrics.stress_velocity_alignment`
-reports the signed alignment that is intentionally excluded from those
-positive drag fits.
+quadratic drag magnitudes, together with an exact, closure-free `G(q)`
+theory derived from the model's actual Ekman bottom-stress closure
+`τ_b = S·∇p_b + T*` (see `exact_drag_contour_integrals`). The returned
+`metrics.stress_velocity_alignment` reports the signed alignment that is
+intentionally excluded from the fitted positive drag laws.
 """
 function compute_nost_isachsen_diagnostics(
     solution,
@@ -109,6 +173,9 @@ function compute_nost_isachsen_diagnostics(
         f[i, j] = problem.coriolis(xx, yy)
         q[i, j] = f[i, j] / problem.depth(xx, yy)
     end
+
+    Ek = problem.parameters.Ek
+    p_internal = PlanetaryGeostrophy.internal_parameters(problem.parameters)
 
     pb_gradient = centered_gradient(dim.bottom_pressure, diagnostics.wet, x, y)
     q_gradient = centered_gradient(q, diagnostics.wet, x, y)
@@ -150,6 +217,21 @@ function compute_nost_isachsen_diagnostics(
         (effective_bottom_stress_magnitude .* pg_speed)[comparison_wet],
     )
 
+    # Exact (closure-free) bottom-stress decomposition τ_b = S·∇p_b + T*,
+    # with T* = τ_b - S·∇p_b (equations (62)--(64)). `S` is evaluated
+    # analytically; `∇p_b` reuses the grid-based `pb_gradient` already
+    # computed above, so no additional expensive quadratures are needed.
+    S_field = fill(NaN + 0.0im, size(q))
+    for j in eachindex(y), i in eachindex(x)
+        diagnostics.wet[i, j] || continue
+        H = problem.depth(x[i], y[j])
+        S_field[i, j] =
+            PlanetaryGeostrophy.bottom_stress_coefficient(p_internal, H, f[i, j])
+    end
+    tau_b = complex.(diagnostics.bottom_stress_x, diagnostics.bottom_stress_y)
+    T_star = tau_b .- S_field .* complex.(pb_gradient.x, pb_gradient.y)
+    T_star_over_f = T_star ./ f
+
     ni_forcing = tdvb.surface_stress_curl .+ tdvb.baroclinic_torque
     dxdy = (x[2] - x[1]) * (y[2] - y[1])
     q_for_contours = copy(q)
@@ -158,6 +240,7 @@ function compute_nost_isachsen_diagnostics(
     contour_q = Float64[]
     linear_G = Float64[]
     quadratic_G = Float64[]
+    exact_G = Float64[]
     for contour_level in Contour.levels(contour_set)
         closed_lines = Tuple{Vector{Float64},Vector{Float64}}[]
         for line in Contour.lines(contour_level)
@@ -170,6 +253,14 @@ function compute_nost_isachsen_diagnostics(
         line_x, line_y = closed_lines[
             argmax(polygon_area(xs, ys) for (xs, ys) in closed_lines)
         ]
+        # Stokes' theorem needs a consistent counter-clockwise traversal so
+        # that the line integrals D(q)/F_T(q) below correspond to the same
+        # orientation as the area integral `enclosed_forcing`; the contour
+        # tracer does not guarantee this, so flip the line when needed.
+        if signed_polygon_area(line_x, line_y) < 0
+            reverse!(line_x)
+            reverse!(line_y)
+        end
         enclosed_forcing = 0.0
         for j in eachindex(y), i in eachindex(x)
             tdvb.wet[i, j] || continue
@@ -177,11 +268,15 @@ function compute_nost_isachsen_diagnostics(
             enclosed_forcing += ni_forcing[i, j] * dxdy
         end
         denominators = contour_denominators(problem, line_x, line_y)
+        exact = exact_drag_contour_integrals(
+            problem, p_internal, line_x, line_y, x, y, T_star_over_f,
+        )
         push!(contour_q, Contour.level(contour_level))
         push!(linear_G, enclosed_forcing / (linear_drag * denominators.linear))
         push!(quadratic_G, sign(enclosed_forcing) * sqrt(
             abs(enclosed_forcing) / (quadratic_drag * denominators.quadratic),
         ))
+        push!(exact_G, (-enclosed_forcing / Ek - exact.FT) / exact.D)
     end
     length(contour_q) >= 2 ||
         throw(ArgumentError("fewer than two closed q contours were resolved"))
@@ -189,18 +284,24 @@ function compute_nost_isachsen_diagnostics(
     contour_q = contour_q[ordering]
     linear_G = linear_G[ordering]
     quadratic_G = quadratic_G[ordering]
+    exact_G = exact_G[ordering]
 
     linear_bottom_u = fill(NaN, size(q))
     linear_bottom_v = fill(NaN, size(q))
     quadratic_bottom_u = fill(NaN, size(q))
     quadratic_bottom_v = fill(NaN, size(q))
+    exact_bottom_u = fill(NaN, size(q))
+    exact_bottom_v = fill(NaN, size(q))
     theory_wet = falses(size(q))
     for index in findall(comparison_wet)
         linear_gradient =
             interpolate_contour_function(q[index], contour_q, linear_G)
         quadratic_gradient =
             interpolate_contour_function(q[index], contour_q, quadratic_G)
-        isfinite(linear_gradient) && isfinite(quadratic_gradient) || continue
+        exact_gradient =
+            interpolate_contour_function(q[index], contour_q, exact_G)
+        isfinite(linear_gradient) && isfinite(quadratic_gradient) &&
+            isfinite(exact_gradient) || continue
         linear_bottom_u[index] =
             -linear_gradient * q_gradient.y[index] / f[index]
         linear_bottom_v[index] =
@@ -209,11 +310,16 @@ function compute_nost_isachsen_diagnostics(
             -quadratic_gradient * q_gradient.y[index] / f[index]
         quadratic_bottom_v[index] =
             quadratic_gradient * q_gradient.x[index] / f[index]
+        exact_bottom_u[index] =
+            -exact_gradient * q_gradient.y[index] / f[index]
+        exact_bottom_v[index] =
+            exact_gradient * q_gradient.x[index] / f[index]
         theory_wet[index] = true
     end
 
     linear_speed = hypot.(linear_bottom_u, linear_bottom_v)
     quadratic_speed = hypot.(quadratic_bottom_u, quadratic_bottom_v)
+    exact_speed = hypot.(exact_bottom_u, exact_bottom_v)
     linear_velocity_difference = hypot.(
         linear_bottom_u .- pg_bottom_u,
         linear_bottom_v .- pg_bottom_v,
@@ -221,6 +327,10 @@ function compute_nost_isachsen_diagnostics(
     quadratic_velocity_difference = hypot.(
         quadratic_bottom_u .- pg_bottom_u,
         quadratic_bottom_v .- pg_bottom_v,
+    )
+    exact_velocity_difference = hypot.(
+        exact_bottom_u .- pg_bottom_u,
+        exact_bottom_v .- pg_bottom_v,
     )
     normal_pg_velocity = (
         pg_bottom_u .* q_gradient.x .+
@@ -249,10 +359,15 @@ function compute_nost_isachsen_diagnostics(
         quadratic_relative_l2_velocity_error=
             l2(quadratic_velocity_difference; wet=theory_wet) /
             l2(pg_speed; wet=theory_wet),
+        exact_relative_l2_velocity_error=
+            l2(exact_velocity_difference; wet=theory_wet) /
+            l2(pg_speed; wet=theory_wet),
         linear_speed_correlation=
             cor(pg_speed[theory_wet], linear_speed[theory_wet]),
         quadratic_speed_correlation=
             cor(pg_speed[theory_wet], quadratic_speed[theory_wet]),
+        exact_speed_correlation=
+            cor(pg_speed[theory_wet], exact_speed[theory_wet]),
         relative_l2_cross_q_velocity=l2(normal_pg_velocity) / l2(pg_speed),
         pg_tdvb_relative_residual=l2(tdvb.residual) / tdvb_scale,
         ni_zero_pressure_torque_relative_residual=
@@ -274,14 +389,19 @@ function compute_nost_isachsen_diagnostics(
         contour_q,
         linear_G,
         quadratic_G,
+        exact_G,
         linear_bottom_u,
         linear_bottom_v,
         quadratic_bottom_u,
         quadratic_bottom_v,
+        exact_bottom_u,
+        exact_bottom_v,
         linear_speed,
         quadratic_speed,
+        exact_speed,
         linear_velocity_difference,
         quadratic_velocity_difference,
+        exact_velocity_difference,
         tdvb_nonpressure_sum,
         tdvb,
         metrics,
@@ -346,10 +466,12 @@ function plot_nost_isachsen_diagnostics(result; output_prefix=nothing)
         maximum(result.pg_speed[result.theory_wet]),
         maximum(result.linear_speed[result.theory_wet]),
         maximum(result.quadratic_speed[result.theory_wet]),
+        maximum(result.exact_speed[result.theory_wet]),
     ))
     velocity_error_scale = max(
         maximum(result.linear_velocity_difference[result.theory_wet]),
         maximum(result.quadratic_velocity_difference[result.theory_wet]),
+        maximum(result.exact_velocity_difference[result.theory_wet]),
     )
 
     pressure_gradient_panel = Plots.scatter(
@@ -379,6 +501,16 @@ function plot_nost_isachsen_diagnostics(result; output_prefix=nothing)
         marker=:diamond,
         label="quadratic drag",
     )
+    Plots.plot!(
+        pressure_gradient_panel,
+        result.contour_q,
+        result.exact_G;
+        linewidth=3,
+        marker=:star5,
+        label="exact theory",
+    )
+
+    blank_panel = Plots.plot(; framestyle=:none, legend=false)
 
     velocity_figure = Plots.plot(
         velocity_panel(
@@ -405,6 +537,14 @@ function plot_nost_isachsen_diagnostics(result; output_prefix=nothing)
             "Nøst--Isachsen quadratic drag",
             velocity_scale,
         ),
+        velocity_panel(
+            result,
+            result.theory_wet,
+            result.exact_bottom_u,
+            result.exact_bottom_v,
+            "Exact S, T* theory",
+            velocity_scale,
+        ),
         error_panel(
             result,
             result.linear_velocity_difference,
@@ -417,9 +557,16 @@ function plot_nost_isachsen_diagnostics(result; output_prefix=nothing)
             "quadratic drag: vector error",
             velocity_error_scale,
         ),
-        pressure_gradient_panel;
-        layout=(2, 3),
-        size=(1650, 950),
+        error_panel(
+            result,
+            result.exact_velocity_difference,
+            "exact theory: vector error",
+            velocity_error_scale,
+        ),
+        pressure_gradient_panel,
+        blank_panel;
+        layout=(3, 3),
+        size=(1650, 1350),
         plot_title="PG versus Nøst & Isachsen (2003)",
     )
 
