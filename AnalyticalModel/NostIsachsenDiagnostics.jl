@@ -236,7 +236,15 @@ function compute_nost_isachsen_diagnostics(
     dxdy = (x[2] - x[1]) * (y[2] - y[1])
     q_for_contours = copy(q)
     q_for_contours[.!isfinite.(q_for_contours)] .= maximum(q[diagnostics.wet])
-    contour_set = Contour.contours(x, y, q_for_contours', contour_levels)
+    # `Contour.contours(xs, ys, z)` requires `z` sized `(length(xs),
+    # length(ys))` with `z[i, j] == f(xs[i], ys[j])` -- i.e. the same
+    # orientation as `q_for_contours` itself. Passing the transpose here
+    # silently swaps the x/y axes of every traced contour line (verified
+    # against the Contour.jl source), which went unnoticed on the
+    # roughly-square smoke-test grids used during development but badly
+    # distorts contours, enclosed-forcing areas, and the exact-theory line
+    # integrals on elongated domains (e.g. the double-basin geometry).
+    contour_set = Contour.contours(x, y, q_for_contours, contour_levels)
     contour_q = Float64[]
     linear_G = Float64[]
     quadratic_G = Float64[]
