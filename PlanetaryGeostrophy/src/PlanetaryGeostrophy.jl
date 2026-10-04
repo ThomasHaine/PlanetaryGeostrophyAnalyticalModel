@@ -2684,6 +2684,8 @@ function compute_vorticity_diagnostics(
     shape = (length(x), length(y))
     arrays = [fill(NaN, shape) for _ in 1:5]
     planetary, stretching, bottom_curl, surface_curl, residual = arrays
+    terrain_following_curl = fill(NaN, shape)
+    pressure_torque = fill(NaN, shape)
     bottom_pressure_values = fill(NaN, shape)
     wet = copy(diagnostics.wet)
     budget_wet = falses(shape)
@@ -2745,6 +2747,8 @@ function compute_vorticity_diagnostics(
                 bottom_pressure_y *
                 solution.problem.depth_x(x[i], y[j])
             )
+            terrain_following_curl[i, j] = terrain_following_bottom_curl
+            pressure_torque[i, j] = bottom_pressure_torque
             bottom_curl[i, j] = terrain_following_bottom_curl +
                 stretching[i, j] + bottom_pressure_torque
             surface_curl[i, j] = Ek * analytical_surface_stress_curl(
@@ -2762,10 +2766,20 @@ function compute_vorticity_diagnostics(
     budget_points > 0 ||
         @warn "Vorticity diagnostic grid has no points with a centered wet stencil"
     finite_l2(values) = sqrt(sum(abs2, values[budget_wet]))
+    # `bottom_curl` already bundles the chain-rule correction (eq 41 docstring):
+    # terrain-following stress curl, bottom vortex stretching, and bottom
+    # pressure torque. The first and third of those largely cancel in the
+    # true solution (compare the barotropic-vorticity balance, eq 36, which
+    # keeps them as separate terms), so normalizing by the combined,
+    # already-cancelled `bottom_curl` array understates the balance scale and
+    # inflates the reported relative residual. Use the uncombined
+    # constituent terms instead, matching the convention used by the
+    # barotropic- and geostrophic-contour-vorticity diagnostics.
     balance_scale = max(
         finite_l2(planetary),
         finite_l2(stretching),
-        finite_l2(bottom_curl),
+        finite_l2(terrain_following_curl),
+        finite_l2(pressure_torque),
         finite_l2(surface_curl),
         eps(),
     )
