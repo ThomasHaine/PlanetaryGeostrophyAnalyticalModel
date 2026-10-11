@@ -1,0 +1,58 @@
+# Run the PlanetaryGeostrophy test suite on pushes to main and on pull requests.
+#
+# The package lives in PlanetaryGeostrophy/ and includes source files from
+# TheoryNotes/ and AnalyticalModel/, so changes there also trigger CI.
+# Notebook-, figure-, and documentation-only changes do not.
+name: CI
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - "**.ipynb"
+      - "**.md"
+      - "**.pdf"
+      - "**.png"
+      - "**.tex"
+  pull_request:
+    paths-ignore:
+      - "**.ipynb"
+      - "**.md"
+      - "**.pdf"
+      - "**.png"
+      - "**.tex"
+  workflow_dispatch:
+
+# A newer push to the same branch or PR cancels the run in progress.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Julia ${{ matrix.version }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        # The committed Manifest.toml was resolved with Julia 1.13.
+        version: ["1.13"]
+    env:
+      # Headless GR plotting; the tests write figure files.
+      GKSwstype: "100"
+      JULIA_NUM_THREADS: auto
+    steps:
+      - uses: actions/checkout@v4
+      - uses: julia-actions/setup-julia@v2
+        with:
+          version: ${{ matrix.version }}
+      - uses: julia-actions/cache@v2
+      - uses: julia-actions/julia-buildpkg@v1
+        with:
+          project: PlanetaryGeostrophy
+      - uses: julia-actions/julia-runtest@v1
+        with:
+          project: PlanetaryGeostrophy
+          # Coverage instrumentation roughly doubles the run time.
+          coverage: false
