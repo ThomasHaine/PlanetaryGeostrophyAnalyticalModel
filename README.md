@@ -16,6 +16,7 @@ Questions/comments welcome.
   - [Problem specification and field output](#problem-specification-and-field-output)
   - [Three-dimensional Lagrangian trajectories](#three-dimensional-lagrangian-trajectories)
   - [Performance metrics](#performance-metrics)
+  - [Solution method and threading](#solution-method-and-threading)
 - [Transport diagnostics](#transport-diagnostics)
 - [Forcing sensitivity](#forcing-sensitivity)
 - [Dynamical-balance diagnostics](#dynamical-balance-diagnostics)
@@ -149,6 +150,51 @@ performance_summary(solution)
 performance_summary(fields)
 files.timings
 ```
+
+### Solution method and threading
+
+By default (`method=:fast`), `solve_pg` evaluates every vertical integral in
+single-integral form:
+
+- the transport forcing 𝔅 from (68),
+- the bottom-stress forcing T from (64),
+- the velocity from (B5) with the closed-form G_𝔲 (59),
+- the buoyancy from (50).
+
+Each of these needs only the baroclinic pressure
+`Π(ξ) = ∫_ξ^0 b dz`. Π comes from the closed-form kernels (A6)–(A7) with one
+quadrature. Vertical integrals use a fixed composite Gauss–Legendre rule
+(`ColumnQuadrature`). Its panels are scaled to the smaller of the Ekman depth
+and the buoyancy-diffusion depth, and it is split at kernel kinks.
+
+𝔅 is evaluated in parallel before assembly. With
+`forcing_assembly=:quadrature` (the default) it is computed at every
+finite-element quadrature point, which gives the same load vector as direct
+evaluation. With `:nodal` it is computed once per node and interpolated; that
+uses about a third of the evaluations but adds an O(h³) error.
+
+Finite-element point queries keep one cell-search cache per thread. Sampling,
+transport diagnostics and DIM diagnostics are threaded, so start Julia with
+`julia -t auto`, or use a threaded IJulia kernel:
+
+```julia
+using IJulia
+IJulia.installkernel("Julia (auto threads)", env=Dict("JULIA_NUM_THREADS" => "auto"))
+```
+
+`method=:b23` restores the original B23 symbolic-kernel quadratures. The test
+suite checks that the two methods agree to about 1e-9.
+
+Timings for the `PG_Double_Basin_Prototype.ipynb` high-resolution setting
+(mesh 0.02, 128×129×98 samples, 65² diagnostic grid) on an 18-thread Apple
+M5 Max:
+
+| Stage | `:b23` | `:fast` |
+|---|---|---|
+| `solve_pg` | 1037 s | 3.5 s |
+| `sample_solution` | 207 s | 1.05 s |
+| `compute_diagnostics` | 780 s | 2.8 s |
+| DIM and vorticity budgets | ~70 s | 2.1 s |
 
 ## Transport diagnostics
 

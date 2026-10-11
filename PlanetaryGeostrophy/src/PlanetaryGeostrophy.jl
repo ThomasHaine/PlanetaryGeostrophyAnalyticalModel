@@ -24,9 +24,11 @@ end
 
 include(joinpath(@__DIR__, "..", "..", "TheoryNotes", "VelocityFieldPrototype.jl"))
 using .VelocityFieldPrototype
+include(joinpath(@__DIR__, "FastColumns.jl"))
 include(joinpath(@__DIR__, "..", "..", "AnalyticalModel", "SurfacePressureTools.jl"))
 
-export PGParameters,
+export ColumnQuadrature,
+       PGParameters,
        PGProblem,
        PGSolution,
        PGFields,
@@ -227,11 +229,20 @@ internal_parameters(p::PGParameters) =
 
 """
     solve_pg(problem; mesh_file=tempname() * ".msh", mesh_resolution=0.1,
-             pressure_order=2, overwrite_mesh=false)
+             pressure_order=2, overwrite_mesh=false, method=:fast,
+             quadrature=ColumnQuadrature(), forcing_assembly=:quadrature)
 
 Generate or reuse a surface mesh, solve the Gridap surface-pressure equation,
 and construct callable Green-function solutions for buoyancy and horizontal
 velocity.
+
+`method=:fast` (the default) evaluates the transport forcing (68),
+bottom-stress forcing (64), velocity (B5), and buoyancy (50) as single
+vertical integrals with the fixed rule `quadrature`. Node and column work is
+threaded, so start Julia with `-t auto`. `forcing_assembly=:quadrature`
+evaluates `𝔅` at every finite-element quadrature point; `:nodal` interpolates
+it from the nodes (see `solve_surface_pressure`). `method=:b23` keeps the
+original B23 symbolic-kernel quadratures for comparison.
 """
 function solve_pg(
     problem::PGProblem;
@@ -239,6 +250,9 @@ function solve_pg(
     mesh_resolution=0.1,
     pressure_order=2,
     overwrite_mesh=false,
+    method=:fast,
+    quadrature=ColumnQuadrature(),
+    forcing_assembly=:quadrature,
 )
     mesh_resolution > 0 || throw(ArgumentError("mesh_resolution must be positive"))
     pressure_order > 0 || throw(ArgumentError("pressure_order must be positive"))
@@ -263,18 +277,43 @@ function solve_pg(
         problem.restoring_buoyancy, problem.surface_buoyancy,
         problem.depth_x, problem.depth_y;
         order=pressure_order,
+        method,
+        quadrature,
+        gradient_step=problem.derivative_step,
+        forcing_assembly,
     )
-    b = (x, y, z) -> buoyancy_from_forcing(
-        p, problem.depth, problem.restoring_buoyancy,
-        problem.surface_buoyancy, x, y, z,
-    )
-    uv = (x, y, z) -> velocity_b23_from_gradps(
-        kernels, p, problem.depth, problem.coriolis,
-        problem.coriolis_x, problem.coriolis_y, pressure.gradps,
-        problem.wind_stress, problem.restoring_buoyancy,
-        problem.surface_buoyancy, problem.depth_x, problem.depth_y,
-        x, y, z; gradient_step=problem.derivative_step,
-    )
+    b = if method === :b23
+        (x, y, z) -> buoyancy_from_forcing(
+            p, problem.depth, problem.restoring_buoyancy,
+            problem.surface_buoyancy, x, y, z,
+        )
+    else
+        (x, y, z) -> begin
+            H = problem.depth(x, y)
+            VFP.checked_depth(H, z)
+            fast_buoyancy(
+                p, H, problem.restoring_buoyancy,
+                problem.surface_buoyancy(x, y), x, y, z, quadrature,
+                panel_count(quadrature, p, problem.coriolis(x, y), H),
+            )
+        end
+    end
+    uv = if method === :b23
+        (x, y, z) -> velocity_b23_from_gradps(
+            kernels, p, problem.depth, problem.coriolis,
+            problem.coriolis_x, problem.coriolis_y, pressure.gradps,
+            problem.wind_stress, problem.restoring_buoyancy,
+            problem.surface_buoyancy, problem.depth_x, problem.depth_y,
+            x, y, z; gradient_step=problem.derivative_step,
+        )
+    else
+        (x, y, z) -> fast_velocity_column(
+            kernels, p, problem.depth, problem.coriolis,
+            pressure.gradps(x, y), problem.wind_stress(x, y),
+            problem.restoring_buoyancy, problem.surface_buoyancy,
+            x, y, quadrature; step=problem.derivative_step,
+        )(z)
+    end
     total_seconds = time() - solve_started
     timings = (
         mesh=mesh_timing,
@@ -289,6 +328,11 @@ end
 function horizontal_velocity_column(solution::PGSolution, x, y)
     problem = solution.problem
     require_water(solution, x, y)
+    if solution.pressure.method === :fast
+        return horizontal_velocity_column(
+            solution, x, y, solution.pressure.gradps(x, y),
+        )
+    end
     return VelocityFieldPrototype.velocity_b23_column_from_gradps(
         solution.kernels,
         internal_parameters(problem.parameters),
@@ -308,6 +352,31 @@ function horizontal_velocity_column(solution::PGSolution, x, y)
     )
 end
 
+"""
+    horizontal_velocity_column(solution, x, y, gradps_value)
+
+Column velocity evaluator given a precomputed `(∂x + i∂y)p_s` at `(x, y)`.
+Callers that sample many columns in parallel use this to separate the
+finite-element pressure-gradient lookup from the column work.
+"""
+function horizontal_velocity_column(solution::PGSolution, x, y, gradps_value)
+    problem = solution.problem
+    p = internal_parameters(problem.parameters)
+    solution.pressure.method === :fast || return VelocityFieldPrototype.velocity_b23_column_from_gradps(
+        solution.kernels, p, problem.depth, problem.coriolis,
+        problem.coriolis_x, problem.coriolis_y, (_, _) -> gradps_value,
+        problem.wind_stress, problem.restoring_buoyancy,
+        problem.surface_buoyancy, problem.depth_x, problem.depth_y, x, y;
+        gradient_step=problem.derivative_step,
+    )
+    return fast_velocity_column(
+        solution.kernels, p, problem.depth, problem.coriolis,
+        gradps_value, problem.wind_stress(x, y),
+        problem.restoring_buoyancy, problem.surface_buoyancy, x, y,
+        solution.pressure.quadrature; step=problem.derivative_step,
+    )
+end
+
 function require_water(solution::PGSolution, x, y, z=nothing)
     problem = solution.problem
     problem.inside(x, y) || throw(DomainError((x, y), "point lies outside the basin"))
@@ -321,7 +390,7 @@ end
 
 function surface_pressure(solution::PGSolution, x, y)
     require_water(solution, x, y)
-    return evaluate(solution.pressure.psurf, Point(x, y))
+    return solution.pressure.psurf_at(Point(x, y))
 end
 
 function horizontal_velocity(solution::PGSolution, x, y, z)
@@ -377,9 +446,11 @@ function project_bottom_stress(solution::PGSolution; order=2)
     finite_element, interpolation_timing = timed_stage(
         "interpolating bottom stress",
     ) do
-        interpolate_everywhere(stress_field, V)
+        stress_at, _ = nodal_lookup(stress_field, model, order)
+        interpolate_everywhere(stress_at, V)
     end
-    value = (x, y) -> evaluate(finite_element, Point(x, y))
+    evaluator = PooledPointEvaluator(finite_element, solution.pressure.probe)
+    value = (x, y) -> evaluator(Point(x, y))
     timings = (
         setup=setup_timing,
         interpolation=interpolation_timing,
@@ -430,10 +501,21 @@ function bottom_pressure(solution::PGSolution, x, y)
     require_water(solution, x, y)
     problem = solution.problem
     p = internal_parameters(problem.parameters)
-    column_buoyancy = VelocityFieldPrototype.buoyancy_column_integral(
-        solution.kernels, p, problem.depth, problem.restoring_buoyancy,
-        problem.surface_buoyancy, x, y,
-    )
+    column_buoyancy = if solution.pressure.method === :fast
+        quadrature = solution.pressure.quadrature
+        fast_column_integral(
+            solution.kernels, p, problem.depth, problem.restoring_buoyancy,
+            problem.surface_buoyancy, x, y, quadrature,
+            panel_count(
+                quadrature, p, problem.coriolis(x, y), problem.depth(x, y),
+            ),
+        )
+    else
+        VelocityFieldPrototype.buoyancy_column_integral(
+            solution.kernels, p, problem.depth, problem.restoring_buoyancy,
+            problem.surface_buoyancy, x, y,
+        )
+    end
     return surface_pressure(solution, x, y) - column_buoyancy
 end
 
@@ -445,9 +527,20 @@ Evaluate the baroclinic potential energy
 """
 function baroclinic_potential_energy(solution::PGSolution, x, y)
     H = require_water(solution, x, y)
-    return -VelocityFieldPrototype.split_quadgk(
+    solution.pressure.method === :fast || return -VelocityFieldPrototype.split_quadgk(
         z -> z * solution.buoyancy_function(x, y, z),
         -H, 0.0,
+    )
+    quadrature = solution.pressure.quadrature
+    problem = solution.problem
+    p = internal_parameters(problem.parameters)
+    panels = panel_count(quadrature, p, problem.coriolis(x, y), H)
+    bs = problem.surface_buoyancy(x, y)
+    return -panel_integral(
+        z -> z * fast_buoyancy(
+            p, H, problem.restoring_buoyancy, bs, x, y, z, quadrature, panels,
+        ),
+        -H, 0.0, quadrature, panels,
     )
 end
 
@@ -1431,9 +1524,11 @@ Solve for the streamfunction of the depth-integrated horizontal current.
 function solve_streamfunction(solution::PGSolution; order=2)
     order > 0 || throw(ArgumentError("order must be positive"))
     result = solve_transport_streamfunction(solution.pressure; order)
-    value = (x, y) -> evaluate(result.finite_element, Point(x, y))
-    finite_element_gradient = ∇(result.finite_element)
-    gradient = (x, y) -> evaluate(finite_element_gradient, Point(x, y))
+    probe = solution.pressure.probe
+    value_at = PooledPointEvaluator(result.finite_element, probe)
+    gradient_at = PooledPointEvaluator(∇(result.finite_element), probe)
+    value = (x, y) -> value_at(Point(x, y))
+    gradient = (x, y) -> gradient_at(Point(x, y))
     return PGStreamfunction(
         result.finite_element, value, gradient, result.timings,
     )
@@ -1705,24 +1800,30 @@ function sample_solution(solution::PGSolution, x_values, y_values, z_values)
     u, v, b = fill(NaN, shape), fill(NaN, shape), fill(NaN, shape)
     ps = fill(NaN, length(x), length(y))
     depth = fill(NaN, length(x), length(y))
-    wet = falses(shape)
+    gradps = fill(complex(NaN, NaN), length(x), length(y))
+    # BitArray writes are not thread-safe, so fill a Bool array.
+    wet_values = fill(false, shape)
     step = solution.problem.derivative_step
 
-    @info "Solution sampling started" Nx=length(x) Ny=length(y) Nz=length(z) grid_points=prod(shape)
+    @info "Solution sampling started" Nx=length(x) Ny=length(y) Nz=length(z) grid_points=prod(shape) threads=Threads.nthreads()
     _, pressure_timing = timed_stage("sampling surface pressure and bathymetry") do
-        for j in eachindex(y), i in eachindex(x)
-            xx, yy = x[i], y[j]
-            solution.problem.inside(xx, yy) || continue
-            H = solution.problem.depth(xx, yy)
-            H > 0 || continue
-            depth[i, j] = H
-            ps[i, j] = float(surface_pressure(solution, xx, yy))
+        Threads.@threads for j in eachindex(y)
+            for i in eachindex(x)
+                xx, yy = x[i], y[j]
+                solution.problem.inside(xx, yy) || continue
+                H = solution.problem.depth(xx, yy)
+                H > 0 || continue
+                depth[i, j] = H
+                ps[i, j] = float(surface_pressure(solution, xx, yy))
+                gradps[i, j] = solution.pressure.gradps(xx, yy)
+            end
         end
     end
 
     progress_stride = max(1, cld(length(y), 10))
+    rows_completed = Threads.Atomic{Int}(0)
     _, fields_timing = timed_stage("sampling 3D horizontal velocity and buoyancy") do
-        for j in eachindex(y)
+        Threads.@threads for j in eachindex(y)
             for i in eachindex(x)
                 xx, yy = x[i], y[j]
                 H = depth[i, j]
@@ -1732,21 +1833,23 @@ function sample_solution(solution::PGSolution, x_values, y_values, z_values)
                 ))
                 stencil_is_inside || continue
                 velocity_column = horizontal_velocity_column(
-                    solution, xx, yy,
+                    solution, xx, yy, gradps[i, j],
                 )
                 for k in eachindex(z)
                     -H <= z[k] <= 0 || continue
                     uv = velocity_column(z[k])
                     u[i, j, k], v[i, j, k] = float(real(uv)), float(imag(uv))
                     b[i, j, k] = float(solution.buoyancy_function(xx, yy, z[k]))
-                    wet[i, j, k] = true
+                    wet_values[i, j, k] = true
                 end
             end
-            if j == 1 || j == length(y) || j % progress_stride == 0
-                @info "3D field sampling progress" rows_completed=j rows_total=length(y) percent=round(100j / length(y); digits=1) wet_points=count(wet)
+            completed = Threads.atomic_add!(rows_completed, 1) + 1
+            if completed == 1 || completed == length(y) || completed % progress_stride == 0
+                @info "3D field sampling progress" rows_completed=completed rows_total=length(y) percent=round(100completed / length(y); digits=1)
             end
         end
     end
+    wet = BitArray(wet_values)
 
     w, vertical_velocity_timing =
         timed_stage("reconstructing vertical velocity from incompressibility") do
@@ -2405,13 +2508,14 @@ function compute_diagnostics(
     U, V = fill(NaN, shape), fill(NaN, shape)
     analytical_U, analytical_V = fill(NaN, shape), fill(NaN, shape)
     Ψ = fill(NaN, shape)
-    wet = falses(shape)
+    wet_values = fill(false, shape)
     step = solution.problem.derivative_step
     progress_stride = max(1, cld(length(y), 10))
+    rows_completed = Threads.Atomic{Int}(0)
     _, sampling_timing = timed_stage(
         "sampling bottom stress, transport, and streamfunction",
     ) do
-        for j in eachindex(y)
+        Threads.@threads for j in eachindex(y)
             for i in eachindex(x)
                 xx, yy = x[i], y[j]
                 solution.problem.inside(xx, yy) || continue
@@ -2432,14 +2536,16 @@ function compute_diagnostics(
                 analytical_U[i, j] = float(analytical_current.U)
                 analytical_V[i, j] = float(analytical_current.V)
                 Ψ[i, j] = float(streamfunction(ψ, xx, yy))
-                wet[i, j] = true
+                wet_values[i, j] = true
             end
 
-            if j == 1 || j == length(y) || j % progress_stride == 0
-                @info "PG diagnostic sampling progress" rows_completed=j rows_total=length(y) percent=round(100j / length(y); digits=1) wet_points=count(wet)
+            completed = Threads.atomic_add!(rows_completed, 1) + 1
+            if completed == 1 || completed == length(y) || completed % progress_stride == 0
+                @info "PG diagnostic sampling progress" rows_completed=completed rows_total=length(y) percent=round(100completed / length(y); digits=1)
             end
         end
     end
+    wet = BitMatrix(wet_values)
 
     total_seconds = time() - diagnostic_started
     wet_points = count(wet)
@@ -2489,10 +2595,11 @@ function compute_dim_diagnostics(
     progress_stride = max(1, cld(length(y), 10))
 
     @info "DIM diagnostic calculation started" Nx=length(x) Ny=length(y) wet_points=count(wet)
+    rows_completed = Threads.Atomic{Int}(0)
     _, sampling_timing = timed_stage(
         "sampling depth-integrated momentum terms",
     ) do
-        for j in eachindex(y)
+        Threads.@threads for j in eachindex(y)
             for i in eachindex(x)
                 wet[i, j] || continue
                 xx, yy = x[i], y[j]
@@ -2512,8 +2619,9 @@ function compute_dim_diagnostics(
                 y_τs[i, j] = terms.y.surface_stress
                 y_residual[i, j] = terms.y_residual
             end
-            if j == 1 || j == length(y) || j % progress_stride == 0
-                @info "DIM diagnostic sampling progress" rows_completed=j rows_total=length(y) percent=round(100j / length(y); digits=1)
+            completed = Threads.atomic_add!(rows_completed, 1) + 1
+            if completed == 1 || completed == length(y) || completed % progress_stride == 0
+                @info "DIM diagnostic sampling progress" rows_completed=completed rows_total=length(y) percent=round(100completed / length(y); digits=1)
             end
         end
     end
