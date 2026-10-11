@@ -1439,7 +1439,11 @@ end
             @test count(budget.wet) > 20
             @test all(isnan, budget.residual[.!budget.wet])
             @test all(isfinite, budget.residual[budget.wet])
-            @test residual < 0.05
+            # The residual is the cell-averaged finite-element mass error.
+            # With U·n = 0 at this basin's vertical coastal wall, a thin
+            # coastal frictional layer forms that mesh 0.08 resolves only
+            # roughly, hence the loose bound; it falls as the mesh is refined.
+            @test residual < 0.1
             @test residual < centered[name].timings.relative_l2_residual
         end
         @test cell.bv.wet == cell.gcvb.wet == cell.tdvb.wet
@@ -1447,5 +1451,65 @@ end
               cell.bv.residual[cell.bv.wet]
         @test cell.bv.transport_divergence[cell.bv.wet] ==
               zeros(count(cell.bv.wet))
+    end
+end
+
+@testset "No-normal-flow coastal condition" begin
+    # A vertical coastal wall (H = 0.4 at the coast) with stress and
+    # buoyancy forcing: p_s = 0 lets frictional and buoyancy-forced transport
+    # cross the coast, while the natural condition U·n = 0 does not.
+    ax, ay = 1.0, 0.75
+    problem = PGProblem(
+        parameters=PGParameters(0.01, 0.2),
+        depth=(x, y) -> 0.4 + 0.6exp(-(x^2 + y^2) / 0.2),
+        coriolis=(x, y) -> 1.0 + 0.15y,
+        wind_stress=(x, y) -> 1e-3cos(pi * y / 1.5) + 2e-4im * sin(x),
+        restoring_buoyancy=(x, y, z) -> 1e-2z + 2e-3x * exp(2z),
+        surface_buoyancy=(x, y) -> 2e-3y,
+        boundary=ellipse_boundary(ax, ay; points=48),
+    )
+    mktempdir() do directory
+        mesh_file = joinpath(directory, "pressure.msh")
+        @test_throws ArgumentError solve_pg(
+            problem; mesh_file, mesh_resolution=0.08, overwrite_mesh=true,
+            coastal_condition=:other,
+        )
+        natural = solve_pg(
+            problem; mesh_file, mesh_resolution=0.08, overwrite_mesh=true,
+        )
+        dirichlet = solve_pg(
+            problem; mesh_file, mesh_resolution=0.08,
+            coastal_condition=:dirichlet,
+        )
+        @test natural.pressure.coastal_condition === :no_normal_flow
+        @test dirichlet.pressure.coastal_condition === :dirichlet
+
+        function coastal_ratio(solution, radius)
+            normal, tangential = Float64[], Float64[]
+            for θ in range(0, 2π; length=257)[1:end-1]
+                x, y = radius * ax * cos(θ), radius * ay * sin(θ)
+                nx, ny = cos(θ) / ax, sin(θ) / ay
+                norm = hypot(nx, ny)
+                current = depth_integrated_current(solution, x, y)
+                push!(normal, (current.U * nx + current.V * ny) / norm)
+                push!(tangential, (-current.U * ny + current.V * nx) / norm)
+            end
+            return sqrt(sum(abs2, normal) / sum(abs2, tangential))
+        end
+        @test coastal_ratio(natural, 0.99) < 0.1
+        @test coastal_ratio(natural, 0.99) < 0.5coastal_ratio(dirichlet, 0.99)
+
+        # Mean-zero surface pressure on the natural-condition solution.
+        Ω = Triangulation(natural.pressure.model)
+        dΩ = Measure(Ω, 4)
+        @test abs(sum(∫(natural.pressure.psurf)dΩ)) < 1e-10
+
+        # The direct transport and the streamfunction transport agree better
+        # once the transport does not cross the coast.
+        xs, ys = range(-0.85, 0.85; length=13), range(-0.6, 0.6; length=11)
+        natural_diagnostics = compute_diagnostics(natural, xs, ys)
+        dirichlet_diagnostics = compute_diagnostics(dirichlet, xs, ys)
+        @test natural_diagnostics.timings.transport_projection_relative_l2 <
+              dirichlet_diagnostics.timings.transport_projection_relative_l2
     end
 end
