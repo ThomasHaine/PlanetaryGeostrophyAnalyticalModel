@@ -104,8 +104,8 @@ end
 
 Exact (closure-free) contour-integral theory for `G(q) = dp_b/dq`, derived
 from the model's actual Ekman bottom-stress closure `τ_b = S·∇p_b + T*`
-(with `T* = S·∇χ + T` from equations (62)--(64)) rather than a fitted linear
-or quadratic drag law. Stokes' theorem applied to the TDVB identity (46) on a
+(with `T* = S·∇χ + T` from equations (63)--(65)) rather than a fitted linear
+or quadratic drag law. Stokes' theorem applied to the TDVB identity (47) on a
 closed `q = f/H` contour gives
 `Ek·[G(q)·D(q) + F_T(q)] = -enclosed_forcing(q)`, where
 
@@ -218,7 +218,7 @@ function compute_nost_isachsen_diagnostics(
     )
 
     # Exact (closure-free) bottom-stress decomposition τ_b = S·∇p_b + T*,
-    # with T* = τ_b - S·∇p_b (equations (62)--(64)). `S` is evaluated
+    # with T* = τ_b - S·∇p_b (equations (63)--(65)). `S` is evaluated
     # analytically; `∇p_b` reuses the grid-based `pb_gradient` already
     # computed above, so no additional expensive quadratures are needed.
     S_field = fill(NaN + 0.0im, size(q))

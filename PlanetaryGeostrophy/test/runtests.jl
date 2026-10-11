@@ -1313,7 +1313,7 @@ end
 
 @testset "Fast single-integral path agrees with B23" begin
     # Sloping bottom, a seamount, beta, and depth-dependent horizontal
-    # buoyancy forcing exercise every term in (64), (68), and (B5).
+    # buoyancy forcing exercise every term in (65), (69), and (B5).
     problem = PGProblem(
         parameters=PGParameters(0.02, 0.2),
         depth=(x, y) -> 0.8 + 0.25x + 0.1y +
