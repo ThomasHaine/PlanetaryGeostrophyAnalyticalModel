@@ -156,10 +156,10 @@ files.timings
 By default (`method=:fast`), `solve_pg` evaluates every vertical integral in
 single-integral form:
 
-- the transport forcing 𝔅 from (68),
-- the bottom-stress forcing T from (64),
-- the velocity from (B5) with the closed-form G_𝔲 (59),
-- the buoyancy from (50).
+- the transport forcing 𝔅 from (69),
+- the bottom-stress forcing T from (65),
+- the velocity from (B5) with the closed-form G_𝔲 (60),
+- the buoyancy from (51).
 
 Each of these needs only the baroclinic pressure
 `Π(ξ) = ∫_ξ^0 b dz`. Π comes from the closed-form kernels (A6)–(A7) with one
@@ -199,7 +199,7 @@ M5 Max:
 ## Transport diagnostics
 
 Bottom stress, depth-integrated current, and its streamfunction are available
-as point queries or sampled maps. These use equations (62)--(69) and the
+as point queries or sampled maps. These use equations (63)--(70) and the
 streamfunction weak form (C2) in the model derivation:
 
 ```julia
@@ -220,7 +220,7 @@ plot_depth_integrated_current(diagnostics)
 plot_streamfunction(diagnostics)
 ```
 
-`depth_integrated_current` returns the direct analytical expression (66).
+`depth_integrated_current` returns the direct analytical expression (67).
 Because Gridap enforces its nondivergence only weakly, `compute_diagnostics`
 uses the discretely nondivergent current
 `(U, V) = (-∂yΨ, ∂xΨ)` for `transport_U` and `transport_V`, so plotted arrows
@@ -408,7 +408,7 @@ $f/H$ contours without bottom pressure.
 
 ### Transport-divergence vorticity
 
-The transport-divergence vorticity diagnostic evaluates equation (46):
+The transport-divergence vorticity diagnostic evaluates equation (47):
 
 ```math
 0
@@ -426,7 +426,7 @@ and the surface and bottom stresses.
 ### Surface-pressure equation
 
 The surface-pressure coefficient diagnostic evaluates the fields in equation
-(74):
+(75):
 
 ```math
 \nabla\mathbin{\cdot}(\mathfrak A_r\nabla p_s)
@@ -460,7 +460,7 @@ recovers $\mathfrak B$ from the previously sampled analytical transport rather
 than repeating its costly column quadrature. Its derivatives use centered
 diagnostic-grid differences, so unsupported edge and near-land cells are left
 blank. The reported residual is the sampled transport divergence, equivalent
-to the left-hand side minus the source in equation (74). Pointwise values are
+to the left-hand side minus the source in equation (75). Pointwise values are
 available from
 `surface_pressure_equation_coefficients(solution, x, y)`.
 

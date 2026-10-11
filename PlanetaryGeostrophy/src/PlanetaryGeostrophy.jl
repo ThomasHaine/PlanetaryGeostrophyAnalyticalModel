@@ -236,8 +236,8 @@ Generate or reuse a surface mesh, solve the Gridap surface-pressure equation,
 and construct callable Green-function solutions for buoyancy and horizontal
 velocity.
 
-`method=:fast` (the default) evaluates the transport forcing (68),
-bottom-stress forcing (64), velocity (B5), and buoyancy (50) as single
+`method=:fast` (the default) evaluates the transport forcing (69),
+bottom-stress forcing (65), velocity (B5), and buoyancy (51) as single
 vertical integrals with the fixed rule `quadrature`. Node and column work is
 threaded, so start Julia with `-t auto`. `forcing_assembly=:quadrature`
 evaluates `𝔅` at every finite-element quadrature point; `:nodal` interpolates
@@ -408,7 +408,7 @@ end
     bottom_stress(solution, x, y)
 
 Evaluate the non-dimensional bottom stress, including surface-pressure,
-buoyancy, and wind-stress contributions, using equations (62)--(64).
+buoyancy, and wind-stress contributions, using equations (63)--(65).
 """
 function bottom_stress(solution::PGSolution, x, y)
     H = require_water(solution, x, y)
@@ -1351,7 +1351,7 @@ end
 """
     transport_divergence_vorticity_terms(solution, x, y)
 
-Evaluate every signed term in the transport-divergence vorticity balance (46),
+Evaluate every signed term in the transport-divergence vorticity balance (47),
 
 `0 = J(p_b, H/f) + J(χ, 1/f) + Ek curl((τ + τ_b)/f)`.
 
@@ -1418,7 +1418,7 @@ end
     surface_pressure_equation_coefficients(solution, x, y)
 
 Evaluate the coefficients in the surface-pressure advection-diffusion equation
-(74),
+(75),
 
 `div(A_r grad(p_s)) + velocity ⋅ grad(p_s) = source`,
 
@@ -3037,7 +3037,7 @@ end
     compute_transport_divergence_vorticity_diagnostics(solution, diagnostics)
 
 Compute maps of all signed terms in the transport-divergence vorticity balance
-(46), together with its closure residual. Gradients of `H/f` and `1/f` use
+(47), together with its closure residual. Gradients of `H/f` and `1/f` use
 the specified analytical derivatives of `H` and `f`. Bottom-pressure,
 baroclinic-potential-energy, and bottom-stress derivatives use centered
 diagnostic-grid differences, with bottom stress sampled from its continuous
@@ -3169,13 +3169,13 @@ end
     compute_surface_pressure_equation_diagnostics(solution, diagnostics)
 
 Sample the velocity, diffusivity, and source fields in the surface-pressure
-advection-diffusion equation (74). The exact analytical transport coefficients
+advection-diffusion equation (75). The exact analytical transport coefficients
 `A` and `B` used by the pressure solve are recovered from the already sampled
 analytical transport and pressure gradient; their derivatives are then
 evaluated with centered diagnostic-grid differences. The total advection
 velocity is accompanied by its inviscid `A_i = H/f` and frictional
 components. The residual is the sampled transport divergence, equivalent to
-the left-hand side minus source in (74). Edge points and points adjoining land
+the left-hand side minus source in (75). Edge points and points adjoining land
 are omitted because a centered stencil is unavailable.
 """
 function compute_surface_pressure_equation_diagnostics(
@@ -3611,7 +3611,7 @@ end
 
 Plot the inviscid, frictional, and total advection-velocity magnitudes and
 vectors on a common scale, plus diffusivity and the separate baroclinic and
-surface-stress source terms in the surface-pressure equation (74).
+surface-stress source terms in the surface-pressure equation (75).
 """
 function plot_surface_pressure_equation_diagnostics(
     diagnostics::PGSurfacePressureEquationDiagnostics;
@@ -4140,7 +4140,7 @@ end
     )
 
 Plot every signed term and the closure residual in the transport-divergence
-vorticity balance (46). The four physical panels sum to zero, apart from the
+vorticity balance (47). The four physical panels sum to zero, apart from the
 reported residual. All physical terms and the residual share symmetric color
 limits.
 """

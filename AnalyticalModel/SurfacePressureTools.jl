@@ -90,7 +90,7 @@ end
 """
     bottom_stress_coefficient(p, H, f)
 
-Analytical coefficient `S` in equation (63), such that
+Analytical coefficient `S` in equation (64), such that
 `τ_b = S * (∂x + i∂y)p_s + T`.
 """
 function bottom_stress_coefficient(p, H, f)
@@ -101,7 +101,7 @@ end
 """
     bottom_stress_forcing(p, H, f, τ, B, bs, x, y; gradient_step)
 
-Analytical forcing `T` in equation (64), including the baroclinic and surface
+Analytical forcing `T` in equation (65), including the baroclinic and surface
 wind-stress contributions.
 """
 function bottom_stress_forcing(
@@ -125,7 +125,7 @@ end
 """
     transport_forcing(p, H, f, τ, B, bs, x, y; gradient_step)
 
-Analytical forcing `B` in equation (68), with a negative baroclinic
+Analytical forcing `B` in equation (69), with a negative baroclinic
 contribution and the unchanged surface wind-stress contribution.
 """
 function transport_forcing(
@@ -158,7 +158,7 @@ Solve the same coupled Gridap surface-pressure problem used in
 `(∂x + i ∂y) p_s` for use in `velocity_b23_from_gradps`.
 
 With `method=:fast` (the default), the transport forcing `𝔅` and the
-bottom-stress forcing `T` use the single-integral forms (68) and (64). `𝔅` is
+bottom-stress forcing `T` use the single-integral forms (69) and (65). `𝔅` is
 evaluated in parallel before assembly. With `forcing_assembly=:quadrature`
 (the default) it is evaluated at every quadrature point, which gives the same
 load vector as direct evaluation. With `:nodal` it is evaluated once per node
