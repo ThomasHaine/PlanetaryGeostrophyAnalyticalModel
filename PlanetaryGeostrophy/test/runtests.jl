@@ -1391,3 +1391,61 @@ end
               1e-6maximum(abs, b23_fields.w[wet])
     end
 end
+
+@testset "Cell-averaged vorticity budgets close" begin
+    # Sloping bottom with a seamount: centered differences of the
+    # finite-element bottom stress do not close here, but Stokes cell
+    # averages should, up to the finite-element mass-conservation error.
+    problem = PGProblem(
+        parameters=PGParameters(0.01, 0.2),
+        depth=(x, y) -> 0.8 + 0.25x + 0.1y +
+            0.3exp(-((x - 0.2)^2 + y^2) / 0.05),
+        coriolis=(x, y) -> 1.0 + 0.15y,
+        wind_stress=(x, y) -> 1e-3cos(pi * y / 1.5) + 2e-4im * sin(x),
+        restoring_buoyancy=(x, y, z) -> 1e-2z + 2e-3x * exp(2z),
+        surface_buoyancy=(x, y) -> 2e-3y,
+        boundary=ellipse_boundary(1.0, 0.75; points=32),
+    )
+    @test_throws ArgumentError CellBudgetQuadrature(edge_panels=0)
+
+    mktempdir() do directory
+        solution = solve_pg(
+            problem;
+            mesh_file=joinpath(directory, "pressure.msh"),
+            mesh_resolution=0.08,
+            overwrite_mesh=true,
+        )
+        diagnostics = compute_diagnostics(
+            solution, range(-0.8, 0.8; length=17), range(-0.6, 0.6; length=13),
+        )
+        @test_throws ArgumentError compute_barotropic_vorticity_diagnostics(
+            solution, diagnostics; method=:other,
+        )
+        budgets(method) = (
+            bv=compute_barotropic_vorticity_diagnostics(solution, diagnostics; method),
+            vorticity=compute_vorticity_diagnostics(solution, diagnostics; method),
+            gcvb=compute_geostrophic_contour_vorticity_diagnostics(
+                solution, diagnostics; method,
+            ),
+            tdvb=compute_transport_divergence_vorticity_diagnostics(
+                solution, diagnostics; method,
+            ),
+        )
+        cell = budgets(:cell_average)
+        centered = budgets(:centered)
+        for name in keys(cell)
+            budget = cell[name]
+            residual = budget.timings.relative_l2_residual
+            @test count(budget.wet) > 20
+            @test all(isnan, budget.residual[.!budget.wet])
+            @test all(isfinite, budget.residual[budget.wet])
+            @test residual < 0.05
+            @test residual < centered[name].timings.relative_l2_residual
+        end
+        @test cell.bv.wet == cell.gcvb.wet == cell.tdvb.wet
+        @test cell.vorticity.residual[cell.vorticity.wet] ≈
+              cell.bv.residual[cell.bv.wet]
+        @test cell.bv.transport_divergence[cell.bv.wet] ==
+              zeros(count(cell.bv.wet))
+    end
+end

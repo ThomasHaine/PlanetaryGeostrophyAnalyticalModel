@@ -368,6 +368,9 @@ f(\partial_x U+\partial_y V)+U f_x+V f_y
 where $J(p_b,H)=p_{b,x}H_y-p_{b,y}H_x$. It retains the transport-divergence
 term explicitly and evaluates it as exactly zero from the steady fixed-lid,
 no-normal-flow mass balance, rather than differentiating sampled transport.
+The residual is then the cell-averaged $-f\nabla\cdot\mathbf U$, which is the
+finite-element mass-conservation error (see
+[Mapped-derivative conventions](#mapped-derivative-conventions)).
 
 ### Depth-integrated vorticity
 
@@ -466,16 +469,49 @@ available from
 
 ### Mapped-derivative conventions
 
-For all four mapped vorticity diagnostics, bottom stress is first interpolated
-into a continuous vector finite-element space before its curl is evaluated. The
-prescribed surface-stress curl is evaluated from the optional exact
-`wind_stress_curl(x, y)` problem specification, or by automatic
-differentiation when it is omitted. The remaining mapped derivatives use
-centered diagnostic-grid differences.
-Cells at the grid edge or next to land are left blank because no centered
-stencil is available; they are also excluded from reported residual norms.
-This avoids interpreting one-sided corner differences or discontinuous
-pressure-element gradients as physical vorticity residuals.
+By default (`method=:cell_average`), the four mapped vorticity diagnostics
+report each term as its average over the diagnostic cell around each grid
+point. The cell edges are the midpoints between neighbouring grid points.
+Curl and Jacobian terms are converted to edge integrals with Stokes' theorem,
+
+```math
+\iint \hat{\mathbf z}\cdot\nabla\times\mathbf F\,dA=\oint \mathbf F\cdot\hat{\mathbf t}\,ds,
+\qquad
+\iint J(a,b)\,dA=\oint a\,\nabla b\cdot\hat{\mathbf t}\,ds .
+```
+
+The resulting edge integrals are:
+
+- bottom-pressure torque $\oint p_b\,dH$ (BV, DIV) and $\oint p_b\,d(H/f)$ (TDVB),
+- JEBAR $\oint \chi\,\nabla H\cdot\hat{\mathbf t}/H^2\,ds$,
+- baroclinic torque $\oint \chi\,d(1/f)$,
+- stress curls $\mathrm{Ek}\oint \boldsymbol\tau\cdot\hat{\mathbf t}\,ds$, divided by $H$ or $f$ where the balance requires.
+
+The advection terms $U f_x+V f_y$ and $J(f/H,\Psi)=-\mathbf U\cdot\nabla(f/H)$
+use area quadrature. The bottom stretching $f w_b$ uses its cell-centre value;
+it vanishes under the no-slip condition (18). No finite-element
+field is differentiated. This matters because the surface-pressure gradient,
+which enters the bottom stress and transport, is discontinuous across element
+edges. Centered differences of those fields do not converge as the grid is
+refined, and at small Ekman number they dominate the residual. In the
+double-basin example at $\mathrm{Ek}=0.002$ the centered residuals are 0.4--1.
+
+Because the depth-integrated momentum balance holds pointwise and the
+transport divergence is set to zero, every cell-averaged residual equals the
+cell-averaged finite-element mass-conservation error, up to quadrature error:
+
+- $-f\nabla\cdot\mathbf U$ for BV and DIV,
+- $(f/H)\nabla\cdot\mathbf U$ for GCVB,
+- $-\nabla\cdot\mathbf U$ for TDVB.
+
+Each interior edge is integrated once and shared by its two cells, and the
+work is threaded. A cell is used when its centered stencil is wet and every
+edge and area quadrature point lies in water. `CellBudgetQuadrature` sets the
+edge panels and points and the area rule. `method=:centered` restores the
+earlier maps. Those use centered diagnostic-grid differences of the sampled
+bottom pressure, $\chi$, and the bottom stress interpolated into a continuous
+finite-element space. The prescribed surface-stress curl there comes from
+`wind_stress_curl(x, y)` or automatic differentiation.
 
 ## Model and plotting conventions
 
