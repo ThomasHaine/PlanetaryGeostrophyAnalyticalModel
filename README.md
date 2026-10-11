@@ -608,9 +608,21 @@ inviscid beta-spiral mechanism of Schott and Stommel (1978). It integrates a
 synthetic subtropical PG water column, plots the absolute-velocity hodograph,
 verifies the isopycnal-slope constraint, recovers the unknown reference
 velocity by overdetermined least squares, and demonstrates the paper's
-wrong-latitude residual test. It also compares the inviscid spiral with an
-independently solved frictional PG basin at small Ekman number. See
+wrong-latitude residual test. See
 [Schott and Stommel (1978)](https://doi.org/10.1016/0011-7471(78)90001-7).
+
+The spiral comes from adiabatic density advection, which the robust-diagnostic
+PG model does not include, so the linear model cannot produce it. The
+notebook's PG section imposes the inviscid column's density field on a closed
+basin instead. The PG model reproduces the spiral's relative (thermal-wind)
+hodograph to about 1%, but its absolute reference velocity is set by the
+basin's depth-integrated balance rather than by density conservation.
+
+**Nonlinear target.** Once density advection is added (for example by
+iterating with `restoring_buoyancy` replaced by
+$B_{\mathrm{eff}} = B - (\varepsilon/\Gamma)\,\mathbf u\cdot\nabla b$), the spiral
+should emerge on its own. The notebook's inversion and wrong-latitude test are
+then a direct check on whether they recover the model's reference velocity.
 
 ### Validation and derivation notebooks
 
@@ -618,3 +630,8 @@ independently solved frictional PG basin at small Ekman number. See
   solution against Oceananigans.
 - `AnalyticalModel/Oceananigans_Variable_Basin_Validation.ipynb` covers
   variable-basin validation.
+- `TheoryNotes/PlotCoefficientRegimes.jl` plots the column coefficients
+  $\mathfrak A$ (68), $S$ (64), and the surface-stress weight in $T$ (65)
+  against $s = H/\delta_E$, with their deep and shallow asymptotes. It writes
+  `TheoryNotes/coefficient_regimes.pdf`. Run it from the repository root with
+  `julia --project=PlanetaryGeostrophy TheoryNotes/PlotCoefficientRegimes.jl`.
