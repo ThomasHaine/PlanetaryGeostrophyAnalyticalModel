@@ -148,10 +148,74 @@ function transport_forcing(
            (p.ν * q^2 * (1 + exp(2 * q * H)))
 end
 
+check_coastal_condition(condition) =
+    condition in (:no_normal_flow, :dirichlet) || throw(ArgumentError(
+        "coastal_condition must be :no_normal_flow or :dirichlet; got $condition",
+    ))
+
+"""
+    pressure_spaces(model, order, coastal_condition)
+
+Finite-element spaces for the surface-pressure problem.
+
+`:no_normal_flow` imposes no essential condition on `p_s`. The weak form's
+natural boundary condition is then `U·n = 0`: integrating
+`∫ v Re{(∂x - i∂y)𝔘} dA` by parts leaves `∮ v U·n ds`. This is needed where
+the coast is a vertical wall (`H > 0`). `p_s` is fixed up to a constant, which
+a Lagrange multiplier sets so that `∫ p_s dA = 0`.
+
+`:dirichlet` sets `p_s = 0` on the coast, as in earlier versions. That
+removes only the geostrophic part of the normal transport. The frictional and
+baroclinic parts, `𝔄_r ∂_n p_s + 𝔅·n`, can still cross the coast unless
+`H → 0` there.
+"""
+function pressure_spaces(model, order, coastal_condition)
+    check_coastal_condition(coastal_condition)
+    reffe = ReferenceFE(lagrangian, Float64, order)
+    if coastal_condition === :dirichlet
+        V = TestFESpace(model, reffe; conformity=:H1, dirichlet_tags="boundary")
+        U = TrialFESpace(V)
+        return (; V, U, test=V, trial=U)
+    end
+    V = TestFESpace(model, reffe; conformity=:H1)
+    U = TrialFESpace(V)
+    Λ = ConstantFESpace(model)
+    return (;
+        V, U,
+        test=MultiFieldFESpace([V, Λ]),
+        trial=MultiFieldFESpace([TrialFESpace(V), TrialFESpace(Λ)]),
+    )
+end
+
+"""
+    solve_pressure_problem(a, l, spaces, dΩ, coastal_condition)
+
+Assemble and solve `a(u, v) = l(v)` on `spaces`, adding the mean-zero
+constraint for `:no_normal_flow`. Returns the operator assembly and the
+single-field solution, each with timing metrics.
+"""
+function solve_pressure_problem(a, l, spaces, dΩ, coastal_condition, label)
+    operator, assembly_timing = pressure_timed_stage("assembling $label operator") do
+        if coastal_condition === :dirichlet
+            AffineFEOperator(a, l, spaces.trial, spaces.test)
+        else
+            constrained_a((u, λ), (v, μ)) = a(u, v) + ∫(λ * v)dΩ + ∫(μ * u)dΩ
+            constrained_l((v, μ)) = l(v)
+            AffineFEOperator(constrained_a, constrained_l, spaces.trial, spaces.test)
+        end
+    end
+    solution, solve_timing = pressure_timed_stage("solving $label linear system") do
+        result = Gridap.solve(operator)
+        coastal_condition === :dirichlet ? result : first(result)
+    end
+    return solution, assembly_timing, solve_timing
+end
+
 """
     solve_surface_pressure(mesh_file, kernels, p, H, f, f_x, f_y, τ, B, bs, H_x, H_y;
                            order=2, method=:fast, quadrature=ColumnQuadrature(),
-                           gradient_step=1e-5, forcing_assembly=:quadrature)
+                           gradient_step=1e-5, forcing_assembly=:quadrature,
+                           coastal_condition=:no_normal_flow)
 
 Solve the same coupled Gridap surface-pressure problem used in
 `PG_Solution_v0.1.ipynb`. The returned `gradps(x, y)` evaluates
@@ -166,6 +230,11 @@ and assembled as an order-`order` Lagrangian interpolant, with about a third
 of the evaluations and an O(h^(order+1)) interpolation error.
 `method=:b23` restores the original B23 quadrature, evaluated serially at every
 quadrature point.
+
+`coastal_condition=:no_normal_flow` (the default) enforces zero normal
+depth-integrated transport through the coast and fixes the mean of `p_s` to
+zero. `:dirichlet` restores the earlier `p_s = 0` coastal condition (see
+`pressure_spaces`).
 """
 function solve_surface_pressure(
     mesh_file, kernels, p, Hfun, ffun, f_x, f_y, τ, B, bs, H_x, H_y;
@@ -174,23 +243,22 @@ function solve_surface_pressure(
     quadrature=ColumnQuadrature(),
     gradient_step=1e-5,
     forcing_assembly=:quadrature,
+    coastal_condition=:no_normal_flow,
 )
+    check_coastal_condition(coastal_condition)
     method in (:fast, :b23) ||
         throw(ArgumentError("method must be :fast or :b23; got $method"))
     solve_started = time()
-    @info "Surface-pressure solve started" mesh_file=string(mesh_file) finite_element_order=order method threads=Threads.nthreads()
+    @info "Surface-pressure solve started" mesh_file=string(mesh_file) finite_element_order=order method coastal_condition threads=Threads.nthreads()
     model, mesh_timing = pressure_timed_stage("loading Gridap surface mesh") do
         GmshDiscreteModel(mesh_file)
     end
     spaces, space_timing = pressure_timed_stage("constructing pressure finite-element spaces") do
         Ω = Triangulation(model)
         dΩ = Measure(Ω, 2 * order)
-        reffe = ReferenceFE(lagrangian, Float64, order)
-        V = TestFESpace(model, reffe; conformity=:H1, dirichlet_tags="boundary")
-        U = TrialFESpace(V)
-        (; Ω, dΩ, V, U)
+        (; Ω, dΩ, pressure_spaces(model, order, coastal_condition)...)
     end
-    Ω, dΩ, V, U = spaces.Ω, spaces.dΩ, spaces.V, spaces.U
+    Ω, dΩ = spaces.Ω, spaces.dΩ
 
     function A_fn(x)
         H = Hfun(x[1], x[2])
@@ -284,12 +352,9 @@ function solve_surface_pressure(
     a(u, v) = ∫(real((∇(v) ⋅ VectorValue(1.0, -im)) *
                      (A_fn * (∇(u) ⋅ VectorValue(1.0, im)))) )dΩ
     l(v) = ∫(real((∇(v) ⋅ VectorValue(-1.0, im)) * forcing.load))dΩ
-    operator, assembly_timing = pressure_timed_stage("assembling surface-pressure operator") do
-        AffineFEOperator(a, l, U, V)
-    end
-    psurf, linear_solve_timing = pressure_timed_stage("solving surface-pressure linear system") do
-        Gridap.solve(operator)
-    end
+    psurf, assembly_timing, linear_solve_timing = solve_pressure_problem(
+        a, l, spaces, dΩ, coastal_condition, "surface-pressure",
+    )
     ∇psurf = ∇(psurf)
     probe = interior_probe_point(model)
     psurf_at = PooledPointEvaluator(psurf, probe)
@@ -312,7 +377,7 @@ function solve_surface_pressure(
     return (;
         model, psurf, psurf_at, gradps, A_fn, B_fn, B_nodal,
         baroclinic_B_fn, stress_B_fn, diagnostic_B_fn, T_fn, order, method,
-        quadrature, probe, timings,
+        quadrature, coastal_condition, probe, timings,
     )
 end
 
@@ -355,17 +420,11 @@ function solve_surface_pressure_adjoint(
     ) do
         Ω = Triangulation(pressure.model)
         dΩ = Measure(Ω, 2 * order)
-        reffe = ReferenceFE(lagrangian, Float64, order)
-        V = TestFESpace(
-            pressure.model,
-            reffe;
-            conformity=:H1,
-            dirichlet_tags="boundary",
-        )
-        U = TrialFESpace(V)
-        (; Ω, dΩ, V, U)
+        # The adjoint uses the forward problem's coastal condition. The
+        # mean-zero constraint block is symmetric, so it transposes to itself.
+        (; Ω, dΩ, pressure_spaces(pressure.model, order, pressure.coastal_condition)...)
     end
-    Ω, dΩ, V, U = spaces.Ω, spaces.dΩ, spaces.V, spaces.U
+    Ω, dΩ = spaces.Ω, spaces.dΩ
     spatial_weight = if isnothing(target_weight)
         unnormalized_target(x) = exp(
             -(
@@ -472,16 +531,9 @@ function solve_surface_pressure_adjoint(
             imag(pressure.A_fn * (∇(v) ⋅ VectorValue(1.0, im)))
         )
     )dΩ
-    operator, assembly_timing = pressure_timed_stage(
-        "assembling adjoint surface-pressure operator",
-    ) do
-        AffineFEOperator(a, l, U, V)
-    end
-    finite_element, linear_solve_timing = pressure_timed_stage(
-        "solving adjoint surface-pressure linear system",
-    ) do
-        Gridap.solve(operator)
-    end
+    finite_element, assembly_timing, linear_solve_timing = solve_pressure_problem(
+        a, l, spaces, dΩ, pressure.coastal_condition, "adjoint surface-pressure",
+    )
     finite_element_gradient = PooledPointEvaluator(
         ∇(finite_element), pressure.probe,
     )
@@ -527,12 +579,14 @@ function solve_transport_streamfunction(pressure; order=2)
             pressure.model, reffe; conformity=:H1, dirichlet_tags="boundary",
         )
         U = TrialFESpace(V)
+        # Coefficient fields are interpolated without a coastal Dirichlet
+        # condition. Interpolating them into the Ψ space would zero ∇p_s, 𝔄,
+        # and 𝔅 on coastal nodes, where the transport need not vanish when
+        # H > 0.
+        V_free = TestFESpace(pressure.model, reffe; conformity=:H1)
         vector_reffe = ReferenceFE(lagrangian, VectorValue{2,Float64}, order)
-        V_vector = TestFESpace(
-            pressure.model, vector_reffe;
-            conformity=:H1, dirichlet_tags="boundary",
-        )
-        (; Ω, dΩ, V, U, V_vector)
+        V_vector = TestFESpace(pressure.model, vector_reffe; conformity=:H1)
+        (; Ω, dΩ, V, U, V_free, V_vector)
     end
     Ω, dΩ, V, U = spaces.Ω, spaces.dΩ, spaces.V, spaces.U
 
@@ -540,8 +594,8 @@ function solve_transport_streamfunction(pressure; order=2)
         "projecting depth-integrated current",
     ) do
         gradp = interpolate(∇(pressure.psurf), spaces.V_vector)
-        real_A = interpolate(x -> real(pressure.A_fn(x)), U)
-        imag_A = interpolate(x -> imag(pressure.A_fn(x)), U)
+        real_A = interpolate(x -> real(pressure.A_fn(x)), spaces.V_free)
+        imag_A = interpolate(x -> imag(pressure.A_fn(x)), spaces.V_free)
         # On the fast path, B_nodal reads the node table built for the
         # pressure solve, so this projection needs no new forcing evaluations.
         B_cache = Dict{Tuple{Float64,Float64},ComplexF64}()
@@ -550,8 +604,8 @@ function solve_transport_streamfunction(pressure; order=2)
             B_cache,
             (Float64(x[1]), Float64(x[2])),
         )
-        real_B = interpolate(x -> real(B_at(x)), U)
-        imag_B = interpolate(x -> imag(B_at(x)), U)
+        real_B = interpolate(x -> real(B_at(x)), spaces.V_free)
+        imag_B = interpolate(x -> imag(B_at(x)), spaces.V_free)
         (real_A + im * imag_A) *
         (gradp ⋅ VectorValue(1.0, im)) +
         (real_B + im * imag_B)

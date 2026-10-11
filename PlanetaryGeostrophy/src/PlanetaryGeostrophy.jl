@@ -231,7 +231,8 @@ internal_parameters(p::PGParameters) =
 """
     solve_pg(problem; mesh_file=tempname() * ".msh", mesh_resolution=0.1,
              pressure_order=2, overwrite_mesh=false, method=:fast,
-             quadrature=ColumnQuadrature(), forcing_assembly=:quadrature)
+             quadrature=ColumnQuadrature(), forcing_assembly=:quadrature,
+             coastal_condition=:no_normal_flow)
 
 Generate or reuse a surface mesh, solve the Gridap surface-pressure equation,
 and construct callable Green-function solutions for buoyancy and horizontal
@@ -244,6 +245,11 @@ threaded, so start Julia with `-t auto`. `forcing_assembly=:quadrature`
 evaluates `𝔅` at every finite-element quadrature point; `:nodal` interpolates
 it from the nodes (see `solve_surface_pressure`). `method=:b23` keeps the
 original B23 symbolic-kernel quadratures for comparison.
+
+`coastal_condition=:no_normal_flow` (the default) enforces zero normal
+depth-integrated transport through the coast, which matters where the coast
+is a vertical wall (`H > 0`), and sets the mean of `p_s` to zero.
+`:dirichlet` restores the earlier `p_s = 0` coastal condition.
 """
 function solve_pg(
     problem::PGProblem;
@@ -254,6 +260,7 @@ function solve_pg(
     method=:fast,
     quadrature=ColumnQuadrature(),
     forcing_assembly=:quadrature,
+    coastal_condition=:no_normal_flow,
 )
     mesh_resolution > 0 || throw(ArgumentError("mesh_resolution must be positive"))
     pressure_order > 0 || throw(ArgumentError("pressure_order must be positive"))
@@ -282,6 +289,7 @@ function solve_pg(
         quadrature,
         gradient_step=problem.derivative_step,
         forcing_assembly,
+        coastal_condition,
     )
     b = if method === :b23
         (x, y, z) -> buoyancy_from_forcing(

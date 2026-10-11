@@ -17,6 +17,7 @@ Questions/comments welcome.
   - [Three-dimensional Lagrangian trajectories](#three-dimensional-lagrangian-trajectories)
   - [Performance metrics](#performance-metrics)
   - [Solution method and threading](#solution-method-and-threading)
+  - [Coastal boundary condition](#coastal-boundary-condition)
 - [Transport diagnostics](#transport-diagnostics)
 - [Forcing sensitivity](#forcing-sensitivity)
 - [Dynamical-balance diagnostics](#dynamical-balance-diagnostics)
@@ -195,6 +196,34 @@ M5 Max:
 | `sample_solution` | 207 s | 1.05 s |
 | `compute_diagnostics` | 780 s | 2.8 s |
 | DIM and vorticity budgets | ~70 s | 2.1 s |
+
+### Coastal boundary condition
+
+By default (`coastal_condition=:no_normal_flow`), the surface-pressure solve
+imposes zero depth-integrated transport through the coast, $\mathbf U\cdot\hat{\mathbf n}=0$.
+This is the natural boundary condition of the weak form. In terms of $p_s$ it
+is the oblique condition
+
+```math
+\mathfrak A_r\,\partial_n p_s-\mathfrak A_i\,\partial_s p_s+\mathfrak B\cdot\hat{\mathbf n}=0 ,
+```
+
+so no essential condition is applied. The free constant in $p_s$ is fixed with
+a Lagrange multiplier so that $\iint p_s\,dA=0$; the adjoint solve uses the
+same constraint.
+
+`coastal_condition=:dirichlet` restores the earlier $p_s=0$ coastal condition.
+That removes only the geostrophic part of the normal transport. Frictional and
+buoyancy-forced transport can still cross a vertical coastal wall ($H>0$),
+although the two conditions agree where $H\to0$ at the coast.
+
+In the double-basin example (coast depth 0.26, Ek = 0.002, mesh 0.04), the
+rms normal/tangential transport at 0.995 of the coastal radius is 0.37 with
+`:dirichlet` and 0.02 with `:no_normal_flow`. The mismatch between the direct
+transport and the streamfunction transport falls from 5.3% to 0.16% (0.05% on
+mesh 0.02). The streamfunction projection now interpolates $\nabla p_s$,
+$\mathfrak A$ and $\mathfrak B$ without a coastal Dirichlet condition; only
+$\Psi$ itself is zero on the coast.
 
 ## Transport diagnostics
 
