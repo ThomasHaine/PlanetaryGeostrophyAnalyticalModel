@@ -1310,3 +1310,84 @@ end
         @test isfile(adjoint_sensitivity_path)
     end
 end
+
+@testset "Fast single-integral path agrees with B23" begin
+    # Sloping bottom, a seamount, beta, and depth-dependent horizontal
+    # buoyancy forcing exercise every term in (64), (68), and (B5).
+    problem = PGProblem(
+        parameters=PGParameters(0.02, 0.2),
+        depth=(x, y) -> 0.8 + 0.25x + 0.1y +
+            0.15exp(-((x - 0.2)^2 + y^2) / 0.1),
+        coriolis=(x, y) -> 1.0 + 0.15y,
+        wind_stress=(x, y) -> 1e-3cos(pi * y / 1.5) + 2e-4im * sin(x),
+        restoring_buoyancy=(x, y, z) -> 1e-2z + 2e-3x * exp(2z),
+        surface_buoyancy=(x, y) -> 2e-3y,
+        boundary=ellipse_boundary(1.0, 0.75; points=32),
+    )
+    @test_throws ArgumentError ColumnQuadrature(points=1)
+
+    mktempdir() do directory
+        mesh_file = joinpath(directory, "pressure.msh")
+        fast = solve_pg(
+            problem; mesh_file, mesh_resolution=0.2, overwrite_mesh=true,
+        )
+        b23 = solve_pg(problem; mesh_file, mesh_resolution=0.2, method=:b23)
+        nodal = solve_pg(
+            problem; mesh_file, mesh_resolution=0.2, forcing_assembly=:nodal,
+        )
+        @test fast.pressure.method === :fast
+        @test b23.pressure.method === :b23
+        @test_throws ArgumentError solve_pg(
+            problem; mesh_file, mesh_resolution=0.2, method=:other,
+        )
+
+        relative(a, b) = abs(a - b) / abs(b)
+        for (x, y) in ((0.3, 0.2), (-0.5, -0.1), (0.0, 0.4))
+            @test relative(fast.pressure.B_fn((x, y)), b23.pressure.B_fn((x, y))) < 1e-7
+            @test relative(fast.pressure.T_fn((x, y)), b23.pressure.T_fn((x, y))) < 1e-7
+            @test relative(
+                surface_pressure(fast, x, y), surface_pressure(b23, x, y),
+            ) < 1e-7
+            fast_current = depth_integrated_current(fast, x, y)
+            b23_current = depth_integrated_current(b23, x, y)
+            @test relative(
+                complex(fast_current.U, fast_current.V),
+                complex(b23_current.U, b23_current.V),
+            ) < 1e-6
+            # Nodal assembly adds an O(h^3) interpolation error in 𝔅; on this
+            # coarse h=0.2 mesh it is about 1-2%, so this is a sanity bound.
+            nodal_current = depth_integrated_current(nodal, x, y)
+            @test relative(
+                complex(nodal_current.U, nodal_current.V),
+                complex(b23_current.U, b23_current.V),
+            ) < 5e-2
+
+            H = problem.depth(x, y)
+            levels = range(-H, 0.0; length=9)
+            velocity(solution, z) =
+                complex(values(horizontal_velocity(solution, x, y, z))...)
+            scale = maximum(abs(velocity(b23, z)) for z in levels)
+            @test maximum(
+                abs(velocity(fast, z) - velocity(b23, z)) for z in levels
+            ) < 1e-6scale
+            @test maximum(
+                abs(buoyancy(fast, x, y, z) - buoyancy(b23, x, y, z))
+                for z in levels
+            ) < 1e-10
+            @test bottom_pressure(fast, x, y) ≈ bottom_pressure(b23, x, y) rtol=1e-8
+            @test baroclinic_potential_energy(fast, x, y) ≈
+                  baroclinic_potential_energy(b23, x, y) rtol=1e-8
+        end
+
+        xs, ys = range(-0.8, 0.8; length=9), range(-0.6, 0.6; length=7)
+        zs = range(-1.2, 0.0; length=7)
+        fast_fields = sample_solution(fast, xs, ys, zs)
+        b23_fields = sample_solution(b23, xs, ys, zs)
+        @test fast_fields.wet == b23_fields.wet
+        wet = fast_fields.wet
+        @test maximum(abs, (fast_fields.u .- b23_fields.u)[wet]) <
+              1e-6maximum(abs, b23_fields.u[wet])
+        @test maximum(abs, (fast_fields.w .- b23_fields.w)[wet]) <
+              1e-6maximum(abs, b23_fields.w[wet])
+    end
+end

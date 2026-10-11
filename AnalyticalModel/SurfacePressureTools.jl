@@ -149,18 +149,36 @@ function transport_forcing(
 end
 
 """
-    solve_surface_pressure(mesh_file, kernels, p, H, f, f_x, f_y, τ, B, bs, H_x, H_y)
+    solve_surface_pressure(mesh_file, kernels, p, H, f, f_x, f_y, τ, B, bs, H_x, H_y;
+                           order=2, method=:fast, quadrature=ColumnQuadrature(),
+                           gradient_step=1e-5, forcing_assembly=:quadrature)
 
 Solve the same coupled Gridap surface-pressure problem used in
 `PG_Solution_v0.1.ipynb`. The returned `gradps(x, y)` evaluates
 `(∂x + i ∂y) p_s` for use in `velocity_b23_from_gradps`.
+
+With `method=:fast` (the default), the transport forcing `𝔅` and the
+bottom-stress forcing `T` use the single-integral forms (68) and (64). `𝔅` is
+evaluated in parallel before assembly. With `forcing_assembly=:quadrature`
+(the default) it is evaluated at every quadrature point, which gives the same
+load vector as direct evaluation. With `:nodal` it is evaluated once per node
+and assembled as an order-`order` Lagrangian interpolant, with about a third
+of the evaluations and an O(h^(order+1)) interpolation error.
+`method=:b23` restores the original B23 quadrature, evaluated serially at every
+quadrature point.
 """
 function solve_surface_pressure(
     mesh_file, kernels, p, Hfun, ffun, f_x, f_y, τ, B, bs, H_x, H_y;
     order=2,
+    method=:fast,
+    quadrature=ColumnQuadrature(),
+    gradient_step=1e-5,
+    forcing_assembly=:quadrature,
 )
+    method in (:fast, :b23) ||
+        throw(ArgumentError("method must be :fast or :b23; got $method"))
     solve_started = time()
-    @info "Surface-pressure solve started" mesh_file=string(mesh_file) finite_element_order=order
+    @info "Surface-pressure solve started" mesh_file=string(mesh_file) finite_element_order=order method threads=Threads.nthreads()
     model, mesh_timing = pressure_timed_stage("loading Gridap surface mesh") do
         GmshDiscreteModel(mesh_file)
     end
@@ -181,8 +199,12 @@ function solve_surface_pressure(
     function baroclinic_B_fn(x)
         H = Hfun(x[1], x[2])
         H > 0 || return 0.0 + 0.0im
-        return buoyancy_transport_b23(
+        method === :b23 && return buoyancy_transport_b23(
             kernels, p, Hfun, ffun, f_x, f_y, B, bs, H_x, H_y, x[1], x[2],
+        )
+        return fast_baroclinic_transport(
+            kernels, p, Hfun, ffun, B, bs, x[1], x[2], quadrature;
+            step=gradient_step,
         )
     end
     function stress_B_fn(x)
@@ -196,21 +218,72 @@ function solve_surface_pressure(
     function diagnostic_B_fn(x)
         H = Hfun(x[1], x[2])
         H > 0 || return 0.0 + 0.0im
-        return transport_forcing(
+        method === :b23 && return transport_forcing(
             p, Hfun, ffun, τ, B, bs, x[1], x[2],
         )
+        return B_fn(x)
     end
     function T_fn(x)
         H = Hfun(x[1], x[2])
         H > 0 || return 0.0 + 0.0im
-        return bottom_stress_forcing(
+        method === :b23 && return bottom_stress_forcing(
             p, Hfun, ffun, τ, B, bs, x[1], x[2],
+        )
+        return fast_bottom_stress_forcing(
+            kernels, p, Hfun, ffun, τ, B, bs, x[1], x[2], quadrature;
+            step=gradient_step,
         )
     end
 
+    # On the fast path, 𝔅 is evaluated in parallel before assembly, either at
+    # every quadrature point (exact, held in a CellState) or once per
+    # finite-element node (an order-`order` interpolant). The node table is
+    # reused by the streamfunction projection and is built on first use there.
+    forcing_assembly in (:quadrature, :nodal) || throw(ArgumentError(
+        "forcing_assembly must be :quadrature or :nodal; got $forcing_assembly",
+    ))
+    nodal_table = Ref{Any}(nothing)
+    function B_nodal(x)
+        method === :b23 && return B_fn(x)
+        if isnothing(nodal_table[])
+            nodal_table[] = first(nodal_lookup(x -> ComplexF64(B_fn(x)), model, order))
+        end
+        return nodal_table[](x)
+    end
+    forcing, forcing_timing = pressure_timed_stage(
+        method === :b23 ? "deferring transport forcing to quadrature points" :
+        "evaluating transport forcing at $(forcing_assembly) points",
+    ) do
+        method === :b23 && return (; load=B_fn, points=0)
+        if forcing_assembly === :nodal
+            B_nodal((0.0, 0.0))
+            vector_space = TestFESpace(
+                model, ReferenceFE(lagrangian, VectorValue{2,Float64}, order);
+                conformity=:H1,
+            )
+            field = interpolate_everywhere(vector_space) do x
+                value = B_nodal(x)
+                VectorValue(real(value), imag(value))
+            end
+            load = field ⋅ VectorValue(1.0, im)
+            return (; load, points=num_free_dofs(vector_space) ÷ 2)
+        end
+        physical_points = collect(get_cell_points(dΩ).cell_phys_point)
+        state = CellState(0.0 + 0.0im, dΩ)
+        Threads.@threads for cell in eachindex(physical_points)
+            points, values = physical_points[cell], state.values[cell]
+            for k in eachindex(points)
+                values[k] = B_fn(points[k])
+            end
+        end
+        (; load=state, points=sum(length, physical_points))
+    end
+    forcing_points = forcing.points
+    @info "Transport forcing representation" method forcing_assembly forcing_points
+
     a(u, v) = ∫(real((∇(v) ⋅ VectorValue(1.0, -im)) *
                      (A_fn * (∇(u) ⋅ VectorValue(1.0, im)))) )dΩ
-    l(v) = ∫(real((∇(v) ⋅ VectorValue(-1.0, im)) * B_fn))dΩ
+    l(v) = ∫(real((∇(v) ⋅ VectorValue(-1.0, im)) * forcing.load))dΩ
     operator, assembly_timing = pressure_timed_stage("assembling surface-pressure operator") do
         AffineFEOperator(a, l, U, V)
     end
@@ -218,22 +291,28 @@ function solve_surface_pressure(
         Gridap.solve(operator)
     end
     ∇psurf = ∇(psurf)
+    probe = interior_probe_point(model)
+    psurf_at = PooledPointEvaluator(psurf, probe)
+    ∇psurf_at = PooledPointEvaluator(∇psurf, probe)
     gradps(x, y) = begin
-        gradient = evaluate(∇psurf, Point(x, y))
+        gradient = ∇psurf_at(Point(x, y))
         gradient[1] + im * gradient[2]
     end
     total_seconds = time() - solve_started
     timings = (
         mesh_load=mesh_timing,
         finite_element_setup=space_timing,
+        forcing_evaluation=forcing_timing,
         operator_assembly=assembly_timing,
         linear_solve=linear_solve_timing,
         total_seconds,
+        forcing_points,
     )
     @info "Surface-pressure solve completed" seconds=round(total_seconds; digits=3)
     return (;
-        model, psurf, gradps, A_fn, B_fn, baroclinic_B_fn, stress_B_fn,
-        diagnostic_B_fn, T_fn, order, timings,
+        model, psurf, psurf_at, gradps, A_fn, B_fn, B_nodal,
+        baroclinic_B_fn, stress_B_fn, diagnostic_B_fn, T_fn, order, method,
+        quadrature, probe, timings,
     )
 end
 
@@ -403,8 +482,10 @@ function solve_surface_pressure_adjoint(
     ) do
         Gridap.solve(operator)
     end
-    finite_element_gradient = ∇(finite_element)
-    gradient = (x, y) -> evaluate(finite_element_gradient, Point(x, y))
+    finite_element_gradient = PooledPointEvaluator(
+        ∇(finite_element), pressure.probe,
+    )
+    gradient = (x, y) -> finite_element_gradient(Point(x, y))
     weight = (x, y) -> spatial_weight(Point(x, y))
     timings = (
         finite_element_setup=space_timing,
@@ -461,9 +542,11 @@ function solve_transport_streamfunction(pressure; order=2)
         gradp = interpolate(∇(pressure.psurf), spaces.V_vector)
         real_A = interpolate(x -> real(pressure.A_fn(x)), U)
         imag_A = interpolate(x -> imag(pressure.A_fn(x)), U)
+        # On the fast path, B_nodal reads the node table built for the
+        # pressure solve, so this projection needs no new forcing evaluations.
         B_cache = Dict{Tuple{Float64,Float64},ComplexF64}()
         B_at(x) = get!(
-            () -> ComplexF64(pressure.B_fn(x)),
+            () -> ComplexF64(pressure.B_nodal(x)),
             B_cache,
             (Float64(x[1]), Float64(x[2])),
         )
