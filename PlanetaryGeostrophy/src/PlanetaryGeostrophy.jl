@@ -27,7 +27,8 @@ using .VelocityFieldPrototype
 include(joinpath(@__DIR__, "FastColumns.jl"))
 include(joinpath(@__DIR__, "..", "..", "AnalyticalModel", "SurfacePressureTools.jl"))
 
-export ColumnQuadrature,
+export CellBudgetQuadrature,
+       ColumnQuadrature,
        PGParameters,
        PGProblem,
        PGSolution,
@@ -2652,7 +2653,9 @@ function compute_dim_diagnostics(solution::PGSolution, x, y; kwargs...)
 end
 
 """
-    compute_barotropic_vorticity_diagnostics(solution, diagnostics)
+    centered_barotropic_vorticity_diagnostics(solution, diagnostics)
+
+Centered-difference form of `compute_barotropic_vorticity_diagnostics(...; method=:centered)`.
 
 Compute maps of all signed terms in the barotropic vorticity equation (36),
 together with its closure residual. Bottom stress is sampled from its
@@ -2662,7 +2665,7 @@ differences. Edge points and points adjoining land are omitted because a
 centered stencil is unavailable. The transport-divergence term is set to its
 exact fixed-lid value of zero.
 """
-function compute_barotropic_vorticity_diagnostics(
+function centered_barotropic_vorticity_diagnostics(
     solution::PGSolution,
     diagnostics::PGDiagnostics,
 )
@@ -2764,15 +2767,20 @@ function compute_barotropic_vorticity_diagnostics(
     solution::PGSolution,
     x,
     y;
+    method=:cell_average,
+    quadrature=DEFAULT_CELL_BUDGET_QUADRATURE,
     kwargs...,
 )
     return compute_barotropic_vorticity_diagnostics(
-        solution, compute_diagnostics(solution, x, y; kwargs...),
+        solution, compute_diagnostics(solution, x, y; kwargs...);
+        method, quadrature,
     )
 end
 
 """
-    compute_vorticity_diagnostics(solution, diagnostics)
+    centered_vorticity_diagnostics(solution, diagnostics)
+
+Centered-difference form of `compute_vorticity_diagnostics(...; method=:centered)`.
 
 Compute maps of all signed terms in the depth-integrated vorticity equation
 (41), together with its closure residual. Bottom stress is sampled from its
@@ -2783,7 +2791,7 @@ fixed-`z` bottom vorticity flux required by (41). Surface-stress curl is
 differentiated analytically. Edge points and points adjoining land are omitted
 because a centered stencil is unavailable.
 """
-function compute_vorticity_diagnostics(
+function centered_vorticity_diagnostics(
     solution::PGSolution,
     diagnostics::PGDiagnostics,
 )
@@ -2905,14 +2913,24 @@ function compute_vorticity_diagnostics(
     )
 end
 
-function compute_vorticity_diagnostics(solution::PGSolution, x, y; kwargs...)
+function compute_vorticity_diagnostics(
+    solution::PGSolution,
+    x,
+    y;
+    method=:cell_average,
+    quadrature=DEFAULT_CELL_BUDGET_QUADRATURE,
+    kwargs...,
+)
     return compute_vorticity_diagnostics(
-        solution, compute_diagnostics(solution, x, y; kwargs...),
+        solution, compute_diagnostics(solution, x, y; kwargs...);
+        method, quadrature,
     )
 end
 
 """
-    compute_geostrophic_contour_vorticity_diagnostics(solution, diagnostics)
+    centered_geostrophic_contour_vorticity_diagnostics(solution, diagnostics)
+
+Centered-difference form of `compute_geostrophic_contour_vorticity_diagnostics(...; method=:centered)`.
 
 Compute maps of all signed terms in the geostrophic-contour vorticity balance
 (43), together with its closure residual. Gradients of `f/H` and `1/H` use
@@ -2925,7 +2943,7 @@ unavailable. As in the mapped BV and DIV diagnostics, the balance uses the
 direct analytical transport; in the continuum this is equivalently
 `(U,V)=(-Ψ_y,Ψ_x)`.
 """
-function compute_geostrophic_contour_vorticity_diagnostics(
+function centered_geostrophic_contour_vorticity_diagnostics(
     solution::PGSolution,
     diagnostics::PGDiagnostics,
 )
@@ -3026,15 +3044,20 @@ function compute_geostrophic_contour_vorticity_diagnostics(
     solution::PGSolution,
     x,
     y;
+    method=:cell_average,
+    quadrature=DEFAULT_CELL_BUDGET_QUADRATURE,
     kwargs...,
 )
     return compute_geostrophic_contour_vorticity_diagnostics(
-        solution, compute_diagnostics(solution, x, y; kwargs...),
+        solution, compute_diagnostics(solution, x, y; kwargs...);
+        method, quadrature,
     )
 end
 
 """
-    compute_transport_divergence_vorticity_diagnostics(solution, diagnostics)
+    centered_transport_divergence_vorticity_diagnostics(solution, diagnostics)
+
+Centered-difference form of `compute_transport_divergence_vorticity_diagnostics(...; method=:centered)`.
 
 Compute maps of all signed terms in the transport-divergence vorticity balance
 (47), together with its closure residual. Gradients of `H/f` and `1/f` use
@@ -3045,7 +3068,7 @@ finite-element interpolant. The curl of the surface stress divided by `f`,
 `curl(τ/f)`, is evaluated analytically. Edge points and points adjoining land
 are omitted because a centered stencil is unavailable.
 """
-function compute_transport_divergence_vorticity_diagnostics(
+function centered_transport_divergence_vorticity_diagnostics(
     solution::PGSolution,
     diagnostics::PGDiagnostics,
 )
@@ -3158,10 +3181,13 @@ function compute_transport_divergence_vorticity_diagnostics(
     solution::PGSolution,
     x,
     y;
+    method=:cell_average,
+    quadrature=DEFAULT_CELL_BUDGET_QUADRATURE,
     kwargs...,
 )
     return compute_transport_divergence_vorticity_diagnostics(
-        solution, compute_diagnostics(solution, x, y; kwargs...),
+        solution, compute_diagnostics(solution, x, y; kwargs...);
+        method, quadrature,
     )
 end
 
@@ -4471,5 +4497,8 @@ performance_summary(sensitivity::PGForcingSensitivities) =
     sensitivity.timings
 performance_summary(sensitivity::PGTransportAdjointSensitivity) =
     sensitivity.timings
+
+
+include(joinpath(@__DIR__, "CellBudgets.jl"))
 
 end
