@@ -656,6 +656,12 @@ then a direct check on whether they recover the model's reference velocity.
 - `TheoryNotes/StommelComparison.jl` compares the PG gyre in a flat
   rectangular β-plane basin with Stommel (1948), using the derived drag
   r = fδ_E/(2H), over a range of H/δ_E (manuscript Section 6c).
+- `TheoryNotes/BetaPlumeComparison.jl` compares the PG β plume with the
+  frictional Stommel (1982) plume, solved by finite differences in the same
+  basin, with constant and corrected derived drag (manuscript Section 6c).
+- `TheoryNotes/BoundaryBetaPlumeComparison.jl` compares PG with the exact
+  boundary β plume of Haine and Fuller (2016) beside an inclined coast
+  (manuscript Section 6c).
 - `TheoryNotes/PlotCoefficientRegimes.jl` plots the column coefficients
   $\mathfrak A$ (68), $S$ (64), and the surface-stress weight in $T$ (65)
   against $s = H/\delta_E$, with their deep and shallow asymptotes. It writes

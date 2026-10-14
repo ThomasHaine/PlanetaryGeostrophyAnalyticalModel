@@ -39,5 +39,7 @@ Two conventions are in use:
 | `verification_convergence.pdf` | `TheoryNotes/VerificationConvergence.jl` |
 | `oceananigans_comparison.pdf` | `AnalyticalModel/OceananigansComparison.jl` |
 | `stommel_comparison.pdf` | `TheoryNotes/StommelComparison.jl` |
+| `beta_plume_comparison.pdf` | `TheoryNotes/BetaPlumeComparison.jl` |
+| `boundary_beta_plume_comparison.pdf` | `TheoryNotes/BoundaryBetaPlumeComparison.jl` |
 
 Copy regenerated figures here, and upload them to Overleaf.
