@@ -46,8 +46,7 @@ The reusable Julia API is a standalone package in the root-level
 analytical solver dependencies; Oceananigans remains confined to the separate
 validation environment.
 It packages the B23 Green-function velocity and buoyancy kernels used by
-the original derivation notebook with the Gridap surface-pressure solve used by
-`Oceananigans_Variable_Basin_Validation.ipynb`.
+the original derivation notebook with a Gridap surface-pressure solve.
 
 ### Installation
 
@@ -653,8 +652,9 @@ then a direct check on whether they recover the model's reference velocity.
 
 - `AnalyticalModel/Oceananigans_PG_Validation.ipynb` validates the analytical
   solution against Oceananigans.
-- `AnalyticalModel/Oceananigans_Variable_Basin_Validation.ipynb` covers
-  variable-basin validation.
+- `AnalyticalModel/OceananigansComparison.jl` compares the PG solution with
+  Oceananigans in an elliptical basin, with flat and sloping bottoms, and times
+  both (manuscript Section 6b and Appendix C).
 - `TheoryNotes/PlotCoefficientRegimes.jl` plots the column coefficients
   $\mathfrak A$ (68), $S$ (64), and the surface-stress weight in $T$ (65)
   against $s = H/\delta_E$, with their deep and shallow asymptotes. It writes
