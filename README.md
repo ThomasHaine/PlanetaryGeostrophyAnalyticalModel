@@ -653,6 +653,9 @@ then a direct check on whether they recover the model's reference velocity.
 - `AnalyticalModel/OceananigansComparison.jl` compares the PG solution with
   Oceananigans in an elliptical basin, with flat and sloping bottoms, and times
   both (manuscript Section 6b and Appendix C).
+- `TheoryNotes/StommelComparison.jl` compares the PG gyre in a flat
+  rectangular β-plane basin with Stommel (1948), using the derived drag
+  r = fδ_E/(2H), over a range of H/δ_E (manuscript Section 6c).
 - `TheoryNotes/PlotCoefficientRegimes.jl` plots the column coefficients
   $\mathfrak A$ (68), $S$ (64), and the surface-stress weight in $T$ (65)
   against $s = H/\delta_E$, with their deep and shallow asymptotes. It writes
