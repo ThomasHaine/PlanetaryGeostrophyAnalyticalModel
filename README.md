@@ -650,8 +650,6 @@ then a direct check on whether they recover the model's reference velocity.
 
 ### Validation and derivation notebooks
 
-- `AnalyticalModel/Oceananigans_PG_Validation.ipynb` validates the analytical
-  solution against Oceananigans.
 - `AnalyticalModel/OceananigansComparison.jl` compares the PG solution with
   Oceananigans in an elliptical basin, with flat and sloping bottoms, and times
   both (manuscript Section 6b and Appendix C).
