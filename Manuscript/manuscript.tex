@@ -1004,8 +1004,9 @@ Dotted vertical lines mark $s = 1$ and $s = 3$.}
 \end{figure}
 
 \Claude{
-With uniform viscosity the column coefficients depend on depth only through $s = H/\delta_E$, the depth measured in Ekman depths (Fig.~\ref{fig:coefficient_regimes}).
+With uniform viscosity the column coefficients depend on depth only through $s = H/\delta_E$, the depth measured in Ekman depths (Fig.~\ref{fig:coefficient_regimes}, $\delta_E = \sqrt{2 \nu \mathrm{Ek}/|f|}$ ).
 For deep water ($s \gg 1$), $\mathfrak{A} \rightarrow [-\delta_E/2 + i(H - \delta_E/2)]/f$.
+% Add commented reference to code to justify these asymptotic limits here.
 The depth-integrated flow is then the geostrophic transport over an effective depth $H - \delta_E/2$, plus a down-gradient bottom Ekman transport with diffusivity $\delta_E/(2f)$.
 In other words, the surface pressure is advected along contours of $f/(H - \delta_E/2)$: the bottom Ekman layer acts as a displacement thickness that modifies the classical $f/H$ steering (panel a).
 The bottom-stress coefficient tends to $\mathrm{Ek}\,S \rightarrow \delta_E (1 - i)/2$, a linear drag rotated by $45^\circ$ (panels d, e), and the surface stress reaches the bed with weight $2e^{-s}$ (panel f).
@@ -1033,7 +1034,7 @@ The solution is verified at four levels: (i) agreement between independent evalu
 The horizontal velocity has three independent implementations.
 The first is the direct double-quadrature form (\ref{eqn:final_velocity_formula1}).
 The second is the symbolic-kernel form (\ref{eqn:final_velocity_formula2}).
-The third, used in production, evaluates (\ref{eqn:appendix_fraku}), (\ref{eqn:T_fn}), and (\ref{eqn:B_fn}) as single vertical integrals of the closed-form kernels, with $\Pi(\xi)$ from (\ref{eqn:term1})--(\ref{eqn:term2}) (Appendix~C).
+The third, used in production, evaluates (\ref{eqn:appendix_fraku}), (\ref{eqn:T_fn}), and (\ref{eqn:B_fn}) as single vertical integrals of the closed-form kernels, with $\Pi(\xi)$ from (\ref{eqn:term1})--(\ref{eqn:term2}).
 At a manufactured state with sloping bathymetry and a $\beta$-plane, the first two agree to a relative difference of $4 \times 10^{-11}$.
 In a sloping, $\beta$-plane basin with a seamount and baroclinic forcing, the third agrees with the second to about $10^{-9}$ in $p_s$, $\mathbf{U}$, $\boldsymbol{\tau}_b$, $\Psi$, and $\mathbf{u}(z)$, and to $10^{-16}$ in $b$.
 The remaining differences are set by the finite-difference step used for horizontal derivatives of $\Pi$.
@@ -1048,11 +1049,10 @@ Errors are measured against the \replaced[id=CL]{finest solution ($h = 0.010$)}{
 With second-order Lagrange elements, the surface pressure and the streamfunction converge \replaced[id=CL]{as $h^3$}{at about $h^{2.2}$}, and the transport, bottom stress, and interior velocity\added[id=CL]{, which depend on $\nabla p_s$,} \replaced[id=CL]{as $h^2$}{at about $h^{1.5}$}.
 \added[id=CL]{These are the optimal rates for this discretization.
 The errors are not concentrated near the coast or its polygon vertices: the error in $\mathbf{U}$ over the inner half of the basin equals that over the whole basin.}
-\deleted[id=CL]{These rates are below the asymptotic rates for smooth solutions ($h^3$ and $h^2$), [TODO: confirm the cause: corners of the polygonal coastline, or the coastal frictional layer of width $\ell \approx \delta_E/(2|\nabla H|)$].}
 At $h = \replaced[id=CL]{0.020}{0.02}$ the relative error is \replaced[id=CL]{$8 \times 10^{-6}$}{$7 \times 10^{-6}$} in $p_s$ and about \replaced[id=CL]{$2 \times 10^{-3}$}{$10^{-3}$} in $\mathbf{U}$ and $\boldsymbol{\tau}_b$.
 
 \begin{table}
-\caption{\label{tab:mesh_convergence} Relative $L_2$ error against the \replaced[id=CL]{finest solution ($h = 0.010$)}{$h = 0.01$ solution} for the test basin of Section~\ref{sect:verification}, with the observed order of convergence between successive meshes in parentheses.\added[id=CL]{ The mesh size $h$ is the mean triangle edge length. The struck-through rows below the second rule are the values before the mesh generator was corrected.}}
+\caption{\label{tab:mesh_convergence} Relative $L_2$ error against the \replaced[id=CL]{finest solution ($h = 0.010$)}{$h = 0.01$ solution} for the test basin of Section~\ref{sect:results}\ref{sect:verification}, with the observed order of convergence between successive meshes in parentheses.\added[id=CL]{ The mesh size $h$ is the mean triangle edge length.}}
 \centering
 \begin{tabular}{cccccc}
 \hline
@@ -1063,18 +1063,13 @@ $h$ & $p_s$ & $\mathbf{U}$ & $\boldsymbol{\tau}_b$ & $\mathbf{u}(-H/2)$ & $\Psi$
 \added[id=CL]{0.039} & \added[id=CL]{$6.5 \times 10^{-5}$ (3.4)} & \added[id=CL]{$6.3 \times 10^{-3}$ (2.1)} & \added[id=CL]{$8.3 \times 10^{-3}$ (2.1)} & \added[id=CL]{$5.3 \times 10^{-3}$ (2.1)} & \added[id=CL]{$2.0 \times 10^{-4}$ (3.5)} \\
 \added[id=CL]{0.020} & \added[id=CL]{$7.9 \times 10^{-6}$ (3.2)} & \added[id=CL]{$1.6 \times 10^{-3}$ (2.1)} & \added[id=CL]{$2.1 \times 10^{-3}$ (2.0)} & \added[id=CL]{$1.3 \times 10^{-3}$ (2.0)} & \added[id=CL]{$2.1 \times 10^{-5}$ (3.3)} \\
 \hline
-\deleted[id=CL]{0.16} & \deleted[id=CL]{$7.6 \times 10^{-4}$} & \deleted[id=CL]{$2.9 \times 10^{-2}$} & \deleted[id=CL]{$3.9 \times 10^{-2}$} & \deleted[id=CL]{$2.5 \times 10^{-2}$} & \deleted[id=CL]{$3.0 \times 10^{-3}$} \\
-\deleted[id=CL]{0.08} & \deleted[id=CL]{$1.4 \times 10^{-4}$ (2.5)} & \deleted[id=CL]{$9.2 \times 10^{-3}$ (1.7)} & \deleted[id=CL]{$1.2 \times 10^{-2}$ (1.7)} & \deleted[id=CL]{$7.9 \times 10^{-3}$ (1.7)} & \deleted[id=CL]{$4.7 \times 10^{-4}$ (2.7)} \\
-\deleted[id=CL]{0.04} & \deleted[id=CL]{$3.2 \times 10^{-5}$ (2.1)} & \deleted[id=CL]{$3.8 \times 10^{-3}$ (1.3)} & \deleted[id=CL]{$5.1 \times 10^{-3}$ (1.3)} & \deleted[id=CL]{$3.3 \times 10^{-3}$ (1.3)} & \deleted[id=CL]{$8.2 \times 10^{-5}$ (2.5)} \\
-\deleted[id=CL]{0.02} & \deleted[id=CL]{$6.7 \times 10^{-6}$ (2.2)} & \deleted[id=CL]{$1.3 \times 10^{-3}$ (1.5)} & \deleted[id=CL]{$1.8 \times 10^{-3}$ (1.5)} & \deleted[id=CL]{$1.2 \times 10^{-3}$ (1.5)} & \deleted[id=CL]{$1.8 \times 10^{-5}$ (2.2)} \\
-\hline
 \end{tabular}
 \end{table}
 
-\paragraph{Coastal boundary condition.}
-Imposing $p_s = 0$ on a vertical coastal wall, instead of (\ref{eqn:ps_bc}), lets frictional and buoyancy-forced transport cross the coast.
-In the double-basin example of Section~\ref{sect:results} (coast depth 0.26, $\mathrm{Ek} = 0.002$), the root-mean-square ratio of normal to tangential transport at 0.995 of the coastal radius is 0.37 with $p_s = 0$ and 0.02 with (\ref{eqn:ps_bc}).
-The relative difference between the transport $\mathbf{U}$ from (\ref{eqn:UV_AB_def}) and the transport $(-\partial_y \Psi, \partial_x \Psi)$ from the separately solved streamfunction (\ref{eqn:streamfunction_pde}) falls from 5\% to 0.05\% (mesh 0.02).
+%\paragraph{Coastal boundary condition.}
+%Imposing $p_s = 0$ on a vertical coastal wall, instead of (\ref{eqn:ps_bc}), lets frictional and buoyancy-forced transport cross the coast.
+%In the double-basin example of Section~\ref{sect:results} (coast depth 0.26, $\mathrm{Ek} = 0.002$), the root-mean-square ratio of normal to tangential transport at 0.995 of the coastal radius is 0.37 with $p_s = 0$ and 0.02 with (\ref{eqn:ps_bc}).
+%The relative difference between the transport $\mathbf{U}$ from (\ref{eqn:UV_AB_def}) and the transport $(-\partial_y \Psi, \partial_x \Psi)$ from the separately solved streamfunction (\ref{eqn:streamfunction_pde}) falls from 5\% to 0.05\% (mesh 0.02).
 
 \paragraph{Dynamical balances.}
 The depth-integrated momentum balance (\ref{eqn:U_mom})--(\ref{eqn:V_mom}) holds pointwise, because the column solution satisfies the momentum equations exactly.
@@ -1089,7 +1084,6 @@ The advection terms $U \partial_x f + V \partial_y f$ and $J(f/H, \Psi) = -\math
 No finite-element field is differentiated.
 Setting $\nabla \cdot \mathbf{U} = 0$ as in (\ref{eqn:BVE_constraint}), each cell-averaged residual equals the cell-averaged finite-element mass-conservation error: $-f \nabla \cdot \mathbf{U}$ for the BV and DIV balances, $(f/H) \nabla \cdot \mathbf{U}$ for the GCVB, and $-\nabla \cdot \mathbf{U}$ for the TDVB.
 These residuals converge under mesh refinement\added[id=CL]{, at roughly $h^2$ once $h \lesssim 0.04$}, from \replaced[id=CL]{0.61}{0.17} (BV) and \replaced[id=CL]{0.30}{0.08} (GCVB) at $h = \replaced[id=CL]{0.13}{0.16}$ to \replaced[id=CL]{$2.0 \times 10^{-3}$}{$1.3 \times 10^{-3}$} and \replaced[id=CL]{$7 \times 10^{-4}$}{$6 \times 10^{-4}$} at $h = \replaced[id=CL]{0.010}{0.01}$ (Fig.~\ref{fig:verification_convergence}b).
-Integral forms of the balances give closure-free checks.
 In the double basin, integrating the GCVB over the regions enclosed by closed $f/H$ contours, as in (\ref{eqn:integrated_GCVB}), closes to $3 \times 10^{-3}$ of its terms.
 The stress circulation around closed isobaths closes to $6 \times 10^{-4}$.
 The area-integrated GCVB over the northern and southern halves of the basin, either side of the strait, closes to $4 \times 10^{-5}$ and $1.3 \times 10^{-4}$.
@@ -1097,21 +1091,18 @@ The area-integrated GCVB over the northern and southern halves of the basin, eit
 \paragraph{Comparison with a primitive-equation model.}
 Appendix~C compares the solution with \texttt{Oceananigans.jl} \citep{wagner_etal25}, \replaced[id=CL]{whose hydrostatic free-surface model is integrated from rest to a steady state with momentum and buoyancy advection switched off}{which integrates the nonhydrostatic Boussinesq equations to a steady state}.
 The test uses an elliptical basin on a $\beta$-plane with $\mathrm{Ek} = 0.02$, \replaced[id=CL]{a flat bottom of depth 0.65 bounded by a vertical coastal wall}{a 0.3-deep vertical sidewall}, weak zonal surface stress, and spatially varying surface and restoring buoyancy.
-\replaced[id=CL]{The two models then solve the same linear equations and differ only in their discretizations.}{The forcing is weak, so that momentum and buoyancy advection are negligible.}
-\deleted[id=CL]{The relative $L_2$ difference in buoyancy over the basin interior is 2.5\%, 1.2\%, and 0.7\% with 16, 32, and 64 vertical levels.
-This is roughly first-order convergence, consistent with the stair-stepped immersed coastline of the \texttt{Oceananigans.jl} grid.}
-\added[id=CL]{Away from the coast and the bottom, the relative $L_2$ difference in the depth-integrated transport $\mathbf{U}$ is 11\%, 4.3\%, and 1.5\% on $40 \times 30 \times 20$, $80 \times 60 \times 40$, and $160 \times 120 \times 40$ \texttt{Oceananigans.jl} grids, and in the horizontal velocity $\mathbf{u}$ it is 8.0\%, 3.4\%, and 1.1\% (Fig.~\ref{fig:oceananigans_comparison}).
+The two models then solve the same linear equations and differ only in their discretizations.
+Away from the coast and the bottom, the relative $L_2$ difference in the depth-integrated transport $\mathbf{U}$ is 11\%, 4.3\%, and 1.5\% on $40 \times 30 \times 20$, $80 \times 60 \times 40$, and $160 \times 120 \times 40$ \texttt{Oceananigans.jl} grids, and in the horizontal velocity $\mathbf{u}$ it is 8.0\%, 3.4\%, and 1.1\% (Fig.~\ref{fig:oceananigans_comparison}).
 This is roughly first-order convergence in the horizontal grid spacing, consistent with the stair-stepped immersed coastline of the \texttt{Oceananigans.jl} grid.
 The buoyancy differences are $1.5 \times 10^{-3}$, $3.5 \times 10^{-4}$, and $3.5 \times 10^{-4}$, limited by the vertical resolution.
 Unlike buoyancy, which is column-local, $\mathbf{u}$ and $\mathbf{U}$ test the surface-pressure solve and the coastal condition.
-The PG solution takes under a second to compute, 25 to 150 times faster than the \texttt{Oceananigans.jl} spin-up (Appendix~C).}
-\deleted[id=CL]{[TODO: Velocity and surface-pressure differences: the saved validation outputs report buoyancy only, and buoyancy is column-local, so it does not test the surface-pressure solve or the coastal condition. Rerun \texttt{Oceananigans\_Variable\_Basin\_Validation.ipynb} with the no-normal-flow condition and report $\mathbf{u}$ and $\mathbf{U}$ differences. Also run \texttt{Oceananigans\_PG\_Validation.ipynb} (flat-bottom column), which has no saved outputs.]}
+The PG solution takes under a second to compute, 25 to 150 times faster than the \texttt{Oceananigans.jl} spin-up (Appendix~C).
 
 \begin{figure}
 \centering
 \includegraphics[width=16cm]{verification_convergence.pdf}
 \caption{\label{fig:verification_convergence} Verification in the test basin of Section~\ref{sect:verification}.
-(a) Relative $L_2$ error against the \replaced[id=CL]{finest solution ($h = 0.010$)}{$h = 0.01$ solution} as the surface-pressure mesh is refined, for the surface pressure $p_s$, depth-integrated transport $\mathbf{U}$, bottom stress $\boldsymbol{\tau}_b$, velocity at mid-depth, and streamfunction $\Psi$\added[id=CL]{; $h$ is the mean triangle edge length}. Gray lines show $h^2$ and $h^3$.
+(a) Relative $L_2$ error against the finest solution ($h = 0.010$) as the surface-pressure mesh is refined, for the surface pressure $p_s$, depth-integrated transport $\mathbf{U}$, bottom stress $\boldsymbol{\tau}_b$, velocity at mid-depth, and streamfunction $\Psi$\added[id=CL]{; $h$ is the mean triangle edge length}. Gray lines show $h^2$ and $h^3$.
 (b) Relative residuals of the mapped barotropic (BV, (\ref{eqn:BVE})) and geostrophic-contour (GCVB, (\ref{eqn:GCVB})) vorticity balances on a fixed $19 \times 15$ diagnostic grid. Solid lines: cell averages via Stokes' theorem. Dashed lines: centered differences of the sampled fields.}
 \end{figure}
 
