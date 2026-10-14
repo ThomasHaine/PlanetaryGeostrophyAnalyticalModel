@@ -45,6 +45,13 @@
 
 \newcommand{\Claude}[1]{{\color{red}{#1}}}
 
+% Tracked changes. Edits made in the repository Manuscript/ folder are marked
+% with \added, \deleted, and \replaced (author CL): insertions in blue,
+% deletions struck through, and a list of changes after the title. To accept
+% every change, load the package as \usepackage[final]{changes}.
+\usepackage{changes}
+\definechangesauthor[name={Claude}, color=blue]{CL}
+
 %% May use \\ to break lines in title:
 
 \title{On Robust Diagnostic Planetary Geostrophy}
@@ -82,6 +89,7 @@ file should be modified by authors for their own manuscript.}
 
 %% Necessary!
 \maketitle
+\listofchanges[style=summary]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % SIGNIFICANCE STATEMENT/CAPSULE SUMMARY
@@ -1035,22 +1043,30 @@ Figure~\ref{fig:verification_convergence}a and Table~\ref{tab:mesh_convergence} 
 The test basin is an ellipse with semi-axes 1 and 0.75 on a $\beta$-plane ($f = 1 + 0.15y$) with $\mathrm{Ek} = 0.01$ and $\Gamma = 0.2$.
 Its depth combines a uniform slope with a seamount and is 0.4--1.2 at the coast, so the coast is a vertical wall and the no-normal-flow condition (\ref{eqn:ps_bc}) is active.
 It is forced by surface stress, by surface buoyancy, and by a restoring buoyancy with depth-dependent horizontal gradients.
-Errors are measured against the solution with mesh resolution $h = 0.01$ at 1300 points inside 97\% of the coastal radius.
-With second-order Lagrange elements, the surface pressure and the streamfunction converge at about $h^{2.2}$, and the transport, bottom stress, and interior velocity at about $h^{1.5}$.
-These rates are below the asymptotic rates for smooth solutions ($h^3$ and $h^2$), \todo{confirm the cause: corners of the polygonal coastline, or the coastal frictional layer of width $\ell \approx \delta_E/(2|\nabla H|)$}.
-At $h = 0.02$ the relative error is $7 \times 10^{-6}$ in $p_s$ and about $10^{-3}$ in $\mathbf{U}$ and $\boldsymbol{\tau}_b$.
+\added[id=CL]{The mesh size $h$ is the mean triangle edge length, which is within a few percent of the size requested from the mesh generator except on the coarsest mesh.}
+Errors are measured against the \replaced[id=CL]{finest solution ($h = 0.010$)}{solution with mesh resolution $h = 0.01$} at 1300 points inside 97\% of the coastal radius.
+With second-order Lagrange elements, the surface pressure and the streamfunction converge \replaced[id=CL]{as $h^3$}{at about $h^{2.2}$}, and the transport, bottom stress, and interior velocity\added[id=CL]{, which depend on $\nabla p_s$,} \replaced[id=CL]{as $h^2$}{at about $h^{1.5}$}.
+\added[id=CL]{These are the optimal rates for this discretization.
+The errors are not concentrated near the coast or its polygon vertices: the error in $\mathbf{U}$ over the inner half of the basin equals that over the whole basin.}
+\deleted[id=CL]{These rates are below the asymptotic rates for smooth solutions ($h^3$ and $h^2$), [TODO: confirm the cause: corners of the polygonal coastline, or the coastal frictional layer of width $\ell \approx \delta_E/(2|\nabla H|)$].}
+At $h = \replaced[id=CL]{0.020}{0.02}$ the relative error is \replaced[id=CL]{$8 \times 10^{-6}$}{$7 \times 10^{-6}$} in $p_s$ and about \replaced[id=CL]{$2 \times 10^{-3}$}{$10^{-3}$} in $\mathbf{U}$ and $\boldsymbol{\tau}_b$.
 
 \begin{table}
-\caption{\label{tab:mesh_convergence} Relative $L_2$ error against the $h = 0.01$ solution for the test basin of Section~\ref{sect:verification}, with the observed order of convergence between successive meshes in parentheses.}
+\caption{\label{tab:mesh_convergence} Relative $L_2$ error against the \replaced[id=CL]{finest solution ($h = 0.010$)}{$h = 0.01$ solution} for the test basin of Section~\ref{sect:verification}, with the observed order of convergence between successive meshes in parentheses.\added[id=CL]{ The mesh size $h$ is the mean triangle edge length. The struck-through rows below the second rule are the values before the mesh generator was corrected.}}
 \centering
 \begin{tabular}{cccccc}
 \hline
 $h$ & $p_s$ & $\mathbf{U}$ & $\boldsymbol{\tau}_b$ & $\mathbf{u}(-H/2)$ & $\Psi$ \\
 \hline
-0.16 & $7.6 \times 10^{-4}$ & $2.9 \times 10^{-2}$ & $3.9 \times 10^{-2}$ & $2.5 \times 10^{-2}$ & $3.0 \times 10^{-3}$ \\
-0.08 & $1.4 \times 10^{-4}$ (2.5) & $9.2 \times 10^{-3}$ (1.7) & $1.2 \times 10^{-2}$ (1.7) & $7.9 \times 10^{-3}$ (1.7) & $4.7 \times 10^{-4}$ (2.7) \\
-0.04 & $3.2 \times 10^{-5}$ (2.1) & $3.8 \times 10^{-3}$ (1.3) & $5.1 \times 10^{-3}$ (1.3) & $3.3 \times 10^{-3}$ (1.3) & $8.2 \times 10^{-5}$ (2.5) \\
-0.02 & $6.7 \times 10^{-6}$ (2.2) & $1.3 \times 10^{-3}$ (1.5) & $1.8 \times 10^{-3}$ (1.5) & $1.2 \times 10^{-3}$ (1.5) & $1.8 \times 10^{-5}$ (2.2) \\
+\added[id=CL]{0.134} & \added[id=CL]{$4.0 \times 10^{-3}$} & \added[id=CL]{$9.6 \times 10^{-2}$} & \added[id=CL]{$1.3 \times 10^{-1}$} & \added[id=CL]{$8.2 \times 10^{-2}$} & \added[id=CL]{$2.5 \times 10^{-2}$} \\
+\added[id=CL]{0.074} & \added[id=CL]{$5.7 \times 10^{-4}$ (3.3)} & \added[id=CL]{$2.4 \times 10^{-2}$ (2.3)} & \added[id=CL]{$3.2 \times 10^{-2}$ (2.3)} & \added[id=CL]{$2.0 \times 10^{-2}$ (2.3)} & \added[id=CL]{$1.9 \times 10^{-3}$ (4.3)} \\
+\added[id=CL]{0.039} & \added[id=CL]{$6.5 \times 10^{-5}$ (3.4)} & \added[id=CL]{$6.3 \times 10^{-3}$ (2.1)} & \added[id=CL]{$8.3 \times 10^{-3}$ (2.1)} & \added[id=CL]{$5.3 \times 10^{-3}$ (2.1)} & \added[id=CL]{$2.0 \times 10^{-4}$ (3.5)} \\
+\added[id=CL]{0.020} & \added[id=CL]{$7.9 \times 10^{-6}$ (3.2)} & \added[id=CL]{$1.6 \times 10^{-3}$ (2.1)} & \added[id=CL]{$2.1 \times 10^{-3}$ (2.0)} & \added[id=CL]{$1.3 \times 10^{-3}$ (2.0)} & \added[id=CL]{$2.1 \times 10^{-5}$ (3.3)} \\
+\hline
+\deleted[id=CL]{0.16} & \deleted[id=CL]{$7.6 \times 10^{-4}$} & \deleted[id=CL]{$2.9 \times 10^{-2}$} & \deleted[id=CL]{$3.9 \times 10^{-2}$} & \deleted[id=CL]{$2.5 \times 10^{-2}$} & \deleted[id=CL]{$3.0 \times 10^{-3}$} \\
+\deleted[id=CL]{0.08} & \deleted[id=CL]{$1.4 \times 10^{-4}$ (2.5)} & \deleted[id=CL]{$9.2 \times 10^{-3}$ (1.7)} & \deleted[id=CL]{$1.2 \times 10^{-2}$ (1.7)} & \deleted[id=CL]{$7.9 \times 10^{-3}$ (1.7)} & \deleted[id=CL]{$4.7 \times 10^{-4}$ (2.7)} \\
+\deleted[id=CL]{0.04} & \deleted[id=CL]{$3.2 \times 10^{-5}$ (2.1)} & \deleted[id=CL]{$3.8 \times 10^{-3}$ (1.3)} & \deleted[id=CL]{$5.1 \times 10^{-3}$ (1.3)} & \deleted[id=CL]{$3.3 \times 10^{-3}$ (1.3)} & \deleted[id=CL]{$8.2 \times 10^{-5}$ (2.5)} \\
+\deleted[id=CL]{0.02} & \deleted[id=CL]{$6.7 \times 10^{-6}$ (2.2)} & \deleted[id=CL]{$1.3 \times 10^{-3}$ (1.5)} & \deleted[id=CL]{$1.8 \times 10^{-3}$ (1.5)} & \deleted[id=CL]{$1.2 \times 10^{-3}$ (1.5)} & \deleted[id=CL]{$1.8 \times 10^{-5}$ (2.2)} \\
 \hline
 \end{tabular}
 \end{table}
@@ -1072,7 +1088,7 @@ By Stokes' theorem, $\iint \hat{\mathbf{z}} \cdot \nabla \times \mathbf{F} \, dA
 The advection terms $U \partial_x f + V \partial_y f$ and $J(f/H, \Psi) = -\mathbf{U} \cdot \nabla (f/H)$ use area quadrature.
 No finite-element field is differentiated.
 Setting $\nabla \cdot \mathbf{U} = 0$ as in (\ref{eqn:BVE_constraint}), each cell-averaged residual equals the cell-averaged finite-element mass-conservation error: $-f \nabla \cdot \mathbf{U}$ for the BV and DIV balances, $(f/H) \nabla \cdot \mathbf{U}$ for the GCVB, and $-\nabla \cdot \mathbf{U}$ for the TDVB.
-These residuals converge under mesh refinement, from 0.17 (BV) and 0.08 (GCVB) at $h = 0.16$ to $1.3 \times 10^{-3}$ and $6 \times 10^{-4}$ at $h = 0.01$ (Fig.~\ref{fig:verification_convergence}b).
+These residuals converge under mesh refinement\added[id=CL]{, at roughly $h^2$ once $h \lesssim 0.04$}, from \replaced[id=CL]{0.61}{0.17} (BV) and \replaced[id=CL]{0.30}{0.08} (GCVB) at $h = \replaced[id=CL]{0.13}{0.16}$ to \replaced[id=CL]{$2.0 \times 10^{-3}$}{$1.3 \times 10^{-3}$} and \replaced[id=CL]{$7 \times 10^{-4}$}{$6 \times 10^{-4}$} at $h = \replaced[id=CL]{0.010}{0.01}$ (Fig.~\ref{fig:verification_convergence}b).
 Integral forms of the balances give closure-free checks.
 In the double basin, integrating the GCVB over the regions enclosed by closed $f/H$ contours, as in (\ref{eqn:integrated_GCVB}), closes to $3 \times 10^{-3}$ of its terms.
 The stress circulation around closed isobaths closes to $6 \times 10^{-4}$.
@@ -1090,7 +1106,7 @@ This is roughly first-order convergence, consistent with the stair-stepped immer
 \centering
 \includegraphics[width=16cm]{verification_convergence.pdf}
 \caption{\label{fig:verification_convergence} Verification in the test basin of Section~\ref{sect:verification}.
-(a) Relative $L_2$ error against the $h = 0.01$ solution as the surface-pressure mesh is refined, for the surface pressure $p_s$, depth-integrated transport $\mathbf{U}$, bottom stress $\boldsymbol{\tau}_b$, velocity at mid-depth, and streamfunction $\Psi$. Gray lines show $h^2$ and $h^3$.
+(a) Relative $L_2$ error against the \replaced[id=CL]{finest solution ($h = 0.010$)}{$h = 0.01$ solution} as the surface-pressure mesh is refined, for the surface pressure $p_s$, depth-integrated transport $\mathbf{U}$, bottom stress $\boldsymbol{\tau}_b$, velocity at mid-depth, and streamfunction $\Psi$\added[id=CL]{; $h$ is the mean triangle edge length}. Gray lines show $h^2$ and $h^3$.
 (b) Relative residuals of the mapped barotropic (BV, (\ref{eqn:BVE})) and geostrophic-contour (GCVB, (\ref{eqn:GCVB})) vorticity balances on a fixed $19 \times 15$ diagnostic grid. Solid lines: cell averages via Stokes' theorem. Dashed lines: centered differences of the sampled fields.}
 \end{figure}
 
@@ -1476,7 +1492,7 @@ $\mathfrak{B}$ is evaluated at every quadrature point of the finite-element mesh
 
 In order to test and validate the derivation of the solution method, the results for a test case are compared to an independently-derived solution.
 We use the \texttt{Oceananigans.jl} Julia package, which solves the Boussinesq incompressible nonhydrostatic Navier-Stokes equations \citep{wagner_etal25}.
-The test involves an elliptical basin with smoothly-varying topography that vanishes at the edges on a $\beta$-plane. 
+The test involves an elliptical basin \replaced[id=CL]{on a $\beta$-plane, with smoothly varying topography and a 0.3-deep vertical sidewall at the coast}{with smoothly-varying topography that vanishes at the edges on a $\beta$-plane}. 
 The forcing consists of a zonal windstress that varies in the meridional direction, and varying surface buoyancy and relaxation buoyancy fields.
 The forcing amplitude is small so that buoyancy and momentum advection are weak and the linear PG equations are an accurate asymptotic approximation.
 
