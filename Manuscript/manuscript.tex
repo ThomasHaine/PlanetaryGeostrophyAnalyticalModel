@@ -1110,6 +1110,32 @@ The PG solution takes under a second to compute, 25 to 150 times faster than the
 Useful for comparison: \citet{willmott&luneva15}
 
 
+% Added by Claude (CL): Section 6c, classical limits. Made by TheoryNotes/StommelComparison.jl.
+\subsection{Classical limits}
+\label{sect:classical_limits}
+
+\paragraph{\added[id=CL]{Sverdrup interior and Stommel boundary layer.}}
+\added[id=CL]{A flat rectangular basin ($2 \times 1$, $H = 1$) on a $\beta$-plane, $f = 1 + 0.6\,y$, is forced by the zonal wind $\tau^x = -\tau_0 \cos (\pi \eta)$, with $\eta = y + 1/2$, and has no buoyancy forcing.
+The classical model is that of \citet{stommel48}, $r \nabla^2 \Psi + \beta \partial_x \Psi = \mathrm{Ek}\, \hat{\mathbf{z}} \cdot \nabla \times \boldsymbol{\tau}$ with $\Psi = 0$ on the coast, whose solution separates as $\Psi = X(x) \sin (\pi \eta)$.
+Its drag coefficient is not fitted: $r = f_0 \delta_E/(2H)$ is the deep limit of the PG bottom stress (Section~\ref{sect:results}a).
+The PG streamfunction is integrated from the PG transport, $\Psi = -\int_x^{x_E} V \, dx'$, independently of the streamfunction solve (\ref{eqn:streamfunction_pde}).
+For $s = H/\delta_E = 28$, 14, 7, and 3.5 ($\mathrm{Ek}$ from $6.25 \times 10^{-4}$ to 0.04), the relative $L_2$ difference in $\Psi$ is 2.6\%, 3.3\%, 5.3\%, and 8.0\%.
+PG reproduces both the Sverdrup interior and the western boundary layer of width $r/\beta$ (Fig.~\ref{fig:stommel_comparison}).
+Two corrections, both implied by the PG bottom stress, account for most of the remaining difference.
+First, the Ekman drag varies with latitude, $r(y) = f \delta_E/(2H) \propto f^{1/2}$; with this local drag the difference falls to 1.0\% and 1.2\% for $s = 28$ and 14.
+Second, the bottom Ekman layer acts as a displacement thickness, so the drag acts on the velocity $\mathbf{U}/(H - \delta_E/2)$; with both corrections the difference at $s = 7$ falls from 5.3\% to 1.5\%.
+The remaining 1\% is comparable to the error of evaluating the corrected model row by row, which neglects $\partial_y r$.
+At $s = 3.5$ neither correction helps (7\%): the Ekman layers fill much of the column, the wind stress reaches the bed with weight $2 e^{-s} \approx 6\%$, and a layer model needs the exact coefficients $\mathfrak{A}$ and $S$ (Fig.~\ref{fig:coefficient_regimes}).}
+
+\begin{figure}
+\centering
+\includegraphics[width=14cm]{stommel_comparison.pdf}
+\caption{\added[id=CL]{\label{fig:stommel_comparison} Sverdrup interior and Stommel western boundary layer.
+(a) PG streamfunction $\Psi$ for $s = H/\delta_E = 14$ ($\mathrm{Ek} = 2.5 \times 10^{-3}$), and (b) the \citet{stommel48} solution with the derived drag $r = f_0 \delta_E/(2H)$, on the same contour levels.
+(c) Zonal profiles of $\Psi$ at $y = 0$ across the western boundary layer, against distance in units of $r/\beta$, for four values of $s$: PG (solid) and Stommel (dashed), normalized by the Stommel maximum.
+(d) Relative $L_2$ difference between the PG and Stommel $\Psi$ against $s$, for the classical constant drag, for the local drag $r(y) = f \delta_E/(2H)$, and for the local drag acting over the depth $H - \delta_E/2$.}}
+\end{figure}
+
 \section{Discussion}
 \label{sect:discussion}
 
