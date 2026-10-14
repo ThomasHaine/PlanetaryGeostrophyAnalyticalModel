@@ -1,0 +1,14 @@
+# LaTeX build products
+*.aux
+*.bbl
+*.blg
+*.fff
+*.lof
+*.log
+*.lot
+*.out
+*.soc
+*.loc
+*.synctex.gz
+*.ttt
+manuscript.pdf
