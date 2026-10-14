@@ -1521,6 +1521,7 @@ There is no horizontal viscosity or diffusivity, as in PG.
 The model is integrated from rest for $200/f_0$, which is 40 restoring times; over the last $5/f_0$ the velocity changes by less than $10^{-5}$ of its maximum.
 The PG solution is sampled at the \texttt{Oceananigans.jl} cell centres and compared over cells more than one cell from the bottom, with wet horizontal neighbours, inside 95\% of the coastal radius (the script \texttt{AnalyticalModel/OceananigansComparison.jl}).}
 
+\Claude{
 Two bottoms are used.
 With a flat bottom of depth 0.65, the differences in buoyancy, horizontal velocity, and depth-integrated transport converge at about first order as the \texttt{Oceananigans.jl} grid is refined, to $3.5 \times 10^{-4}$, 1.1\%, and 1.5\% at $160 \times 120 \times 40$ (Section~\ref{sect:verification} and Fig.~\ref{fig:oceananigans_comparison}a--d).
 With the Gaussian bowl $H = 0.3 + 0.7\, e^{-2r^2}$ (with $r$ the elliptical radius) and a 0.3-deep coastal wall, the comparison is limited by the representation of the sloping bottom in the $z$-level model (Fig.~\ref{fig:oceananigans_comparison}e).
@@ -1528,12 +1529,13 @@ With a stair-stepped bottom, the transport difference is 29\% at $80 \times 60 \
 Partial bottom cells reduce the difference to 18\%, and a weak horizontal viscosity of $10^{-4}$ reduces it to 7.6\%.
 The buoyancy differences are about 1\% in all these cases.
 On this basis, we presume that the PG solution is derived and coded accurately. 
-The test is important as parts of the PG solution are produced automatically using \texttt{Sympy.jl} and \texttt{Symbolics.jl}, and some of the software development employs artificial intelligence assistance (Github Copilot version 1.1.21).
+The test is important as parts of the PG solution are produced automatically using \texttt{Sympy.jl} and \texttt{Symbolics.jl}, and some of the software development employs artificial intelligence assistance.
 Table~\ref{tab:oceananigans_timing} compares the wall-clock times on an Apple M5 Max (18 threads) after compilation.
 The PG solve, including meshing the coastline at $h = 0.02$ and solving for $p_s$, takes 0.7~s for the flat bottom and 1.0~s for the bowl, and sampling the solution at the \texttt{Oceananigans.jl} cell centres takes a further 0.05--0.7~s.
 The \texttt{Oceananigans.jl} spin-up takes 18~s to 180~s on the CPU with the same threads, so computing the PG solution is 25 to 150 times faster, and the ratio grows with resolution.
 The spin-up is long because the time step is limited by the explicit boundary fluxes to about $\Delta z^2/\mathrm{Ek}$, and partial bottom cells, which are thinner, need a time step four times smaller (540~s at $80 \times 60 \times 40$).
 The PG solution needs no spin-up, and its cost is set by the two-dimensional surface-pressure mesh, independent of the vertical resolution at which it is sampled.
+}
 
 % Added by Claude (CL): Oceananigans comparison table and figure.
 \begin{table}
