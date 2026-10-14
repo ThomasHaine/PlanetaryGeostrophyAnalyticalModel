@@ -662,6 +662,9 @@ then a direct check on whether they recover the model's reference velocity.
 - `TheoryNotes/BoundaryBetaPlumeComparison.jl` compares PG with the exact
   boundary β plume of Haine and Fuller (2016) beside an inclined coast
   (manuscript Section 6c).
+- `TheoryNotes/TopographicSteeringComparison.jl` compares PG with the
+  Ekman-layer model (steering along f/H or f/(H - δ_E/2)) for a topographic β
+  plume over a slope to a shallow shelf (manuscript Section 6c).
 - `TheoryNotes/PlotCoefficientRegimes.jl` plots the column coefficients
   $\mathfrak A$ (68), $S$ (64), and the surface-stress weight in $T$ (65)
   against $s = H/\delta_E$, with their deep and shallow asymptotes. It writes

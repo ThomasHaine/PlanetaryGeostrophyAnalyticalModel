@@ -41,5 +41,6 @@ Two conventions are in use:
 | `stommel_comparison.pdf` | `TheoryNotes/StommelComparison.jl` |
 | `beta_plume_comparison.pdf` | `TheoryNotes/BetaPlumeComparison.jl` |
 | `boundary_beta_plume_comparison.pdf` | `TheoryNotes/BoundaryBetaPlumeComparison.jl` |
+| `topographic_steering_comparison.pdf` | `TheoryNotes/TopographicSteeringComparison.jl` |
 
 Copy regenerated figures here, and upload them to Overleaf.
