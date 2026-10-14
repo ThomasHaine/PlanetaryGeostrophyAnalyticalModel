@@ -37,5 +37,6 @@ Two conventions are in use:
 |---|---|
 | `coefficient_regimes.pdf` | `TheoryNotes/PlotCoefficientRegimes.jl` |
 | `verification_convergence.pdf` | `TheoryNotes/VerificationConvergence.jl` |
+| `oceananigans_comparison.pdf` | `AnalyticalModel/OceananigansComparison.jl` |
 
 Copy regenerated figures here, and upload them to Overleaf.
