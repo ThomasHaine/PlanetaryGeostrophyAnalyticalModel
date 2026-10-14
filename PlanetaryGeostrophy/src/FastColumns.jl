@@ -10,6 +10,7 @@
 
 using QuadGK: gauss
 using Gridap.Arrays: return_cache, evaluate!
+using Gridap.CellData: Interpolable, KDTreeSearch
 
 const VFP = VelocityFieldPrototype
 
@@ -299,12 +300,23 @@ struct PooledPointEvaluator{F,C}
     caches::Channel{C}
 end
 
-function PooledPointEvaluator(field, probe; copies=Threads.nthreads())
-    first_cache = return_cache(field, probe)
+# Gridap locates a point by checking the cells around its nearest mesh
+# vertices. With only the nearest vertex (Gridap's default), points can be
+# missed where small coastal elements meet larger interior ones; searching
+# several vertices avoids that.
+const POINT_SEARCH_VERTICES = 8
+
+function PooledPointEvaluator(
+    field, probe;
+    copies=Threads.nthreads(),
+    num_nearest_vertices=POINT_SEARCH_VERTICES,
+)
+    searchable = Interpolable(field; searchmethod=KDTreeSearch(; num_nearest_vertices))
+    first_cache = return_cache(searchable, probe)
     caches = Channel{typeof(first_cache)}(copies)
     put!(caches, first_cache)
     for _ in 2:copies
-        put!(caches, return_cache(field, probe))
+        put!(caches, return_cache(searchable, probe))
     end
     return PooledPointEvaluator(field, caches)
 end

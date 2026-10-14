@@ -921,9 +921,12 @@ end
             surface_buoyancy=problem.surface_buoyancy,
             boundary=problem.boundary,
         )
+        # Use the same mesh as `solution`. The mesh file is regenerated when
+        # the requested resolution differs from the one it was written with.
         variable_solution = solve_pg(
             variable_problem;
             mesh_file=joinpath(directory, "pressure.msh"),
+            mesh_resolution=0.3,
             pressure_order=1,
         )
         variable_terms = depth_integrated_momentum_terms(
@@ -1088,6 +1091,7 @@ end
             problem;
             wind_stress_y=(x, y) -> 1e-3cos(pi * y / Ly),
             mesh_file=joinpath(directory, "pressure.msh"),
+            mesh_resolution=0.3,
             pressure_order=1,
         )
         velocity_response =
@@ -1412,7 +1416,7 @@ end
         solution = solve_pg(
             problem;
             mesh_file=joinpath(directory, "pressure.msh"),
-            mesh_resolution=0.08,
+            mesh_resolution=0.05,
             overwrite_mesh=true,
         )
         diagnostics = compute_diagnostics(
@@ -1441,7 +1445,7 @@ end
             @test all(isfinite, budget.residual[budget.wet])
             # The residual is the cell-averaged finite-element mass error.
             # With U·n = 0 at this basin's vertical coastal wall, a thin
-            # coastal frictional layer forms that mesh 0.08 resolves only
+            # coastal frictional layer forms that mesh 0.05 resolves only
             # roughly, hence the loose bound; it falls as the mesh is refined.
             @test residual < 0.1
             @test residual < centered[name].timings.relative_l2_residual
@@ -1511,5 +1515,34 @@ end
         dirichlet_diagnostics = compute_diagnostics(dirichlet, xs, ys)
         @test natural_diagnostics.timings.transport_projection_relative_l2 <
               dirichlet_diagnostics.timings.transport_projection_relative_l2
+    end
+end
+
+@testset "Surface mesh generation" begin
+    PG = PlanetaryGeostrophy
+    coastline = ellipse_boundary(1.0, 0.75; points=64)
+    mktempdir() do directory
+        mesh_file = joinpath(directory, "pressure.msh")
+        PG.generate_pressure_mesh(mesh_file, coastline; resolution=0.05)
+        written = mtime(mesh_file)
+        @test PG.pressure_mesh_is_current(mesh_file, coastline; resolution=0.05)
+        @test !PG.pressure_mesh_is_current(mesh_file, coastline; resolution=0.04)
+        @test !PG.pressure_mesh_is_current(
+            mesh_file, ellipse_boundary(1.0, 0.7; points=64); resolution=0.05,
+        )
+        sleep(1.1)
+        PG.generate_pressure_mesh(mesh_file, coastline; resolution=0.05)
+        @test mtime(mesh_file) == written
+
+        # The realized size follows `resolution`, not the coastline vertex
+        # spacing (0.086 for 64 points, 0.022 for 256 points).
+        for (points, resolution) in ((64, 0.04), (64, 0.02), (256, 0.02))
+            path = joinpath(directory, "size_$(points)_$(resolution).msh")
+            PG.generate_pressure_mesh(
+                path, ellipse_boundary(1.0, 0.75; points); resolution,
+            )
+            ratio = PG.mean_edge_length(PG.GmshDiscreteModel(path)) / resolution
+            @test 0.9 < ratio < 1.05
+        end
     end
 end

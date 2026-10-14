@@ -16,20 +16,63 @@ function pressure_timed_stage(f, label)
     return measurement.value, metrics
 end
 
+# Version 2 sizes elements by `resolution` everywhere instead of extending the
+# coastline point spacing into the interior.
+const PRESSURE_MESH_GENERATOR_VERSION = 2
+
+pressure_mesh_metadata_path(path) = string(path) * ".meta"
+
+pressure_mesh_metadata(boundary, resolution) = string(
+    "generator=", PRESSURE_MESH_GENERATOR_VERSION, "\n",
+    "resolution=", repr(Float64(resolution)), "\n",
+    "boundary=", repr([(Float64(x), Float64(y)) for (x, y) in boundary]), "\n",
+)
+
 """
-    generate_pressure_mesh(path, boundary; resolution)
+    pressure_mesh_is_current(path, boundary; resolution)
+
+Whether the mesh file at `path` exists and was written by this version of
+`generate_pressure_mesh` for the same `boundary` and `resolution`.
+"""
+function pressure_mesh_is_current(path, boundary; resolution)
+    metadata_path = pressure_mesh_metadata_path(path)
+    return isfile(path) && isfile(metadata_path) &&
+           read(metadata_path, String) == pressure_mesh_metadata(boundary, resolution)
+end
+
+"""
+    generate_pressure_mesh(path, boundary; resolution, overwrite=false)
 
 Write a two-dimensional Gmsh mesh for the closed polygon `boundary`, whose
 entries are `(x, y)` pairs. The mesh includes the physical line tag
 `"boundary"` required by `solve_surface_pressure`.
+
+Elements have size close to `resolution` throughout the basin: the mean edge
+length is within a few percent of it when `resolution` is small compared with
+the basin. The polygon vertices are mesh nodes, so where the coastline's vertex
+spacing is smaller than `resolution` the elements next to the coast are
+smaller too.
+
+An existing mesh file is reused only if it was written by this generator for
+the same `boundary` and `resolution`, as recorded in the sidecar file
+`path * ".meta"`. Otherwise it is regenerated, as it is when `overwrite=true`.
 """
 function generate_pressure_mesh(path, boundary; resolution, overwrite=false)
-    if isfile(path)
-        overwrite || return path
-        rm(path)
+    if !overwrite && pressure_mesh_is_current(path, boundary; resolution)
+        return path
     end
+    isfile(path) && rm(path)
     gmsh.initialize()
     try
+        # Gmsh by default also takes element sizes from the boundary points
+        # and extends them inward. The coastline's edges are then split into a
+        # whole number of segments, so the realized size followed the polygon
+        # vertex spacing rather than `resolution`.
+        gmsh.option.setNumber("Mesh.MeshSizeExtendFromBoundary", 0)
+        gmsh.option.setNumber("Mesh.MeshSizeFromPoints", 0)
+        gmsh.option.setNumber("Mesh.MeshSizeFromCurvature", 0)
+        gmsh.option.setNumber("Mesh.MeshSizeMin", resolution)
+        gmsh.option.setNumber("Mesh.MeshSizeMax", resolution)
         gmsh.model.add("surface_pressure")
         occ = gmsh.model.occ
         point_tags = [
@@ -51,7 +94,25 @@ function generate_pressure_mesh(path, boundary; resolution, overwrite=false)
     finally
         gmsh.finalize()
     end
+    write(pressure_mesh_metadata_path(path), pressure_mesh_metadata(boundary, resolution))
     return path
+end
+
+"""
+    mean_edge_length(model)
+
+Mean triangle edge length of a Gridap surface mesh, the realized mesh size.
+"""
+function mean_edge_length(model)
+    total, count = 0.0, 0
+    for vertices in get_cell_coordinates(Triangulation(model))
+        for k in eachindex(vertices)
+            a, b = vertices[k], vertices[mod1(k + 1, length(vertices))]
+            total += hypot(a[1] - b[1], a[2] - b[2])
+            count += 1
+        end
+    end
+    return total / count
 end
 
 rectangle_boundary(Lx, Ly) = [
@@ -253,6 +314,8 @@ function solve_surface_pressure(
     model, mesh_timing = pressure_timed_stage("loading Gridap surface mesh") do
         GmshDiscreteModel(mesh_file)
     end
+    mesh_size = mean_edge_length(model)
+    @info "Surface mesh" cells=num_cells(model) mean_edge_length=round(mesh_size; sigdigits=3)
     spaces, space_timing = pressure_timed_stage("constructing pressure finite-element spaces") do
         Ω = Triangulation(model)
         dΩ = Measure(Ω, 2 * order)
@@ -372,6 +435,7 @@ function solve_surface_pressure(
         linear_solve=linear_solve_timing,
         total_seconds,
         forcing_points,
+        mean_edge_length=mesh_size,
     )
     @info "Surface-pressure solve completed" seconds=round(total_seconds; digits=3)
     return (;
