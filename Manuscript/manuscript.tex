@@ -1095,12 +1095,17 @@ The stress circulation around closed isobaths closes to $6 \times 10^{-4}$.
 The area-integrated GCVB over the northern and southern halves of the basin, either side of the strait, closes to $4 \times 10^{-5}$ and $1.3 \times 10^{-4}$.
 
 \paragraph{Comparison with a primitive-equation model.}
-Appendix~C compares the solution with \texttt{Oceananigans.jl} \citep{wagner_etal25}, which integrates the nonhydrostatic Boussinesq equations to a steady state.
-The test uses an elliptical basin on a $\beta$-plane with $\mathrm{Ek} = 0.02$, a 0.3-deep vertical sidewall, weak zonal surface stress, and spatially varying surface and restoring buoyancy.
-The forcing is weak, so that momentum and buoyancy advection are negligible.
-The relative $L_2$ difference in buoyancy over the basin interior is 2.5\%, 1.2\%, and 0.7\% with 16, 32, and 64 vertical levels.
-This is roughly first-order convergence, consistent with the stair-stepped immersed coastline of the \texttt{Oceananigans.jl} grid.
-\todo{Velocity and surface-pressure differences: the saved validation outputs report buoyancy only, and buoyancy is column-local, so it does not test the surface-pressure solve or the coastal condition. Rerun \texttt{Oceananigans\_Variable\_Basin\_Validation.ipynb} with the no-normal-flow condition and report $\mathbf{u}$ and $\mathbf{U}$ differences. Also run \texttt{Oceananigans\_PG\_Validation.ipynb} (flat-bottom column), which has no saved outputs.}
+Appendix~C compares the solution with \texttt{Oceananigans.jl} \citep{wagner_etal25}, \replaced[id=CL]{whose hydrostatic free-surface model is integrated from rest to a steady state with momentum and buoyancy advection switched off}{which integrates the nonhydrostatic Boussinesq equations to a steady state}.
+The test uses an elliptical basin on a $\beta$-plane with $\mathrm{Ek} = 0.02$, \replaced[id=CL]{a flat bottom of depth 0.65 bounded by a vertical coastal wall}{a 0.3-deep vertical sidewall}, weak zonal surface stress, and spatially varying surface and restoring buoyancy.
+\replaced[id=CL]{The two models then solve the same linear equations and differ only in their discretizations.}{The forcing is weak, so that momentum and buoyancy advection are negligible.}
+\deleted[id=CL]{The relative $L_2$ difference in buoyancy over the basin interior is 2.5\%, 1.2\%, and 0.7\% with 16, 32, and 64 vertical levels.
+This is roughly first-order convergence, consistent with the stair-stepped immersed coastline of the \texttt{Oceananigans.jl} grid.}
+\added[id=CL]{Away from the coast and the bottom, the relative $L_2$ difference in the depth-integrated transport $\mathbf{U}$ is 11\%, 4.3\%, and 1.5\% on $40 \times 30 \times 20$, $80 \times 60 \times 40$, and $160 \times 120 \times 40$ \texttt{Oceananigans.jl} grids, and in the horizontal velocity $\mathbf{u}$ it is 8.0\%, 3.4\%, and 1.1\% (Fig.~\ref{fig:oceananigans_comparison}).
+This is roughly first-order convergence in the horizontal grid spacing, consistent with the stair-stepped immersed coastline of the \texttt{Oceananigans.jl} grid.
+The buoyancy differences are $1.5 \times 10^{-3}$, $3.5 \times 10^{-4}$, and $3.5 \times 10^{-4}$, limited by the vertical resolution.
+Unlike buoyancy, which is column-local, $\mathbf{u}$ and $\mathbf{U}$ test the surface-pressure solve and the coastal condition.
+The PG solution takes under a second to compute, 25 to 150 times faster than the \texttt{Oceananigans.jl} spin-up (Appendix~C).}
+\deleted[id=CL]{[TODO: Velocity and surface-pressure differences: the saved validation outputs report buoyancy only, and buoyancy is column-local, so it does not test the surface-pressure solve or the coastal condition. Rerun \texttt{Oceananigans\_Variable\_Basin\_Validation.ipynb} with the no-normal-flow condition and report $\mathbf{u}$ and $\mathbf{U}$ differences. Also run \texttt{Oceananigans\_PG\_Validation.ipynb} (flat-bottom column), which has no saved outputs.]}
 
 \begin{figure}
 \centering
@@ -1491,16 +1496,54 @@ $\mathfrak{B}$ is evaluated at every quadrature point of the finite-element mesh
 \subsection{Solution validation}
 
 In order to test and validate the derivation of the solution method, the results for a test case are compared to an independently-derived solution.
-We use the \texttt{Oceananigans.jl} Julia package, which solves the Boussinesq incompressible nonhydrostatic Navier-Stokes equations \citep{wagner_etal25}.
+We use the \texttt{Oceananigans.jl} Julia package, \replaced[id=CL]{and its hydrostatic free-surface model, which solves the hydrostatic Boussinesq equations}{which solves the Boussinesq incompressible nonhydrostatic Navier-Stokes equations} \citep{wagner_etal25}.
 The test involves an elliptical basin \replaced[id=CL]{on a $\beta$-plane, with smoothly varying topography and a 0.3-deep vertical sidewall at the coast}{with smoothly-varying topography that vanishes at the edges on a $\beta$-plane}. 
 The forcing consists of a zonal windstress that varies in the meridional direction, and varying surface buoyancy and relaxation buoyancy fields.
 The forcing amplitude is small so that buoyancy and momentum advection are weak and the linear PG equations are an accurate asymptotic approximation.
+\added[id=CL]{In \texttt{Oceananigans.jl}, advection is switched off, the vertical viscosity and diffusivity are $\mathrm{Ek}$ (implicit in time), the bottom is no-slip, the surface buoyancy is prescribed, and the buoyancy relaxes to its restoring field at rate $\Gamma$.
+There is no horizontal viscosity or diffusivity, as in PG.
+The model is integrated from rest for $200/f_0$, which is 40 restoring times; over the last $5/f_0$ the velocity changes by less than $10^{-5}$ of its maximum.
+The PG solution is sampled at the \texttt{Oceananigans.jl} cell centres and compared over cells more than one cell from the bottom, with wet horizontal neighbours, inside 95\% of the coastal radius (the script \texttt{AnalyticalModel/OceananigansComparison.jl}).}
 
-Solutions for the surface pressure, buoyancy, and velocity fields from the Oceananigans solution and the PG solution are compared (see \texttt{Oceananigans\_Variable\_Basin\_Validation.ipynb}).
-The differences between the two solutions are of order 1\% and diminish as the grid spacing in the Oceananigans model is refined.
+\replaced[id=CL]{Two bottoms are used.
+With a flat bottom of depth 0.65, the differences in buoyancy, horizontal velocity, and depth-integrated transport converge at about first order as the \texttt{Oceananigans.jl} grid is refined, to $3.5 \times 10^{-4}$, 1.1\%, and 1.5\% at $160 \times 120 \times 40$ (Section~\ref{sect:verification} and Fig.~\ref{fig:oceananigans_comparison}a--d).
+With the Gaussian bowl $H = 0.3 + 0.7\, e^{-2r^2}$ (with $r$ the elliptical radius) and a 0.3-deep coastal wall, the comparison is limited by the representation of the sloping bottom in the $z$-level model (Fig.~\ref{fig:oceananigans_comparison}e).
+With a stair-stepped bottom, the transport difference is 29\% at $80 \times 60 \times 40$ and grows to 58\% at $160 \times 120 \times 40$, as grid-scale noise at the steps, undamped without horizontal viscosity, grows.
+Partial bottom cells reduce the difference to 18\%, and a weak horizontal viscosity of $10^{-4}$ reduces it to 7.6\%.
+The buoyancy differences are about 1\% in all these cases.}{Solutions for the surface pressure, buoyancy, and velocity fields from the Oceananigans solution and the PG solution are compared (see \texttt{Oceananigans\_Variable\_Basin\_Validation.ipynb}).
+The differences between the two solutions are of order 1\% and diminish as the grid spacing in the Oceananigans model is refined.}
 On this basis, we presume that the PG solution is derived and coded accurately. 
 The test is important as parts of the PG solution are produced automatically using \texttt{Sympy.jl} and \texttt{Symbolics.jl}, and some of the software development employs artificial intelligence assistance (Github Copilot version 1.1.21).
-For typical parameters, computing the PG solution is hundreds of times faster than computing the Oceananigans solution.
+\replaced[id=CL]{Table~\ref{tab:oceananigans_timing} compares the wall-clock times on an Apple M5 Max (18 threads) after compilation.
+The PG solve, including meshing the coastline at $h = 0.02$ and solving for $p_s$, takes 0.7~s for the flat bottom and 1.0~s for the bowl, and sampling the solution at the \texttt{Oceananigans.jl} cell centres takes a further 0.05--0.7~s.
+The \texttt{Oceananigans.jl} spin-up takes 18~s to 180~s on the CPU with the same threads, so computing the PG solution is 25 to 150 times faster, and the ratio grows with resolution.
+The spin-up is long because the time step is limited by the explicit boundary fluxes to about $\Delta z^2/\mathrm{Ek}$, and partial bottom cells, which are thinner, need a time step four times smaller (540~s at $80 \times 60 \times 40$).
+The PG solution needs no spin-up, and its cost is set by the two-dimensional surface-pressure mesh, independent of the vertical resolution at which it is sampled.}{For typical parameters, computing the PG solution is hundreds of times faster than computing the Oceananigans solution.}
+
+% Added by Claude (CL): Oceananigans comparison table and figure.
+\begin{table}
+\caption{\added[id=CL]{\label{tab:oceananigans_timing} Comparison with \texttt{Oceananigans.jl} for the flat-bottom basin: relative $L_2$ differences in buoyancy $b$, horizontal velocity $\mathbf{u}$, and depth-integrated transport $\mathbf{U}$, and wall-clock time to solution on 18 threads. The PG solve (meshing and surface pressure, $h = 0.02$) takes 0.7~s; the PG time includes sampling at the \texttt{Oceananigans.jl} cell centres.}}
+\centering
+\begin{tabular}{lccccccc}
+\hline
+Grid & $\Delta t$ & Steps & $b$ & $\mathbf{u}$ & $\mathbf{U}$ & \texttt{Oceananigans.jl} (s) & PG (s) \\
+\hline
+$40 \times 30 \times 20$ & 0.05 & 4\,000 & $1.5 \times 10^{-3}$ & 0.080 & 0.112 & 18 & 0.7 \\
+$80 \times 60 \times 40$ & 0.0125 & 16\,000 & $3.5 \times 10^{-4}$ & 0.034 & 0.043 & 83 & 0.9 \\
+$160 \times 120 \times 40$ & 0.0125 & 16\,000 & $3.5 \times 10^{-4}$ & 0.011 & 0.015 & 180 & 1.2 \\
+\hline
+\end{tabular}
+\end{table}
+
+\begin{figure}
+\centering
+\includegraphics[width=16cm]{oceananigans_comparison.pdf}
+\caption{\added[id=CL]{\label{fig:oceananigans_comparison} Comparison with \texttt{Oceananigans.jl}.
+(a) \texttt{Oceananigans.jl} and (b) PG depth-integrated transport magnitude $|\mathbf{U}|$ for the flat-bottom basin on the $160 \times 120 \times 40$ grid, and (c) their difference over the comparison columns.
+(d) Relative $L_2$ differences for the flat bottom against the \texttt{Oceananigans.jl} grid spacing; the gray line is proportional to $\Delta x$.
+(e) Relative $L_2$ differences in $\mathbf{u}$ and $\mathbf{U}$ for the Gaussian-bowl bottom with stair-stepped and partial bottom cells, and with a horizontal viscosity $\nu_h = 10^{-4}$.
+(f) Wall-clock time to solution for the flat bottom.}}
+\end{figure}
 
 \bibliographystyle{ametsoc2014}
 \bibliography{references}
