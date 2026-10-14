@@ -20,6 +20,7 @@ Questions/comments welcome.
   - [Performance metrics](#performance-metrics)
   - [Solution method and threading](#solution-method-and-threading)
   - [Coastal boundary condition](#coastal-boundary-condition)
+  - [Surface mesh](#surface-mesh)
 - [Transport diagnostics](#transport-diagnostics)
 - [Forcing sensitivity](#forcing-sensitivity)
 - [Dynamical-balance diagnostics](#dynamical-balance-diagnostics)
@@ -226,6 +227,28 @@ transport and the streamfunction transport falls from 5.3% to 0.16% (0.05% on
 mesh 0.02). The streamfunction projection now interpolates $\nabla p_s$,
 $\mathfrak A$ and $\mathfrak B$ without a coastal Dirichlet condition; only
 $\Psi$ itself is zero on the coast.
+
+### Surface mesh
+
+`solve_pg(problem; mesh_resolution=h)` meshes the coastline polygon with
+second-order elements of size close to `h` throughout the basin. The realized
+mean edge length is reported as
+`solution.timings.surface_pressure.mean_edge_length`. It is within a few
+percent of `h` when `h` is small compared with the basin (for example 0.99 of
+`h` at 0.02 and 0.92 at 0.08 for a 64-point ellipse of semi-axes 1 and 0.75).
+The polygon vertices are mesh nodes, so where the coastline's vertex spacing is
+smaller than `h`, the elements next to the coast are smaller too.
+
+Earlier versions let Gmsh take element sizes from the coastline points and
+extend them inward. The realized size then followed how the polygon's edges
+divided into segments: about 0.54 of `h` at 0.16 and 0.91 at 0.02 for the same
+ellipse, and with a 256-point coastline 0.16, 0.08 and 0.04 gave the same mesh.
+
+A mesh file passed as `mesh_file` is reused only if it was written by the
+current generator for the same coastline and resolution, as recorded in the
+sidecar file `mesh_file * ".meta"`. Otherwise it is regenerated, so a cached
+mesh from an earlier version or with different settings is never reused
+silently.
 
 ## Transport diagnostics
 

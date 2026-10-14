@@ -265,7 +265,8 @@ function solve_pg(
     mesh_resolution > 0 || throw(ArgumentError("mesh_resolution must be positive"))
     pressure_order > 0 || throw(ArgumentError("pressure_order must be positive"))
     solve_started = time()
-    reusing_mesh = isfile(mesh_file) && !overwrite_mesh
+    reusing_mesh = !overwrite_mesh &&
+        pressure_mesh_is_current(mesh_file, problem.boundary; resolution=mesh_resolution)
     @info "PG solve started" Ek=problem.parameters.Ek Γ=problem.parameters.Γ viscosity=problem.parameters.viscosity diffusivity=problem.parameters.diffusivity pressure_order mesh_resolution mesh_file=string(mesh_file)
     mesh, mesh_timing = timed_stage(
         reusing_mesh ? "reusing surface mesh" : "generating surface mesh",

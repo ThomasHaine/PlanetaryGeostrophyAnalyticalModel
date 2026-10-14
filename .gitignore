@@ -16,3 +16,4 @@ Development*
 AnalyticalModel/Old*
 .vscode*
 .DS_Store
+*.msh.meta
