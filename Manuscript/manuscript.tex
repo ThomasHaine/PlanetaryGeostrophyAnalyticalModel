@@ -1136,6 +1136,37 @@ At $s = 3.5$ neither correction helps (7\%): the Ekman layers fill much of the c
 (d) Relative $L_2$ difference between the PG and Stommel $\Psi$ against $s$, for the classical constant drag, for the local drag $r(y) = f \delta_E/(2H)$, and for the local drag acting over the depth $H - \delta_E/2$.}}
 \end{figure}
 
+\paragraph{\added[id=CL]{$\beta$ plumes.}}
+\added[id=CL]{An isolated Gaussian patch of positive wind-stress curl, of radius 0.2, in a flat $4 \times 2$ basin with $f = 1 + 0.3\,y$ drives the westward $\beta$ plume of \citet{stommel82}.
+The classical model is the frictional vorticity equation $\nabla \cdot (r \nabla \Psi) + \beta \partial_x \Psi = \mathrm{Ek}\, \hat{\mathbf{z}} \cdot \nabla \times \boldsymbol{\tau}$ with $\Psi = 0$ on the coast, solved by second-order finite differences in the same basin, so that the walls and a variable drag are treated exactly.
+With the constant derived drag $r = f_0 \delta_E/(2H)$, the relative $L_2$ difference in $\Psi$ is 1.5\%, 2.7\%, 6.5\%, and 8.8\% for $s = 26$, 13, 6.5, and 3.2.
+With the local Ekman drag acting over the displacement thickness, $r(y) = f \delta_E/[2(H - \delta_E/2)]$, it is 0.8\%, 1.3\%, 1.9\%, and 9.1\% (Fig.~\ref{fig:beta_plume_comparison}).
+As for the gyre, these two corrections, both implied by the PG bottom stress, halve the difference or better wherever $s \gtrsim 6$, and the layer model fails near $s \approx 3$.}
+
+\added[id=CL]{\citet{haine&fuller16} give the exact solution for a $\beta$ plume beside a straight coast inclined at angle $\theta$ to east--west, with Rayleigh drag $\lambda$: the free-space plume of the source minus a weighted image source reflected in the coast.
+In a basin cut by such a coast, a Gaussian source of radius 0.1 lies $5 \delta_S$ from it, where $\delta_S = \lambda/\beta$ is the Stommel length and $\lambda = f_0 \delta_E/(2H)$ is again derived ($s = 62$; $\beta = 0.1$, so that the drag varies by only about $\pm 7\%$ over the domain).
+PG reproduces the exact solution, convolved with the source, to 0.7\% for $\theta = 30^\circ$ and 0.6\% for $\theta = 60^\circ$ (Fig.~\ref{fig:boundary_beta_plume_comparison}).
+Down-plume, along the line through the source parallel to the coast, the PG e-folding length (fitted after removing the $(-s)^{-3/2}$ factor of the far-field asymptote) is within 7\% and 3\% of that of the exact solution.
+Within the basin neither has yet reached the asymptotic e-folding length $2 \delta_S/(1 - \cos \theta)$.
+This test also exercises the no-normal-flow condition on an inclined coast.}
+
+\begin{figure}
+\centering
+\includegraphics[width=14cm]{beta_plume_comparison.pdf}
+\caption{\added[id=CL]{\label{fig:beta_plume_comparison} The $\beta$ plume of \citet{stommel82}.
+(a) PG streamfunction $\Psi$ for $s = H/\delta_E = 13$ ($\mathrm{Ek} = 3 \times 10^{-3}$), with the forcing patch dashed, and (b) the classical frictional solution with the derived drag $r = f_0 \delta_E/(2H)$, on the same contour levels.
+(c) Meridional sections of $\Psi$ across the plume at $x = -0.6$ for four values of $s$: PG (solid) and the classical solution (dashed), normalized by the classical extremum.
+(d) Relative $L_2$ difference between the PG and classical $\Psi$ against $s$, for the constant drag and for the local drag $r(y) = f \delta_E/[2(H - \delta_E/2)]$.}}
+\end{figure}
+
+\begin{figure}
+\centering
+\includegraphics[width=16cm]{boundary_beta_plume_comparison.pdf}
+\caption{\added[id=CL]{\label{fig:boundary_beta_plume_comparison} Boundary $\beta$ plumes of \citet{haine&fuller16}, for a coast inclined at $\theta = 30^\circ$ (top) and $60^\circ$ (bottom) to east--west.
+Left: PG streamfunction $\Psi$. Centre: the exact solution of \citet{haine&fuller16} with the derived drag $\lambda = f_0 \delta_E/(2H)$, convolved with the Gaussian source, on the same contour levels. The dotted line runs through the source parallel to the coast.
+Right: $|\Psi|$ along that line against down-plume distance in units of $\delta_S = \lambda/\beta$, for PG (solid), the exact solution (dashed), and the far-field asymptote $\propto (-s)^{-3/2} \exp[-|s|(1 - \cos \theta)/2\delta_S]$ (gray).}}
+\end{figure}
+
 \section{Discussion}
 \label{sect:discussion}
 
