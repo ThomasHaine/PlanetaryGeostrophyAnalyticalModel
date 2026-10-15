@@ -1186,6 +1186,61 @@ Where the shelf is less than about two Ekman depths deep, the Ekman layers overl
 (d) Relative $L_2$ difference between the PG and layer-model $\Psi$ over the deep basin ($H > 0.6$) and the shelf ($H < 0.2$), with steering along $f/H$ and along $f/(H - \delta_E/2)$, against the shelf $s$.}}
 \end{figure}
 
+% Added by Claude (CL): Section 6d, double-basin showcase. Made by TheoryNotes/DoubleBasinShowcase.jl.
+\subsection{A double basin}
+\label{sect:double_basin}
+
+\added[id=CL]{To show the method on a less idealized geometry, Fig.~\ref{fig:double_basin_showcase} shows a double basin on an $f$-plane with $\mathrm{Ek} = 0.002$, so that $\delta_E = 0.063$.
+Two deep bowls are separated by a shallow ridge running west from the eastern shelf and joined by a deeper western strait, loosely modeled on the Nordic Seas and Fram Strait.
+The outer shelf is 0.26 deep, only 4.1 Ekman depths, so the Ekman layers overlap there, and the deepest water is about 19 Ekman depths.
+Cyclonic wind-stress cells over each bowl, a meridional surface-buoyancy gradient, and uniform restoring stratification drive the circulation.
+The steady circulation consists of two cyclonic gyres steered by the closed isobaths of each bowl, joined through the strait, where the meridional velocity is nearly uniform with depth down to the bed (Fig.~\ref{fig:double_basin_showcase}a, b).}
+
+\added[id=CL]{Table~\ref{tab:double_basin} lists the cost of each stage on 18 threads.
+The solve on a mesh of size 0.02 takes 8~s, and all five dynamical balances of Table~\ref{tab:dynamical_balances} take a further 19~s on a $65 \times 65$ diagnostic grid.
+The depth-integrated momentum balance closes to $10^{-5}$, and the cell-averaged vorticity balances to 3\%, the residual being set by the diagnostic grid (Section~\ref{sect:verification}).}
+
+\added[id=CL]{The solution also tests the integral constraint of \citet{nost&isachsen03}.
+On closed $f/H$ contours, the bottom geostrophic velocity follows from the forcing integrated over the enclosed area once a drag law is assumed.
+With a linear or quadratic isotropic drag, calibrated by least squares against the PG bottom stress itself, the predicted bottom velocity differs from the PG velocity by 103\% and 120\% (relative $L_2$, 2771 points), although the speeds remain correlated (0.92 and 0.88).
+With the drag derived from the PG bottom stress, $\boldsymbol{\tau}_b = S \nabla p_b + T$, which is rotated relative to the bottom velocity and includes the baroclinic and wind contributions, the same constraint reproduces the PG bottom velocity to 3\% (Fig.~\ref{fig:double_basin_showcase}c).
+The drag closure, not the integral constraint, limits the classical method.}
+
+\added[id=CL]{Finally, one adjoint solve of the surface-pressure equation gives the sensitivity of the northward transport through the strait to the wind stress, surface buoyancy, and restoring buoyancy everywhere (Fig.~\ref{fig:double_basin_showcase}d--f).
+The adjoint identity holds to $10^{-14}$, and the solve and kernels take 21~s.
+The kernels extend from the strait along the isobaths of the western slope and around the southern bowl, mapping the region whose forcing sets the strait transport.}
+
+\begin{table}
+\caption{\added[id=CL]{\label{tab:double_basin} Wall-clock times on 18 threads (Apple M5 Max) for the double basin of Fig.~\ref{fig:double_basin_showcase}, and the closure of each balance as the relative $L_2$ residual on the $65 \times 65$ diagnostic grid.}}
+\centering
+\begin{tabular}{lcc}
+\hline
+Stage & Time (s) & Residual \\
+\hline
+PG solve, mesh 0.02 (153\,876 quadrature points) & 7.7 & \\
+3-D sampling, $241 \times 3 \times 121$ points & 1.6 & \\
+Transport, bottom stress, and $\Psi$ & 5.6 & \\
+Depth-integrated momentum (DIM) & 0.6 & $1.0 \times 10^{-5}$ \\
+Barotropic vorticity (BV), cell averages & 13.2 & 0.034 \\
+Depth-integrated vorticity & 2.0 & 0.034 \\
+Geostrophic-contour vorticity (GCVB) & 1.6 & 0.027 \\
+Transport-divergence vorticity (TDVB) & 1.6 & 0.034 \\
+Nøst--Isachsen comparison & 1.6 & \\
+Adjoint sensitivity of the strait transport & 21.1 & \\
+\hline
+\end{tabular}
+\end{table}
+
+\begin{figure}
+\centering
+\includegraphics[width=16cm]{double_basin_showcase.pdf}
+\caption{\added[id=CL]{\label{fig:double_basin_showcase} Double basin on an $f$-plane, $\mathrm{Ek} = 0.002$.
+(a) Transport streamfunction $\Psi$, with isobaths $H = 0.4$, 0.8, and 1.2 (gray) and the strait section (gold).
+(b) Meridional velocity $v$ (color) and buoyancy $b$ (contours) in a zonal section at $y = 0$; the strait section is shaded.
+(c) Bottom speed on closed $f/H$ contours from the \citet{nost&isachsen03} integral constraint against the PG bottom speed, with an assumed linear drag calibrated against the PG bottom stress (gray) and with the drag derived from the PG bottom stress (blue); percentages are relative $L_2$ velocity differences.
+(d--f) Adjoint sensitivity of the northward strait transport to the local wind stress $\tau^x$ and $\tau^y$, and to the restoring buoyancy $B$ at $z = -0.5$; color scales are clipped at the 97th percentile of the magnitude.}}
+\end{figure}
+
 \section{Discussion}
 \label{sect:discussion}
 

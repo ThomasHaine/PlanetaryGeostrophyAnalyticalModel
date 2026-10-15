@@ -42,5 +42,6 @@ Two conventions are in use:
 | `beta_plume_comparison.pdf` | `TheoryNotes/BetaPlumeComparison.jl` |
 | `boundary_beta_plume_comparison.pdf` | `TheoryNotes/BoundaryBetaPlumeComparison.jl` |
 | `topographic_steering_comparison.pdf` | `TheoryNotes/TopographicSteeringComparison.jl` |
+| `double_basin_showcase.pdf` | `TheoryNotes/DoubleBasinShowcase.jl` |
 
 Copy regenerated figures here, and upload them to Overleaf.
