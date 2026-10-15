@@ -1167,6 +1167,25 @@ Left: PG streamfunction $\Psi$. Centre: the exact solution of \citet{haine&fulle
 Right: $|\Psi|$ along that line against down-plume distance in units of $\delta_S = \lambda/\beta$, for PG (solid), the exact solution (dashed), and the far-field asymptote $\propto (-s)^{-3/2} \exp[-|s|(1 - \cos \theta)/2\delta_S]$ (gray).}}
 \end{figure}
 
+\paragraph{\added[id=CL]{Topographic steering.}}
+\added[id=CL]{On an $f$-plane, a shelf of depth 0.1 in the north of a $4 \times 2$ basin falls across a slope, $H = 0.1 + 0.45 \left[ 1 - \tanh \left( (y - 0.3)/0.25 \right) \right]$, to depth 1 in the south.
+An isolated patch of wind-stress curl on the slope drives a topographic $\beta$ plume that runs west along the isobaths, with shallow water to the right.
+The classical layer model is the deep limit of the PG transport (Section~\ref{sect:results}a): geostrophic transport over a depth $b$ plus the bottom Ekman transport down the surface-pressure gradient, $f (\mathbf{U} - \mathbf{U}_E) = -(\delta_E/2) \nabla p_s + b \, \hat{\mathbf{z}} \times \nabla p_s$, with $\mathbf{U}_E$ the surface Ekman transport.
+Eliminating $p_s$ gives an elliptic equation for $\Psi$ that, for $\delta_E \ll b$, steers $\Psi$ along contours of $f/b$ with drag $f \delta_E/(2 b^2)$; it is solved by finite differences in the same basin.
+With classical $f/H$ steering ($b = H$), the relative $L_2$ difference in $\Psi$ over the deep basin ($H > 0.6$) is 15\%, 4.3\%, and 2.0\% for $\mathrm{Ek} = 5 \times 10^{-3}$, $1.25 \times 10^{-3}$, and $2 \times 10^{-4}$, where the deep basin has $s = 10$, 20, and 50.
+Steering along $f/(H - \delta_E/2)$, with the bottom Ekman layer as a displacement thickness, reduces it to 6.2\%, 2.0\%, and 0.2\% (Fig.~\ref{fig:topographic_steering_comparison}).
+On the shelf ($H < 0.2$), where $s = 1$, 2, and 5, the differences are 52\%, 13\%, and 4.4\% with $f/H$ steering, and 40\%, 13\%, and 0.6\% with $f/(H - \delta_E/2)$.
+Where the shelf is less than about two Ekman depths deep, the Ekman layers overlap, the transport becomes the lubrication flow down the pressure gradient of Section~\ref{sect:results}a, and neither steering depth recovers the PG solution.}
+
+\begin{figure}
+\centering
+\includegraphics[width=14cm]{topographic_steering_comparison.pdf}
+\caption{\added[id=CL]{\label{fig:topographic_steering_comparison} Topographic steering over a slope to a shallow shelf, on an $f$-plane.
+(a) PG streamfunction $\Psi$ for $\mathrm{Ek} = 1.25 \times 10^{-3}$ (shelf $s = 2$, deep $s = 20$), and (b) the layer model with steering along $f/H$, on the same contour levels. Gray dashed lines are isobaths $H = 0.2$, 0.4, 0.6, and 0.8; the dotted circle marks the forcing patch.
+(c) Meridional sections of $\Psi$ at $x = -0.5$ for shelf $s = 1$, 2, and 5: PG (solid) and the layer model with $f/H$ steering (dashed), normalized by the PG extremum; the shaded band is the shelf.
+(d) Relative $L_2$ difference between the PG and layer-model $\Psi$ over the deep basin ($H > 0.6$) and the shelf ($H < 0.2$), with steering along $f/H$ and along $f/(H - \delta_E/2)$, against the shelf $s$.}}
+\end{figure}
+
 \section{Discussion}
 \label{sect:discussion}
 
