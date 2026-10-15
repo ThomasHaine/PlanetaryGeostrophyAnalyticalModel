@@ -189,6 +189,12 @@ function map_panel(Ψ, title)
     contour!(p, reference.x, reference.y, [depth(xx, yy) for xx in reference.x, yy in reference.y]';
         levels=isobaths, color=:gray, ls=:dash, lw=0.8, colorbar=false)
     plot!(p, first.(source), last.(source); color=:black, ls=:dot, label="")
+    # Ψ = 0 separates the plume from the weak recirculation east of the source.
+    # It is drawn in the interior only: on the walls Ψ = 0 to round-off, and the
+    # sign of that round-off would trace the walls.
+    interior = 3:length(reference.x)-2, 3:length(reference.y)-2
+    contour!(p, reference.x[interior[1]], reference.y[interior[2]], Ψ[interior...]';
+        levels=[0.0], color=:black, ls=:dashdot, lw=1.8, colorbar=false)
     return p
 end
 panel_a = map_panel(reference.Ψ_pg, @sprintf("(a) PG \$\\Psi\$, shelf \$s = %.0f\$", reference.s_shelf))
