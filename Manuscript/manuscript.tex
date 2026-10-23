@@ -1245,6 +1245,62 @@ Adjoint sensitivity of the strait transport & 21.1 & \\
 (d--f) Adjoint sensitivity of the northward strait transport to the local wind stress $\tau^x$ and $\tau^y$, and to the restoring buoyancy $B$ at $z = -0.5$; color scales are clipped at the 97th percentile of the magnitude.}}
 \end{figure}
 
+% Added by Claude (CL): Section 6e, cost and dimensional parameters. Made by TheoryNotes/CostScaling.jl.
+\subsection{Cost and dimensional parameters}
+\label{sect:cost}
+
+\added[id=CL]{Table~\ref{tab:cost_scaling} shows how the cost of the solve scales, in the test basin of Section~\ref{sect:verification} on 18 threads.
+Almost all of it is the evaluation of the column integrals for $\mathfrak{A}$, $\mathfrak{B}$, $S$, and $T$ at the quadrature points of the surface-pressure mesh; the finite-element assembly and linear solve take at most a fifth.
+At fixed $\mathrm{Ek}$, the cost is proportional to the number of quadrature points, from 0.22~s at $h = 0.08$ to 11.7~s at $h = 0.01$.
+At fixed mesh, it grows with $s = H/\delta_E$, because each column is split into $\lceil H/(4\delta_E) \rceil$ Gauss--Legendre panels: from 0.75~s at $\mathrm{Ek} = 10^{-2}$ to 202~s at $\mathrm{Ek} = 10^{-5}$, somewhat faster than $s$.
+The column integrals are independent, and the solve at $h = 0.02$ takes 16.9~s on one thread and 2.0~s on 18, a speed-up of 8.5 on a processor with 6 performance and 12 efficiency cores.}
+
+\added[id=CL]{Table~\ref{tab:dimensional} gives dimensional values for a basin of width $L = 1000$~km and depth $H_0 = 4000$~m with $f_0 = 10^{-4}$~s$^{-1}$.
+The Ekman numbers of the examples, $0.02$ to $1.3 \times 10^{-4}$, correspond to vertical viscosities of 32 to 0.2~m$^2$\,s$^{-1}$ and Ekman depths of 800 to 64~m.
+A realistic $\nu_0 \approx 10^{-2}$~m$^2$\,s$^{-1}$ gives $\mathrm{Ek} \approx 6 \times 10^{-6}$ and $\delta_E \approx 14$~m.
+Two costs limit such small Ekman numbers.
+The column integrals grow with $s$, which reaches about 300, and the mesh must resolve the frictional layers of width $\ell \approx \delta_E/(2|\nabla H|)$ over slopes (Section~\ref{sect:classical_limits}), a few kilometers for continental slopes.
+Extrapolating linearly from $\mathrm{Ek} = 10^{-5}$ at $h = 0.04$, a uniform mesh of size $h = 0.005$ (5~km) would take about 4~hours on 18 threads, so realistic Ekman numbers call for meshes refined only over steep slopes.}
+
+\begin{table}
+\caption{\added[id=CL]{\label{tab:cost_scaling} Wall-clock time of the PG solve (best of three, after compilation) in the test basin of Section~\ref{sect:verification}, on 18 threads of an Apple M5 Max unless stated. The forcing evaluation computes the column integrals at the quadrature points of the surface-pressure mesh. The script is \texttt{TheoryNotes/CostScaling.jl}.}}
+\centering
+\begin{tabular}{lrrrr}
+\hline
+Case & Quadrature points & Total (s) & Forcing (s) & Assembly and solve (s) \\
+\hline
+$\mathrm{Ek} = 10^{-2}$, $h = 0.08$ & 5\,988 & 0.22 & 0.18 & 0.01 \\
+$\mathrm{Ek} = 10^{-2}$, $h = 0.04$ & 21\,576 & 0.76 & 0.65 & 0.04 \\
+$\mathrm{Ek} = 10^{-2}$, $h = 0.02$ & 82\,896 & 2.58 & 2.16 & 0.22 \\
+$\mathrm{Ek} = 10^{-2}$, $h = 0.01$ & 328\,152 & 11.7 & 8.93 & 2.15 \\
+\hline
+$\mathrm{Ek} = 10^{-3}$, $h = 0.04$ ($s \le 31$) & 21\,576 & 3.35 & 3.24 & 0.04 \\
+$\mathrm{Ek} = 10^{-4}$, $h = 0.04$ ($s \le 99$) & 21\,576 & 22.3 & 22.2 & 0.05 \\
+$\mathrm{Ek} = 10^{-5}$, $h = 0.04$ ($s \le 313$) & 21\,576 & 202 & 202 & 0.04 \\
+\hline
+$\mathrm{Ek} = 10^{-2}$, $h = 0.02$, 1 thread & 82\,896 & 16.9 & 16.6 & 0.21 \\
+\quad 2 / 4 / 8 / 18 threads & & 10.5 / 5.0 / 3.4 / 2.0 & & \\
+\hline
+\end{tabular}
+\end{table}
+
+\begin{table}
+\caption{\added[id=CL]{\label{tab:dimensional} Dimensional values for $L = 1000$~km, $H_0 = 4000$~m, $f_0 = 10^{-4}$~s$^{-1}$, and $\nu = \kappa$ ($\mathrm{Pr} = 1$): $\nu_0 = \mathrm{Ek}\, f_0 H_0^2$ and $\delta_E = H_0 \sqrt{2\,\mathrm{Ek}}$.
+The nondimensional $\beta = 0.15$ of the test basin is $1.5 \times 10^{-11}$~m$^{-1}$\,s$^{-1}$, and $\Gamma = 0.2$ is a relaxation rate $\gamma = \Gamma f_0/\mathrm{Pr} = 2 \times 10^{-5}$~s$^{-1}$ (0.6~days).}}
+\centering
+\begin{tabular}{lccc}
+\hline
+Example & $\mathrm{Ek}$ & $\nu_0$ (m$^2$\,s$^{-1}$) & $\delta_E$ (m) \\
+\hline
+\texttt{Oceananigans.jl} comparison (Appendix C) & 0.02 & 32 & 800 \\
+Test basin (Section~\ref{sect:verification}) & 0.01 & 16 & 570 \\
+Double basin (Section~\ref{sect:double_basin}) & 0.002 & 3.2 & 250 \\
+Boundary $\beta$ plume (Section~\ref{sect:classical_limits}) & $1.3 \times 10^{-4}$ & 0.20 & 64 \\
+Realistic & $6 \times 10^{-6}$ & 0.01 & 14 \\
+\hline
+\end{tabular}
+\end{table}
+
 \section{Discussion}
 \label{sect:discussion}
 
