@@ -1072,7 +1072,7 @@ $h$ & $p_s$ & $\mathbf{U}$ & $\boldsymbol{\tau}_b$ & $\mathbf{u}(-H/2)$ & $\Psi$
 
 \paragraph{Dynamical balances.}
 The depth-integrated momentum balance (\ref{eqn:U_mom})--(\ref{eqn:V_mom}) holds pointwise, because the column solution satisfies the momentum equations exactly.
-Evaluated with centered differences of step $10^{-5}$ for $\nabla p_b$ and $\nabla \chi$, its relative residual is about $10^{-6}$ in the double basin.
+Evaluated with centered differences of step $10^{-5}$ for $\nabla p_b$ and $\nabla \chi$, its relative residual is about \replaced[id=CL]{$10^{-5}$}{$10^{-6}$} in the double basin\added[id=CL]{ of Section~\ref{sect:double_basin}, two deep bowls on an $f$-plane joined by a strait, with a shelf only four Ekman depths deep (Fig.~\ref{fig:double_basin_showcase})}.
 The vorticity balances (\ref{eqn:BVE}), (\ref{eqn:DIV}), (\ref{eqn:GCVB}), and (\ref{eqn:TDVB}) are curls of that balance, so they also hold exactly for the continuous fields.
 Mapping them requires care, however.
 They act on the bottom stress and transport, which contain $\nabla p_s$, and with continuous Lagrange elements $\nabla p_s$ is discontinuous across element edges.
