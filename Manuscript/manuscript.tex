@@ -1037,6 +1037,9 @@ The third, used in production, evaluates (\ref{eqn:appendix_fraku}), (\ref{eqn:T
 At a manufactured state with sloping bathymetry and a $\beta$-plane, the first two agree to a relative difference of $4 \times 10^{-11}$.
 In a sloping, $\beta$-plane basin with a seamount and baroclinic forcing, the third agrees with the second to about $10^{-9}$ in $p_s$, $\mathbf{U}$, $\boldsymbol{\tau}_b$, $\Psi$, and $\mathbf{u}(z)$, and to $10^{-16}$ in $b$.
 The remaining differences are set by the finite-difference step used for horizontal derivatives of $\Pi$.
+\added[id=CL]{The three forms differ greatly in cost.
+On one thread, a single velocity sample takes 3.8~ms with the first form and 0.26~ms with the second.
+In the test basin on a mesh of size 0.04 and 18 threads, the surface-pressure solve takes 173~s with the second form and 0.5~s with the third, about 350 times faster, and sampling the velocity in 403 columns of 49 levels takes 0.63~ms and 0.063~ms per column (the script \texttt{TheoryNotes/ColumnMethodTimings.jl}).}
 
 \paragraph{Mesh convergence.}
 Figure~\ref{fig:verification_convergence}a and Table~\ref{tab:mesh_convergence} show the convergence of the solution as the surface-pressure mesh is refined.
