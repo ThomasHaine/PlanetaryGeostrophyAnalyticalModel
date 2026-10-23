@@ -665,6 +665,10 @@ then a direct check on whether they recover the model's reference velocity.
 - `TheoryNotes/TopographicSteeringComparison.jl` compares PG with the
   Ekman-layer model (steering along f/H or f/(H - δ_E/2)) for a topographic β
   plume over a slope to a shallow shelf (manuscript Section 6c).
+- `TheoryNotes/DoubleBasinShowcase.jl` reruns the double basin of
+  `PG_Double_Basin_Prototype.ipynb`: timed solve, all five balances,
+  Nøst–Isachsen with assumed and derived drag, and the adjoint sensitivity of
+  the strait transport (manuscript Section 6d).
 - `TheoryNotes/PlotCoefficientRegimes.jl` plots the column coefficients
   $\mathfrak A$ (68), $S$ (64), and the surface-stress weight in $T$ (65)
   against $s = H/\delta_E$, with their deep and shallow asymptotes. It writes
