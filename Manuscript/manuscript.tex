@@ -1249,8 +1249,8 @@ Adjoint sensitivity of the strait transport & 21.1 & \\
 \subsection{Cost and dimensional parameters}
 \label{sect:cost}
 
-\added[id=CL]{Table~\ref{tab:cost_scaling} shows how the cost of the solve scales, in the test basin of Section~\ref{sect:verification} on 18 threads.
-Almost all of it is the evaluation of the column integrals for $\mathfrak{A}$, $\mathfrak{B}$, $S$, and $T$ at the quadrature points of the surface-pressure mesh; the finite-element assembly and linear solve take at most a fifth.
+\added[id=CL]{Table~\ref{tab:cost_scaling} shows how the wall clock time cost of the solve scales, in the test basin of Section~\ref{sect:results}\ref{sect:verification} on 18 threads.
+The evaluation of the column integrals for $\mathfrak{A}$, $\mathfrak{B}$, $S$, and $T$ at the quadrature points of the surface-pressure mesh dominate the time cost; the finite-element assembly and linear solve take at most a fifth.
 At fixed $\mathrm{Ek}$, the cost is proportional to the number of quadrature points, from 0.22~s at $h = 0.08$ to 11.7~s at $h = 0.01$.
 At fixed mesh, it grows with $s = H/\delta_E$, because each column is split into $\lceil H/(4\delta_E) \rceil$ Gauss--Legendre panels: from 0.75~s at $\mathrm{Ek} = 10^{-2}$ to 202~s at $\mathrm{Ek} = 10^{-5}$, somewhat faster than $s$.
 The column integrals are independent, and the solve at $h = 0.02$ takes 16.9~s on one thread and 2.0~s on 18, a speed-up of 8.5 on a processor with 6 performance and 12 efficiency cores.}
