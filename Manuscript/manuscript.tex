@@ -1304,13 +1304,46 @@ Realistic & $6 \times 10^{-6}$ & 0.01 & 14 \\
 \section{Discussion}
 \label{sect:discussion}
 
+% Added by Claude (CL): Discussion drafted from the bullet list below, which is struck through.
 \begin{itemize}
-    \item Talk about including horizontal friction too.
-    \item Topostrophy \citep{merryfield&scott07,holloway08}
-    \item This diagnostic quantification could be used, for instance, as a baseline to  compare with solutions that transcend PG dynamics, like those that include momentum advection, time-dependence, and/or horizontal dissipation.
-    \item Spin up of OGCMs.
-    \item Faster external mode solver.
+    \item \deleted[id=CL]{Talk about including horizontal friction too.}
+    \item \deleted[id=CL]{Topostrophy (Merryfield and Scott 2007; Holloway 2008)}
+    \item \deleted[id=CL]{This diagnostic quantification could be used, for instance, as a baseline to  compare with solutions that transcend PG dynamics, like those that include momentum advection, time-dependence, and/or horizontal dissipation.}
+    \item \deleted[id=CL]{Spin up of OGCMs.}
+    \item \deleted[id=CL]{Faster external mode solver.}
 \end{itemize}
+
+\added[id=CL]{The linear robust-diagnostic PG equations have been solved exactly for an arbitrary basin, bathymetry, and Coriolis parameter, with the surface and bottom Ekman layers resolved even where they overlap.
+The three-dimensional problem reduces to closed-form Green's functions in each column and one two-dimensional advection--diffusion equation for the surface pressure, whose coefficients $\mathfrak{A}$ and $\mathfrak{B}$ are exact column integrals.
+The solution has been verified against independent implementations of the column solution, under mesh refinement, by closure of every depth-integrated balance, and against a primitive-equation model, and it takes seconds to compute (Sections~\ref{sect:verification} and \ref{sect:cost}).
+Because the solution is exact, the depth-integrated momentum and vorticity balances, the integral constraints on closed contours, and the sensitivities to the forcing can all be evaluated without a parameterized drag or a residual of unknown origin.}
+
+\added[id=CL]{The exact coefficients also sharpen several classical rules of thumb (Sections~\ref{sect:results}a and \ref{sect:classical_limits}).
+First, the depth-integrated flow is steered along contours of $f/(H - \delta_E/2)$ rather than $f/H$, because the bottom Ekman layer acts as a displacement thickness; in the topographic steering test this correction reduces the error of the layer model from 2\% to 0.2\% at $s = H/\delta_E = 50$.
+Second, the bottom drag is not a free parameter: in deep water it is the linear drag $f \delta_E/(2H)$ of \citet{stommel48}, rotated by $45^\circ$, and it varies with latitude as $f^{1/2}$, which accounts for much of the difference between the PG solutions and the classical Stommel gyre and $\beta$ plume.
+Third, a single length, $\ell = |\mathfrak{A}^r| / |\nabla \mathfrak{A}^i|$, sets the width of every frictional layer: $r/\beta$ on a flat $\beta$-plane and $\delta_E/(2|\nabla H|)$ over a slope.
+Fourth, the classical layer picture holds where the water is deeper than about three Ekman depths; where it is shallower than about two, the Ekman layers overlap, the transport becomes a lubrication flow down the pressure gradient, and $f/H$ contours no longer guide it.
+The double basin shows the practical consequence: the integral constraint of \citet{nost&isachsen03} reproduces the bottom velocity on closed $f/H$ contours to 3\% with the derived bottom stress, but errs by 100\% with an isotropic drag calibrated against the same stress (Section~\ref{sect:double_basin}).}
+
+\added[id=CL]{The solution has limitations, each of which excludes some physics.
+Buoyancy is not advected, so the density field is prescribed through the restoring field $B$ and the surface buoyancy $b_s$.
+Robust-diagnostic PG therefore cannot produce a $\beta$ spiral \citep{schott&stommel78}: given the density field of a spiral it reproduces the thermal-wind shear, but its reference velocity is set by the basin-wide balance of wind stress, bottom friction, and no normal flow at the coast, not by density conservation.
+Friction is vertical only, so the frictional boundary layers are of Stommel type, and the viscous sublayers of \citet{munk50} are absent; in the comparison with \texttt{Oceananigans.jl}, it was the $z$-level model that needed horizontal viscosity to suppress grid-scale noise over a sloping bottom (Appendix~C).
+The viscosity and diffusivity are uniform in the vertical; other profiles, such as the exponential bottom-enhanced diffusivity of \citet{peterson&callies26}, need new Green's functions.
+The $\delta^2$ term of the bottom buoyancy condition (\ref{eqn:bot_b_bc}) is dropped, which excludes the bottom-boundary-layer flows driven by mixing over slopes \citep{peterson&callies23,peterson&callies26}.
+Finally, the solution is steady, uses a rigid lid in which the surface pressure stands for the surface height, and requires $f \neq 0$, so the deep tropics are excluded.
+The cost of small Ekman numbers is discussed in Section~\ref{sect:cost}: realistic values need meshes refined over steep slopes.}
+
+\added[id=CL]{Within these limits the solution has several uses.
+It is a fast solver for the steady external mode given a density field, and could provide a dynamically consistent initial state for the spin-up of ocean general circulation models.
+Its exact vorticity budgets, evaluated as cell averages, are a baseline against which the budgets of models with momentum advection, time dependence, or horizontal dissipation can be compared.
+The adjoint gives, from one solve, the forcing that controls a chosen transport, as in the strait of the double basin, and it could similarly map the sources of topostrophy, the tendency of the flow to keep shallow water to its right \citep{merryfield&scott07,holloway08}.
+Applied to climatological density and wind-stress fields, the solution would infer the circulation in the spirit of \citet{nost&isachsen03}, but with a derived rather than a fitted drag.
+Horizontal friction, in contrast, would couple neighboring columns and so break the column separability on which the method rests.}
+
+\added[id=CL]{The solution is also a step towards the thermocline problem.
+With buoyancy advection, (\ref{eqn:b}) can be written as relaxation to an effective field, $\Gamma (B_{\mathrm{eff}} - b)$ with $B_{\mathrm{eff}} = B - (\mathrm{Pr}\,\mathrm{Bu}/\Gamma)\, \mathbf{u} \cdot \nabla b$, so the linear solution could serve as the inner step of an iteration in which $B_{\mathrm{eff}}$ is updated from the previous velocity and buoyancy.
+Whether such an iteration converges, and what thermocline structure it selects, is left for future work.}
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
