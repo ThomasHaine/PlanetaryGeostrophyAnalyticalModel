@@ -101,6 +101,9 @@ file should be modified by authors for their own manuscript.}}
 %
 % \statement
 % Significance statement here.
+% Added by Claude (CL): draft significance statement.
+\statement
+\added[id=CL]{The large-scale ocean circulation is often explained by simple rules: currents follow contours of depth and latitude, friction at the sea floor acts as a linear drag, and the circulation around closed depth contours is set by the wind. We give an exact solution for the steady wind- and density-driven circulation of a model ocean with realistic topography, in which the friction near the sea floor is resolved rather than assumed. The solution agrees with an ocean model, takes seconds to compute, and shows where the classical rules hold and where they fail, notably over shallow shelves and when the bottom drag is assumed. It is a fast and exact baseline for interpreting ocean models and observations.}
 %
 % \capsule
 % Capsule summary here.
@@ -1678,7 +1681,7 @@ Take the divergence form of the equation, multiply by test function $v$, and int
  \; dy\; dx 
  \label{eqn:ps_weak_form}
 \end{align}
-assuming that $p_s$ and $v$ vanish on the boundaries.
+\deleted[id=CL]{assuming that $p_s$ and $v$ vanish on the boundaries.}
 \Claude{ 
 The boundary term from the integration by parts, $\oint v \, \mathbf{U} \cdot \hat{\mathbf{n}} \, ds$, vanishes by the no-normal-flow condition (\ref{eqn:ps_bc}).
 That condition is therefore natural in (\ref{eqn:ps_weak_form}), and no condition is imposed on $p_s$ or $v$ at the coast.
