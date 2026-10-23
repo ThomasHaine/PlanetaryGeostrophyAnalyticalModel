@@ -913,7 +913,7 @@ This extends the GCVB (eq.~(\ref{eqn:GCVB})) because it has explicitly included 
 
 
 \Claude{ The surface pressure equation (\ref{eqn:ps}) requires a boundary condition at the coast.
-Mass conservation requires that the depth-integrated flow does not cross the coast, $\mathbf{U} \cdot \hat{\mathbf{n}} = 0$, where $\hat{\mathbf{n}}$ is the outward unit normal.
+Mass conservation requires that the depth-integrated flow does not cross the coast, $\mathbf{U} \cdot \hat{\mathbf{n}} = 0$, where $\hat{\mathbf{n}}$ is the outward unit normal with Cartesian components $(n_x, n_y)$.
 Using $\Re \{ (n_x - i n_y) \mathfrak{U} \} = \mathbf{U} \cdot \hat{\mathbf{n}}$ and $(n_x - i n_y)(\partial_x + i \partial_y) = \partial_n + i \partial_s$, with $s$ the anticlockwise arc length along the coast, (\ref{eqn:UV_AB_def}) implies that
 \begin{align}
 \mathfrak{A}^r \partial_n p_s - \mathfrak{A}^i \partial_s p_s + \mathfrak{B} \cdot \hat{\mathbf{n}} & = 0
@@ -1013,7 +1013,7 @@ For deep water ($s \gg 1$), $\mathfrak{A} \rightarrow [-\delta_E/2 + i(H - \delt
 % overlays these deep and shallow asymptotes in Fig. coefficient_regimes, and prints the
 % relative errors of the deep limits at s = 1, 2, 3, 5 that are quoted below.
 The depth-integrated flow is then the geostrophic transport over an effective depth $H - \delta_E/2$, plus a down-gradient bottom Ekman transport with diffusivity $\delta_E/(2f)$.
-In other words, the surface pressure is advected along contours of $f/(H - \delta_E/2)$: the bottom Ekman layer acts as a displacement thickness that modifies the classical $f/H$ steering (panel a).
+In other words, the surface pressure is advected along contours of $f/(H - \delta_E/2)$ and the bottom Ekman layer acts as a displacement thickness that modifies the classical $f/H$ steering (panel a).
 The bottom-stress coefficient tends to $\mathrm{Ek}\,S \rightarrow \delta_E (1 - i)/2$, a linear drag rotated by $45^\circ$ (panels d, e), and the surface stress reaches the bed with weight $2e^{-s}$ (panel f).
 These deep limits are accurate to better than 0.5\% for $s \geq 3$, the steering one to 0.15\% already at $s = 2$.
 They reproduce classical Ekman-layer theory, including the linear bottom-drag coefficient $r = f \delta_E/(2H)$ of \citet{stommel48}.
@@ -1044,7 +1044,7 @@ In the test basin on a mesh of size 0.04 and 18 threads, the surface-pressure so
 \paragraph{Mesh convergence.}
 Figure~\ref{fig:verification_convergence}a and Table~\ref{tab:mesh_convergence} show the convergence of the solution as the surface-pressure mesh is refined.
 The test basin is an ellipse with semi-axes 1 and 0.75 on a $\beta$-plane ($f = 1 + 0.15y$) with $\mathrm{Ek} = 0.01$ and $\Gamma = 0.2$.
-Its depth combines a uniform slope with a seamount and is 0.4--1.2 at the coast, so the coast is a vertical wall and the no-normal-flow condition (\ref{eqn:ps_bc}) is active.
+Its depth field combines a uniform slope with a seamount and is $H \approx $0.4--1.2 at the coast, so the coast is a vertical wall and the no-normal-flow condition (\ref{eqn:ps_bc}) is active.
 It is forced by surface stress, by surface buoyancy, and by a restoring buoyancy with depth-dependent horizontal gradients.
 \added[id=CL]{The mesh size $h$ is the mean triangle edge length, which is within a few percent of the size requested from the mesh generator except on the coarsest mesh.}
 Errors are measured against the finest solution ($h = 0.010$) at 1300 points inside 97\% of the coastal radius.
@@ -1099,12 +1099,12 @@ Away from the coast and the bottom, the relative $L_2$ difference in the depth-i
 This is roughly first-order convergence in the horizontal grid spacing, consistent with the stair-stepped immersed coastline of the \texttt{Oceananigans.jl} grid.
 The buoyancy differences are $1.5 \times 10^{-3}$, $3.5 \times 10^{-4}$, and $3.5 \times 10^{-4}$, limited by the vertical resolution.
 Unlike buoyancy, which is column-local, $\mathbf{u}$ and $\mathbf{U}$ test the surface-pressure solve and the coastal condition.
-The PG solution takes under a second to compute, 25 to 150 times faster than the \texttt{Oceananigans.jl} spin-up (Appendix~C).
+The PG solution takes under a second to compute, 25 to 150 times faster than the \texttt{Oceananigans.jl} run (Appendix~C).
 
 \begin{figure}
 \centering
 \includegraphics[width=16cm]{verification_convergence.pdf}
-\caption{\label{fig:verification_convergence} Verification in the test basin of Section~\ref{sect:verification}.
+\caption{\label{fig:verification_convergence} Verification in the test basin of Section~\ref{sect:results}\ref{sect:verification}.
 (a) Relative $L_2$ error against the finest solution ($h = 0.010$) as the surface-pressure mesh is refined, for the surface pressure $p_s$, depth-integrated transport $\mathbf{U}$, bottom stress $\boldsymbol{\tau}_b$, velocity at mid-depth, and streamfunction $\Psi$\added[id=CL]{; $h$ is the mean triangle edge length}. Gray lines show $h^2$ and $h^3$.
 (b) Relative residuals of the mapped barotropic (BV, (\ref{eqn:BVE})) and geostrophic-contour (GCVB, (\ref{eqn:GCVB})) vorticity balances on a fixed $19 \times 15$ diagnostic grid. Solid lines: cell averages via Stokes' theorem. Dashed lines: centered differences of the sampled fields.}
 \end{figure}
@@ -1632,7 +1632,7 @@ The PG solution is sampled at the \texttt{Oceananigans.jl} cell centres and comp
 
 \Claude{
 Two bottoms are used.
-With a flat bottom of depth 0.65, the differences in buoyancy, horizontal velocity, and depth-integrated transport converge at about first order as the \texttt{Oceananigans.jl} grid is refined, to $3.5 \times 10^{-4}$, 1.1\%, and 1.5\% at $160 \times 120 \times 40$ (Section~\ref{sect:verification} and Fig.~\ref{fig:oceananigans_comparison}a--d).
+With a flat bottom of depth 0.65, the differences in buoyancy, horizontal velocity, and depth-integrated transport converge at about first order as the \texttt{Oceananigans.jl} grid is refined, to $3.5 \times 10^{-4}$, 1.1\%, and 1.5\% at $160 \times 120 \times 40$ (Section~\ref{sect:results}\ref{sect:verification} and Fig.~\ref{fig:oceananigans_comparison}a--d).
 With the Gaussian bowl $H = 0.3 + 0.7\, e^{-2r^2}$ (with $r$ the elliptical radius) and a 0.3-deep coastal wall, the comparison is limited by the representation of the sloping bottom in the $z$-level model (Fig.~\ref{fig:oceananigans_comparison}e).
 With a stair-stepped bottom, the transport difference is 29\% at $80 \times 60 \times 40$ and grows to 58\% at $160 \times 120 \times 40$, as grid-scale noise at the steps, undamped without horizontal viscosity, grows.
 Partial bottom cells reduce the difference to 18\%, and a weak horizontal viscosity of $10^{-4}$ reduces it to 7.6\%.
