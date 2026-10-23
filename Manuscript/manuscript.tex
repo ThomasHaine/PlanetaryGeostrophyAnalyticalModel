@@ -1202,7 +1202,7 @@ The steady circulation consists of two cyclonic gyres steered by the closed isob
 
 \added[id=CL]{Table~\ref{tab:double_basin} lists the cost of each stage on 18 threads.
 The solve on a mesh of size 0.02 takes 8~s, and all five dynamical balances of Table~\ref{tab:dynamical_balances} take a further 19~s on a $65 \times 65$ diagnostic grid.
-The depth-integrated momentum balance closes to $10^{-5}$, and the cell-averaged vorticity balances to 3\%, the residual being set by the diagnostic grid (Section~\ref{sect:verification}).}
+The depth-integrated momentum balance closes to $10^{-5}$, and the cell-averaged vorticity balances to 3\%, the residual being set by the diagnostic grid (Section~\ref{sect:results}\ref{sect:verification}).}
 
 \added[id=CL]{The solution also tests the integral constraint of \citet{nost&isachsen03}.
 On closed $f/H$ contours, the bottom geostrophic velocity follows from the forcing integrated over the enclosed area once a drag law is assumed.
@@ -1211,7 +1211,7 @@ With the drag derived from the PG bottom stress, $\boldsymbol{\tau}_b = S \nabla
 The drag closure, not the integral constraint, limits the classical method.}
 
 \added[id=CL]{Finally, one adjoint solve of the surface-pressure equation gives the sensitivity of the northward transport through the strait to the wind stress, surface buoyancy, and restoring buoyancy everywhere (Fig.~\ref{fig:double_basin_showcase}d--f).
-The adjoint identity holds to $10^{-14}$, and the solve and kernels take 21~s.
+The adjoint identity holds to $10^{-14}$, and the solve takes 21~s.
 The kernels extend from the strait along the isobaths of the western slope and around the southern bowl, mapping the region whose forcing sets the strait transport.}
 
 \begin{table}
