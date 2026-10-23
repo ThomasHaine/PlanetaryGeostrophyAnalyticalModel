@@ -633,7 +633,8 @@ Writing the horizontal velocity vector as $\mathfrak{u} = u + i v$ (with $i = \s
 \end{align}
 Following the robust diagnostic assumption, the baroclinic part of the pressure gradient is a known forcing function in (\ref{eqn:PG_mom_frak}) and the surface pressure gradient is to be determined.
 
-This problem is solved exactly by (see \appFGEqnSoln\ for details and \texttt{FrictionalGeostrophicEquationSolution.ipynb} \#2.1, 2.2)
+This problem is solved exactly by (see \appFGEqnSoln\ for details\deleted[id=CL]{ and \texttt{FrictionalGeostrophicEquationSolution.ipynb} \#2.1, 2.2})
+% Notebook cell reference, now summarized in the code-availability statement: and \texttt{FrictionalGeostrophicEquationSolution.ipynb} \#2.1, 2.2
 \begin{align}
 \mathfrak{u} (z) & = \frac{1}{\mathrm{Ek}} \int_{-H}^{0} G_{ \mathfrak{u}} (z; \xi) \left( \partial_x + i \partial_y \right) p(\xi) \; d \xi 
  -   G_{\mathfrak{u}} (z; 0)  \left( \tau^x + i \tau^y \right) .
@@ -693,7 +694,8 @@ T & = - \frac{1}{\mathrm{Ek}} \int_{-H}^{0}
  \left( \tau^x + i \tau^y \right)
  \label{eqn:T_fn}
 \end{align} 
-(see \texttt{FrictionalGeostrophicEquationSolution.ipynb} \#2.5 and \#2.6). 
+\deleted[id=CL]{(see \texttt{FrictionalGeostrophicEquationSolution.ipynb} \#2.5 and \#2.6). }
+% Notebook cell reference, now summarized in the code-availability statement: (see \texttt{FrictionalGeostrophicEquationSolution.ipynb} \#2.5 and \#2.6). 
 Notice that the direction of the bottom stress depends on position in a non-trivial way: this is discussed further below.
 % Fix this loose end.
 
@@ -738,7 +740,8 @@ For $\nu = 1$ one finds
 \left( \tau^x + i \tau^y \right) \Bigg]  
 \label{eqn:B_fn}
 \end{align}
-(see \texttt{FrictionalGeostrophicEquationSolution.ipynb} \#2.5 and \#2.7).
+\deleted[id=CL]{(see \texttt{FrictionalGeostrophicEquationSolution.ipynb} \#2.5 and \#2.7).}
+% Notebook cell reference, now summarized in the code-availability statement: (see \texttt{FrictionalGeostrophicEquationSolution.ipynb} \#2.5 and \#2.7).
 Note also that the streamfunction for the depth-integrated flow (\ref{eqn:streamfunction_def}) is given by:
 \begin{align}
 \nabla^2 \Psi & =  - \left( i \partial_x + \partial_y \right) \mathfrak{U} , \nonumber \\
@@ -969,7 +972,8 @@ Figure \ref{fig:velocity_Gsfn} also shows the vertically-integrated $G_\mathfrak
 To interpret these results, first consider the case of vanishing pressure gradient and surface stress in the positive $x$ direction (eastward; $\tau^y = 0$).
 Eq.~(\ref{eqn:expanded_form_of_u}) shows that the surface velocity is then $- G_{\mathfrak{u}} (0; 0) \tau^x$.
 The component $G_{\mathfrak{u}} (0; 0)$ is on the $\xi / H = 0$ curve, and has a phase of about 135$^\mathrm{o}$ for $\mathrm{Ek} = 0.025$ (Figure \ref{fig:velocity_Gsfn}d).
-Therefore, $-G_{\mathfrak{u}} (0; 0)$ has a phase of -45$^\mathrm{o}$, which is measured anti-clockwise from the direction of the stress (see \texttt{FrictionalGeostrophicEquationSolution.ipynb}).
+Therefore, $-G_{\mathfrak{u}} (0; 0)$ has a phase of -45$^\mathrm{o}$, which is measured anti-clockwise from the direction of the stress\deleted[id=CL]{ (see \texttt{FrictionalGeostrophicEquationSolution.ipynb})}.
+% Notebook cell reference, now summarized in the code-availability statement: (see \texttt{FrictionalGeostrophicEquationSolution.ipynb})
 This corresponds to a surface current at 45$^\mathrm{o}$ to the right of the stress (in the northern hemisphere), consistent with small Ekman number theory \citep{salmon98,vallis06}.
 Next consider the case of vanishing surface stress and an imposed surface pressure gradient in the positive $x$ direction (sea level slopes up to the east; $p_s = p_s^x$ for real, positive $p_s^x$).
 From (\ref{eqn:expanded_form_of_u}) the surface velocity is then proportional to $\int_{-H}^{0} G_{ \mathfrak{u}} (z; \xi) \; d \xi $.
@@ -1328,6 +1332,10 @@ The analytical results were supported by the \texttt{SymPy} and \texttt{Symbolic
 %
 \datastatement
 All codes to reproduce the analytical and numerical results in this paper are available at \texttt{github.com/ThomasHaine/PlanetaryGeostrophyAnalyticalModel}.
+\added[id=CL]{The repository contains the \texttt{PlanetaryGeostrophy} Julia package, which implements the solution, the diagnostics, and the adjoint, with its test suite, and the derivations and scripts behind the paper.
+The Jupyter notebooks in \texttt{TheoryNotes/} derive the column solutions with \texttt{SymPy}: \texttt{BuoyancyEquationSolution.ipynb} derives the buoyancy Green's function and its integrals (Section~\ref{sect:b_solution} and Appendix~A; cells 1.1--1.31), and \texttt{FrictionalGeostrophicEquationSolution.ipynb} derives the velocity Green's function, its integrals, the bottom stress, and the coefficients $\mathfrak{A}$, $\mathfrak{B}$, $S$, and $T$ (Section~\ref{sect:PG_soln} and Appendix~B; cells 1.1--1.3 and 2.1--2.7).
+\texttt{ComputeQuadratures.ipynb} and \texttt{SymbolicsTesting.jl} build and test the symbolic kernels of Appendix~B.
+The figures and tables of Sections~\ref{sect:results}b--e and Appendix~C are made by the scripts \texttt{TheoryNotes/PlotCoefficientRegimes.jl} (Fig.~\ref{fig:coefficient_regimes}) and, also in \texttt{TheoryNotes/}, \texttt{VerificationConvergence.jl}, \texttt{ColumnMethodTimings.jl}, \texttt{StommelComparison.jl}, \texttt{BetaPlumeComparison.jl}, \texttt{BoundaryBetaPlumeComparison.jl}, \texttt{TopographicSteeringComparison.jl}, \texttt{DoubleBasinShowcase.jl}, \texttt{DoubleBasinBudgets.jl}, and \texttt{CostScaling.jl}, and \texttt{AnalyticalModel/OceananigansComparison.jl}.}
 
 
 \section{Appendices}
@@ -1345,7 +1353,8 @@ The Green's function satisfies:
 \end{align}
 where $\delta(z - \xi)$ is the Dirac delta function.
 This is a second order linear ordinary differential equation with two boundary conditions, which can be solved exactly, at least for certain diffusivity profiles.
-The solution for uniform non-dimensional diffusivity is (see \texttt{BuoyancyEquationSolution.ipynb} \#1.1, \#1.11)
+The solution for uniform non-dimensional diffusivity is\deleted[id=CL]{ (see \texttt{BuoyancyEquationSolution.ipynb} \#1.1, \#1.11)}
+% Notebook cell reference, now summarized in the code-availability statement: (see \texttt{BuoyancyEquationSolution.ipynb} \#1.1, \#1.11)
 \begin{align}
 G_b (z; \xi) & = \frac{\mathrm{e}^{\psi \left(z + \xi\right)}}
 {2 \kappa \psi \left(1 + \mathrm{e}^{2 \psi H}\right)}
@@ -1371,7 +1380,8 @@ To compute the contribution from the surface buoyancy field $b_s$ to $b$ we need
 \partial_\xi G_b(z;\xi)|_{\xi = 0} &=  \frac{\mathrm{e}^{\psi z} \left( \mathrm{e}^{2 \psi H} + \mathrm{e}^{-2 \psi z}\right)}{\kappa \left(1 + \mathrm{e}^{2 \psi H} \right)} .
 \label{eqn:dG_b_d_xi}
 \end{align}
-(see \texttt{BuoyancyEquationSolution.ipynb} \#1.2).
+\deleted[id=CL]{(see \texttt{BuoyancyEquationSolution.ipynb} \#1.2).}
+% Notebook cell reference, now summarized in the code-availability statement: (see \texttt{BuoyancyEquationSolution.ipynb} \#1.2).
 These results lead to (\ref{eqn:b_solution}).
 If required, the solution for a bottom-intensified exponential diffusivity profile, like Eq.~(17) of \citet{peterson&callies26}, can be found using hypergeometric functions \citep{arfken&weber95}.
 The form of the solution (\ref{eqn:b_solution}) is the same, just the Green's function $G_b$ differs.
@@ -1406,7 +1416,8 @@ and
 \frac{ \mathrm{e}^{2 \psi H} + \mathrm{e}^{ - \xi \psi} - \mathrm{e}^{\psi \left( \xi + 2 H \right)} - 1 }{\kappa \psi \left( 1 + \mathrm{e}^{2 \psi H}\right)} \equiv G_{b,2}(\xi)
 \label{eqn:term2}
 \end{align}
-(see \texttt{BuoyancyEquationSolution.ipynb}, \#1.3, \#1.31).
+\deleted[id=CL]{(see \texttt{BuoyancyEquationSolution.ipynb}, \#1.3, \#1.31).}
+% Notebook cell reference, now summarized in the code-availability statement: (see \texttt{BuoyancyEquationSolution.ipynb}, \#1.3, \#1.31).
 
 
 \appendix[B]
@@ -1434,7 +1445,8 @@ We find that the solution for uniform non-dimensional viscosity $\nu$ is:
 \label{eqn:FG_Gsfn_app}
 \end{align}
 which is (\ref{eqn:FG_Gsfn}) for $\nu = 1$.
-In this formula $\varphi = \sqrt{i} \phi = \sqrt{i f / (\nu \, \mathrm{Ek}) } $ (see \texttt{FrictionalGeostrophicEquationSolution.ipynb} \#1.1).
+In this formula $\varphi = \sqrt{i} \phi = \sqrt{i f / (\nu \, \mathrm{Ek}) } $\deleted[id=CL]{ (see \texttt{FrictionalGeostrophicEquationSolution.ipynb} \#1.1)}.
+% Notebook cell reference, now summarized in the code-availability statement: (see \texttt{FrictionalGeostrophicEquationSolution.ipynb} \#1.1)
 As for the buoyancy equation in \appbEqnSoln , the Green's function for exponential viscosity profiles can be found using hypergeometric functions.
 
 \subsection*{Solution for velocity field}
@@ -1455,7 +1467,8 @@ The first term on the right hand side of (\ref{eqn:appendix_fraku}) is a product
  \frac{ \mathrm{e}^{\varphi \left(  z + H \right)} +  \mathrm{e}^{\varphi \left( H - z \right)} - \mathrm{e}^{2 \varphi  H} - 1}{ \nu \, \varphi^{2} \left( 1 + \mathrm{e}^{2 \varphi H} \right)} \equiv G_{\mathfrak{u},1}(z)
 \label{eqn:Guv_int_wrt_xi}
 \end{align}
-(see \texttt{FrictionalGeostrophicEquationSolution.ipynb} \#1.2).
+\deleted[id=CL]{(see \texttt{FrictionalGeostrophicEquationSolution.ipynb} \#1.2).}
+% Notebook cell reference, now summarized in the code-availability statement: (see \texttt{FrictionalGeostrophicEquationSolution.ipynb} \#1.2).
 The second term is a product of the surface stress and another known function:
 \begin{align}
   G_{ \mathfrak{u}}(z;0) & = 
@@ -1463,7 +1476,8 @@ The second term is a product of the surface stress and another known function:
 \left[ 1 - \mathrm{e}^{2 \varphi ( z  + H ) } \right] \equiv G_{\mathfrak{u},2}(z)
 \label{eqn:Guv0}
 \end{align}
-(see \texttt{FrictionalGeostrophicEquationSolution.ipynb} \#1.3).
+\deleted[id=CL]{(see \texttt{FrictionalGeostrophicEquationSolution.ipynb} \#1.3).}
+% Notebook cell reference, now summarized in the code-availability statement: (see \texttt{FrictionalGeostrophicEquationSolution.ipynb} \#1.3).
 The last term, which is the baroclinic pressure gradient, is more complicated.
 We rewrite it in a more convenient form, as follows.
 Substitute using (\ref{eqn:b_solution})
