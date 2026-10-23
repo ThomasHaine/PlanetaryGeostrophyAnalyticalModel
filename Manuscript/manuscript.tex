@@ -1072,20 +1072,21 @@ $h$ & $p_s$ & $\mathbf{U}$ & $\boldsymbol{\tau}_b$ & $\mathbf{u}(-H/2)$ & $\Psi$
 
 \paragraph{Dynamical balances.}
 The depth-integrated momentum balance (\ref{eqn:U_mom})--(\ref{eqn:V_mom}) holds pointwise, because the column solution satisfies the momentum equations exactly.
-Evaluated with centered differences of step $10^{-5}$ for $\nabla p_b$ and $\nabla \chi$, its relative residual is about $10^{-6}$ in the double basin.
+Evaluated with centered differences of step $10^{-5}$ for $\nabla p_b$ and $\nabla \chi$, its relative residual is about \replaced[id=CL]{$10^{-5}$}{$10^{-6}$} in the double basin\added[id=CL]{ of Section~\ref{sect:double_basin}, two deep bowls on an $f$-plane joined by a strait, with a shelf only four Ekman depths deep (Fig.~\ref{fig:double_basin_showcase})}.
 The vorticity balances (\ref{eqn:BVE}), (\ref{eqn:DIV}), (\ref{eqn:GCVB}), and (\ref{eqn:TDVB}) are curls of that balance, so they also hold exactly for the continuous fields.
 Mapping them requires care, however.
 They act on the bottom stress and transport, which contain $\nabla p_s$, and with continuous Lagrange elements $\nabla p_s$ is discontinuous across element edges.
-Centered differences of these fields therefore do not converge: their relative residual stays at 0.95--0.99 for every mesh in Fig.~\ref{fig:verification_convergence}b, and at 0.4--1 on every diagnostic grid in the double basin.
+Centered differences of these fields therefore do not converge: their relative residual stays at 0.95--0.99 for every mesh in Fig.~\ref{fig:verification_convergence}b, and at \replaced[id=CL]{0.73--1.0}{0.4--1} on every diagnostic grid in the double basin\added[id=CL]{, from $17 \times 17$ to $129 \times 129$}.
 Instead we average each term over the diagnostic cell around each grid point.
 By Stokes' theorem, $\iint \hat{\mathbf{z}} \cdot \nabla \times \mathbf{F} \, dA = \oint \mathbf{F} \cdot \hat{\mathbf{t}} \, ds$ and $\iint J(a,b) \, dA = \oint a \, \nabla b \cdot \hat{\mathbf{t}} \, ds$, so every curl and Jacobian becomes an edge integral, for example $\oint p_b \, dH$ for the bottom-pressure torque.
 The advection terms $U \partial_x f + V \partial_y f$ and $J(f/H, \Psi) = -\mathbf{U} \cdot \nabla (f/H)$ use area quadrature.
 No finite-element field is differentiated.
 Setting $\nabla \cdot \mathbf{U} = 0$ as in (\ref{eqn:BVE_constraint}), each cell-averaged residual equals the cell-averaged finite-element mass-conservation error: $-f \nabla \cdot \mathbf{U}$ for the BV and DIV balances, $(f/H) \nabla \cdot \mathbf{U}$ for the GCVB, and $-\nabla \cdot \mathbf{U}$ for the TDVB.
 These residuals converge under mesh refinement\added[id=CL]{, at roughly $h^2$ once $h \lesssim 0.04$}, from 0.61 (BV) and 0.30 (GCVB) at $h = 0.13$ to $2.0 \times 10^{-3}$ and $7 \times 10^{-4}$ at $h = 0.010$ (Fig.~\ref{fig:verification_convergence}b).
+\added[id=CL]{In the double basin the cell-averaged residuals are $4 \times 10^{-3}$ (BV) and $8 \times 10^{-3}$ (GCVB) on a $17 \times 17$ grid, and grow to 0.10 and 0.08 on a $129 \times 129$ grid, whose cells are smaller than the finite elements, so that the mass-conservation error of each element is less averaged out.}
 In the double basin, integrating the GCVB over the regions enclosed by closed $f/H$ contours, as in (\ref{eqn:integrated_GCVB}), closes to $3 \times 10^{-3}$ of its terms.
 The stress circulation around closed isobaths closes to $6 \times 10^{-4}$.
-The area-integrated GCVB over the northern and southern halves of the basin, either side of the strait, closes to $4 \times 10^{-5}$ and $1.3 \times 10^{-4}$.
+The area-integrated GCVB over the northern and southern halves of the basin, either side of the strait, closes to \replaced[id=CL]{$4.5 \times 10^{-5}$ and $1.2 \times 10^{-4}$}{$4 \times 10^{-5}$ and $1.3 \times 10^{-4}$}.
 
 \paragraph{Comparison with a primitive-equation model.}
 Appendix~C compares the solution with \texttt{Oceananigans.jl} \citep{wagner_etal25}, whose hydrostatic free-surface model is integrated from rest to a steady state with momentum and buoyancy advection switched off.
