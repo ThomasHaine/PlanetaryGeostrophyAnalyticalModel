@@ -1321,7 +1321,7 @@ Along coasts parallel to the steering flow, frictional layers instead widen as $
 Fourth, the classical layer picture holds where the water is deeper than about three Ekman depths; where it is shallower than about two, the Ekman layers overlap, the transport becomes a lubrication flow down the pressure gradient, and $f/H$ contours no longer guide it.
 The double basin shows the practical consequence: the integral constraint of \citet{nost&isachsen03} reproduces the bottom velocity on closed $f/H$ contours to 3\% with the derived bottom stress, but errs by 100\% with an isotropic drag calibrated against the same stress (Section~\ref{sect:results}\ref{sect:double_basin}).}
 
-\added[id=CL]{The solution has limitations, each of involves some excluded physics.
+\added[id=CL]{The solution has limitations, each of which involves some excluded physics.
 Buoyancy is not advected, so the density field is prescribed through the restoring field $B$ and the surface buoyancy $b_s$.
 Robust-diagnostic PG therefore cannot produce a $\beta$ spiral \citep{schott&stommel78}, for example.
 Friction is vertical only, so the frictional boundary layers are of Stommel type, and the viscous sublayers of \citet{munk50} are absent; in the comparison with \texttt{Oceananigans.jl}, it was the $z$-level model that needed horizontal viscosity to suppress grid-scale noise over a sloping bottom (Appendix~C).
@@ -1348,7 +1348,7 @@ Whether such an iteration converges, and what thermocline structure it selects, 
 \acknowledgments
 
 Tarun Verma and Henry Peterson provided useful feedback on the early stages of this work.
-Large language models (GPT 5.4 mini, GPT 5.5, Github Copliot version 1.1.21, Claude Opus 5.5) were used for assistance with Julia code, especially debugging and plotting of final figures, literature exploration, code generation, and some writing.
+Large language models (GPT 5.4 mini, GPT 5.5, GitHub Copliot version 1.1.21, Claude Opus 5.5) were used for assistance with Julia code, especially debugging and plotting of final figures, literature exploration, code generation, and some writing.
 The analytical results were supported by the \texttt{SymPy} and \texttt{Symbolics.jl} computer algebra systems \citep{meurer_etal17,gowda_etal21}.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
