@@ -974,19 +974,19 @@ The component $G_{\mathfrak{u}} (0; 0)$ is on the $\xi / H = 0$ curve, and has a
 Therefore, $-G_{\mathfrak{u}} (0; 0)$ has a phase of -45$^\mathrm{o}$, which is measured anti-clockwise from the direction of the stress.
 % Notebook cell reference, now summarized in the code-availability statement: (see \texttt{FrictionalGeostrophicEquationSolution.ipynb})
 This corresponds to a surface current at 45$^\mathrm{o}$ to the right of the stress (in the northern hemisphere), consistent with small Ekman number theory \citep{salmon98,vallis06}.
-Next consider the case of vanishing surface stress and an imposed surface pressure gradient in the positive $x$ direction (sea level slopes up to the east; $p_s = p_s^x$ for real, positive $p_s^x$).
+Next consider the case of vanishing surface stress and an imposed surface pressure gradient in the positive $x$ direction (sea level slopes up to the east).
 From (\ref{eqn:expanded_form_of_u}) the surface velocity is then proportional to $\int_{-H}^{0} G_{ \mathfrak{u}} (z; \xi) \; d \xi $.
 The component $\int_{-H}^{0} G_{ \mathfrak{u}} (z; \xi) \; d \xi $ is labeled Gu\_int and has a phase of about 90$^\mathrm{o}$ for $\mathrm{Ek} = 0.025$ (Figure \ref{fig:velocity_Gsfn}d).
 This corresponds to a surface geostrophic current flowing northwards with the pressure gradient force pushing westwards (opposite to the pressure gradient itself) and an equal and opposite Coriolis force pushing eastwards.
-Finally, for the same case (no stress, $p_s = p_s^x$), consider the bottom stress.
+Finally, for the same case (no stress, $\partial_x p_s > 0 $), consider the bottom stress.
 From (\ref{eqn:bottom_stress_ST_def}) and (\ref{eqn:S_fn}), 
 $\tau_b$ is proportional to $(1/\varphi) \tanh \left( \varphi H \right)$.
-Thus, as $\mathrm{Ek}$ gets small $\varphi = \sqrt{i f / \mathrm{Ek}} $ diverges, $\tanh \left( \varphi H \right) \rightarrow 1$ and $\tau_b$ becomes proportional to $i^{-1/2} = 1 - i$.
+Thus, as $\mathrm{Ek}$ gets small $\varphi = \sqrt{i f / \mathrm{Ek}} $ diverges, $\tanh \left( \varphi H \right) \rightarrow 1$ and $\tau_b$ becomes proportional to $i^{-1/2} = (1 - i)/\sqrt{2}$.
 The bottom stress $1 - i$ corresponds to a southeast direction, which is at 135$^{\mathrm{o}}$ to the direction of the geostrophic current, consistent with textbook theory \citep{vallis06}.
 
 These results establish the validity of the horizontal velocity Green's function $G_\mathfrak{u}$ in Figure \ref{fig:velocity_Gsfn} for familiar, special cases of (\ref{eqn:expanded_form_of_u}).
 More generally, Figure \ref{fig:velocity_Gsfn} shows that $G_\mathfrak{u}$ respects the homogeneous velocity boundary conditions (\ref{eqn:sfc_bcs_frak}) and (\ref{eqn:bot_bcs_frak}) of vanishing vertical derivative at the surface and vanishing magnitude at the bottom (see (\ref{eqn:G_u_sfc_bc}) and (\ref{eqn:G_u_bot_bc})).
-The (discontinuous) peaks at $z = \xi$ in $G_\mathfrak{u} (z; \xi )$ show how a pressure gradient causes a response in the horizontal velocity that is at 135$^{\mathrm{o}}$ to the pressure gradient; that is, at -45$^{\mathrm{o}}$ to the pressure gradient force (in the northern hemisphere).
+The kinked peaks at $z = \xi$ in $G_\mathfrak{u} (z; \xi )$ show how a pressure gradient causes a response in the horizontal velocity that is at 135$^{\mathrm{o}}$ to the pressure gradient; that is, at -45$^{\mathrm{o}}$ to the pressure gradient force (in the northern hemisphere).
 Therefore, the water moves at 45$^{\mathrm{o}}$ to the right of the pressure gradient force.
 This response decays with height above and below $z=\xi$ in clockwise spirals that represent internal Ekman layers.
 The decay length scale depends inversely on the square root of the Ekman number, as expected.
@@ -1049,7 +1049,7 @@ Figure~\ref{fig:verification_convergence}a and Table~\ref{tab:mesh_convergence} 
 The test basin is an ellipse with semi-axes 1 and 0.75 on a $\beta$-plane ($f = 1 + 0.15y$) with $\mathrm{Ek} = 0.01$ and $\Gamma = 0.2$.
 Its depth field combines a uniform slope with a seamount and is $H \approx $0.54--1.06 at the coast, so the coast is a vertical wall and the no-normal-flow condition (\ref{eqn:ps_bc}) is active.
 It is forced by surface stress, by surface buoyancy, and by a restoring buoyancy with depth-dependent horizontal gradients.
-\added[id=CL]{The mesh size $h$ is the mean triangle edge length, which is within a few percent of the size requested from the mesh generator except on the coarsest mesh.}
+\added[id=CL]{The mesh size $h$ is the mean triangle edge length, which is 8\% different from the size requested from the mesh generator except on the coarsest mesh.}
 Errors are measured against the finest solution ($h = 0.010$) at 1341 points inside 97\% of the coastal radius.
 With second-order Lagrange elements, the surface pressure and the streamfunction converge as $h^3$, and the transport, bottom stress, and interior velocity\added[id=CL]{, which depend on $\nabla p_s$,} as $h^2$.
 \added[id=CL]{These are the optimal rates for this discretization.
@@ -1255,7 +1255,7 @@ Adjoint sensitivity of the strait transport & 21.1 & \\
 \added[id=CL]{Table~\ref{tab:cost_scaling} shows how the wall-clock time cost of the solve scales, in the test basin of Section~\ref{sect:results}\ref{sect:verification} on 18 threads.
 The evaluation of the column integrals for $\mathfrak{A}$, $\mathfrak{B}$, $S$, and $T$ at the quadrature points of the surface-pressure mesh dominate the time cost; the finite-element assembly and linear solve take at most a fifth.
 At fixed $\mathrm{Ek}$, the cost is proportional to the number of quadrature points, from 0.22~s at $h = 0.08$ to 11.7~s at $h = 0.01$.
-At fixed mesh, it grows with $s = H/\delta_E$, because each column is split into $\lceil H/(4\delta_E) \rceil$ Gauss--Legendre panels: from 0.75~s at $\mathrm{Ek} = 10^{-2}$ to 202~s at $\mathrm{Ek} = 10^{-5}$, somewhat faster than $s$.
+At fixed mesh, it grows with $s = H/\delta_E$, because each column is split into $\lceil H/(4\delta_E) \rceil$ Gauss--Legendre panels: from 0.75~s at $\mathrm{Ek} = 10^{-2}$ to 202~s at $\mathrm{Ek} = 10^{-5}$, faster than $s$.
 The column integrals are independent, and the solve at $h = 0.02$ takes 16.9~s on one thread and 2.0~s on 18, a speed-up of 8.5 on a processor with 6 performance and 12 efficiency cores.}
 
 \added[id=CL]{Table~\ref{tab:dimensional} gives dimensional values for a basin of width $L = 1000$~km and depth $H_0 = 4000$~m with $f_0 = 10^{-4}$~s$^{-1}$.
