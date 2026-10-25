@@ -261,6 +261,7 @@ b = b_s
 where $b_s(x,y)$ is a known surface buoyancy field and at the sea floor ${\mathbf{\hat n}} = -(\partial_x H, \partial_y H, 1)/\sqrt{1 + (\partial_x H)^2 + (\partial_y H)^2 }$.
 Notice that the bottom boundary condition is no normal flux of buoyancy through the sea floor.
 At a sloping bottom boundary, this condition will lead to non-zero horizontal buoyancy gradients, and therefore a non-zero thermal wind (\citealt{peterson&callies26}; see, for example, \citealt{klinger&haine19} Sections 2.1.2 and 2.2.2 for the thermal wind, which is derived from the geostrophic and hydrostatic balances).
+\added[id=CL]{The same holds for the small-aspect-ratio form $\partial_z b = 0$ used below and by \citet{peterson&callies26}, because the depth at which isopycnals meet the sea floor varies horizontally.}
 We retain both inhomogeneous sources of buoyancy, $b_s$ and $B$, for generality, although both of them are not always needed.
 
 The viscosity and diffusivity parameters in (\ref{eqn:u_mom_dim})--(\ref{eqn:v_mom_dim}) and (\ref{eqn:b_dim}) can vary in the vertical direction, for instance, to represent the effects of bottom-enhanced mixing (see Section \ref{sect:discussion}, \citealt{peterson&callies23,peterson&callies26}).
@@ -1324,10 +1325,14 @@ The double basin shows the practical consequence: the integral constraint of \ci
 \added[id=CL]{The solution has limitations, each of which involves some excluded physics.
 Buoyancy is not advected, so the density field is prescribed through the restoring field $B$ and the surface buoyancy $b_s$.
 Robust-diagnostic PG therefore cannot produce a $\beta$ spiral \citep{schott&stommel78}, for example.
-Friction is vertical only, so the frictional boundary layers are of Stommel type, and the viscous sublayers of \citet{munk50} are absent; in the comparison with \texttt{Oceananigans.jl}, it was the $z$-level model that needed horizontal viscosity to suppress grid-scale noise over a sloping bottom (Appendix~C).
-The viscosity and diffusivity are uniform in the vertical; other profiles, such as the exponential bottom-enhanced diffusivity of \citet{peterson&callies26}, need new Green's functions.
-The $\delta^2$ term of the bottom buoyancy condition (\ref{eqn:bot_b_bc}) is dropped, which excludes the bottom-boundary-layer flows driven by mixing over slopes \citep{peterson&callies23,peterson&callies26}.
-Finally, the solution is steady, uses a rigid lid in which the surface pressure stands for the surface height, and requires $f \neq 0$, so the deep tropics are excluded.
+Friction is vertical only, so the frictional boundary layers are of Stommel type, and the viscous sublayers of \citet{munk50} are absent; in the comparison with \texttt{Oceananigans.jl}, it was the $z$-level model that needed horizontal viscosity to suppress grid-scale noise over a sloping bottom (Appendix~C).}
+\deleted[id=CL]{The viscosity and diffusivity are uniform in the vertical; other profiles, such as the exponential bottom-enhanced diffusivity of Peterson and Callies (2026), need new Green's functions.
+The $\delta^2$ term of the bottom buoyancy condition (\ref{eqn:bot_b_bc}) is dropped, which excludes the bottom-boundary-layer flows driven by mixing over slopes (Peterson and Callies 2023, 2026).}
+\added[id=CL]{The viscosity and diffusivity are uniform in the vertical.
+Each column then has a buoyancy bottom boundary layer of thickness $(\kappa\,\mathrm{Ek}/\Gamma)^{1/2}$ in which the no-flux condition $\partial_z b = 0$ bends isopycnals into a sloping bottom, so the solution contains cross-slope buoyancy gradients and a thermal wind near the bed, but not the stronger ones that bottom-enhanced mixing produces as it erodes the stratification \citep{peterson&callies23,peterson&callies26}.
+Such diffusivity profiles, like the exponential profile of \citet{peterson&callies26}, need new Green's functions; for exponential profiles they can be found using hypergeometric functions (Appendix~A).
+As in \citet{peterson&callies26}, the $\delta^2$ term of the full bottom buoyancy condition (\ref{eqn:bot_b_bc}) is dropped; it matters only over slopes steep enough that the normal and vertical directions differ appreciably.}
+\added[id=CL]{Finally, the solution is steady, uses a rigid lid in which the surface pressure stands for the surface height, and requires $f \neq 0$, so the deep tropics are excluded.
 The cost of small Ekman numbers is discussed in Section~\ref{sect:results}\ref{sect:cost}: realistic values need meshes refined over steep slopes.}
 
 \added[id=CL]{Within these limits the solution has several uses.
