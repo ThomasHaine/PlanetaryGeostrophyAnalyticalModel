@@ -1326,8 +1326,6 @@ The double basin shows the practical consequence: the integral constraint of \ci
 Buoyancy is not advected, so the density field is prescribed through the restoring field $B$ and the surface buoyancy $b_s$.
 Robust-diagnostic PG therefore cannot produce a $\beta$ spiral \citep{schott&stommel78}, for example.
 Friction is vertical only, so the frictional boundary layers are of Stommel type, and the viscous sublayers of \citet{munk50} are absent; in the comparison with \texttt{Oceananigans.jl}, it was the $z$-level model that needed horizontal viscosity to suppress grid-scale noise over a sloping bottom (Appendix~C).}
-\deleted[id=CL]{The viscosity and diffusivity are uniform in the vertical; other profiles, such as the exponential bottom-enhanced diffusivity of Peterson and Callies (2026), need new Green's functions.
-The $\delta^2$ term of the bottom buoyancy condition (\ref{eqn:bot_b_bc}) is dropped, which excludes the bottom-boundary-layer flows driven by mixing over slopes (Peterson and Callies 2023, 2026).}
 \added[id=CL]{The viscosity and diffusivity are uniform in the vertical.
 Each column then has a buoyancy bottom boundary layer of thickness $(\kappa\,\mathrm{Ek}/\Gamma)^{1/2}$ in which the no-flux condition $\partial_z b = 0$ bends isopycnals into a sloping bottom, so the solution contains cross-slope buoyancy gradients and a thermal wind near the bed, but not the stronger ones that bottom-enhanced mixing produces as it erodes the stratification \citep{peterson&callies23,peterson&callies26}.
 Such diffusivity profiles, like the exponential profile of \citet{peterson&callies26}, need new Green's functions; for exponential profiles they can be found using hypergeometric functions (Appendix~A).
