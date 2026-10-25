@@ -1049,7 +1049,7 @@ Figure~\ref{fig:verification_convergence}a and Table~\ref{tab:mesh_convergence} 
 The test basin is an ellipse with semi-axes 1 and 0.75 on a $\beta$-plane ($f = 1 + 0.15y$) with $\mathrm{Ek} = 0.01$ and $\Gamma = 0.2$.
 Its depth field combines a uniform slope with a seamount and is $H \approx $0.54--1.06 at the coast, so the coast is a vertical wall and the no-normal-flow condition (\ref{eqn:ps_bc}) is active.
 It is forced by surface stress, by surface buoyancy, and by a restoring buoyancy with depth-dependent horizontal gradients.
-\added[id=CL]{The mesh size $h$ is the mean triangle edge length, which is 8\% different from the size requested from the mesh generator except on the coarsest mesh.}
+\added[id=CL]{The mesh size $h$ is the mean triangle edge length, which is within 3\% of the size requested from the mesh generator for requested sizes of 0.04 and below, 8\% smaller at 0.08, and 16\% smaller at 0.16.}
 Errors are measured against the finest solution ($h = 0.010$) at 1341 points inside 97\% of the coastal radius.
 With second-order Lagrange elements, the surface pressure and the streamfunction converge as $h^3$, and the transport, bottom stress, and interior velocity\added[id=CL]{, which depend on $\nabla p_s$,} as $h^2$.
 \added[id=CL]{These are the optimal rates for this discretization.
