@@ -947,7 +947,7 @@ The $b$ solutions match the $b_s$ surface value and the no flux bottom boundary 
 They are drawn towards the $B(z)$ profiles, especially for small $\mathrm{Ek}$, as expected from the buoyancy equation (\ref{eqn:steady_vertical_b}).
 The $b$ profiles smoothly interpolate between these constraints.
 Figure \ref{fig:buoyancy_solutions}b, d shows the $G_b(z; \xi)$ Green's functions for various $\xi$ source depths.
-They are peaked (discontinuous) at $z = \xi$ with larger magnitudes and narrower peaks for smaller Ekman number.
+They are peaked (continuous with kinks) at $z = \xi$ with smaller magnitudes and narrower peaks for smaller Ekman number.
 These functions weight the contribution from the relaxation profile $B$ in (\ref{eqn:b_solution}).
 Figure \ref{fig:buoyancy_solutions} also shows the $\partial_\xi G_b(z;\xi) |_{\xi=0}$ functions from (\ref{eqn:dG_b_d_xi}).
 They equal one at the surface and decay with depth, more rapidly for smaller Ekman number.
@@ -989,7 +989,7 @@ More generally, Figure \ref{fig:velocity_Gsfn} shows that $G_\mathfrak{u}$ respe
 The (discontinuous) peaks at $z = \xi$ in $G_\mathfrak{u} (z; \xi )$ show how a pressure gradient causes a response in the horizontal velocity that is at 135$^{\mathrm{o}}$ to the pressure gradient; that is, at -45$^{\mathrm{o}}$ to the pressure gradient force (in the northern hemisphere).
 Therefore, the water moves at 45$^{\mathrm{o}}$ to the right of the pressure gradient force.
 This response decays with height above and below $z=\xi$ in clockwise spirals that represent internal Ekman layers.
-The decay length scale depends inversely on the Ekman number, as expected.
+The decay length scale depends inversely on the square root of the Ekman number, as expected.
 The influence of the surface pressure gradient extends throughout the water column until it decays to zero in the bottom Ekman layer (Figure \ref{fig:velocity_Gsfn} Gu\_int curves).
 
 \begin{figure}
@@ -1047,10 +1047,10 @@ In the test basin on a mesh of size 0.04 and 18 threads, the surface-pressure so
 \paragraph{Mesh convergence.}
 Figure~\ref{fig:verification_convergence}a and Table~\ref{tab:mesh_convergence} show the convergence of the solution as the surface-pressure mesh is refined.
 The test basin is an ellipse with semi-axes 1 and 0.75 on a $\beta$-plane ($f = 1 + 0.15y$) with $\mathrm{Ek} = 0.01$ and $\Gamma = 0.2$.
-Its depth field combines a uniform slope with a seamount and is $H \approx $0.4--1.2 at the coast, so the coast is a vertical wall and the no-normal-flow condition (\ref{eqn:ps_bc}) is active.
+Its depth field combines a uniform slope with a seamount and is $H \approx $0.54--1.06 at the coast, so the coast is a vertical wall and the no-normal-flow condition (\ref{eqn:ps_bc}) is active.
 It is forced by surface stress, by surface buoyancy, and by a restoring buoyancy with depth-dependent horizontal gradients.
 \added[id=CL]{The mesh size $h$ is the mean triangle edge length, which is within a few percent of the size requested from the mesh generator except on the coarsest mesh.}
-Errors are measured against the finest solution ($h = 0.010$) at 1300 points inside 97\% of the coastal radius.
+Errors are measured against the finest solution ($h = 0.010$) at 1341 points inside 97\% of the coastal radius.
 With second-order Lagrange elements, the surface pressure and the streamfunction converge as $h^3$, and the transport, bottom stress, and interior velocity\added[id=CL]{, which depend on $\nabla p_s$,} as $h^2$.
 \added[id=CL]{These are the optimal rates for this discretization.
 The errors are not concentrated near the coast or its polygon vertices: the error in $\mathbf{U}$ over the inner half of the basin equals that over the whole basin.}
@@ -1082,7 +1082,7 @@ Evaluated with centered differences of step $10^{-5}$ for $\nabla p_b$ and $\nab
 The vorticity balances (\ref{eqn:BVE}), (\ref{eqn:DIV}), (\ref{eqn:GCVB}), and (\ref{eqn:TDVB}) are curls of that balance, so they also hold exactly for the continuous fields.
 Mapping them requires care, however.
 They act on the bottom stress and transport, which contain $\nabla p_s$, and with continuous Lagrange elements $\nabla p_s$ is discontinuous across element edges.
-Centered differences of these fields therefore do not converge: their relative residual stays at 0.95--0.99 for every mesh in Fig.~\ref{fig:verification_convergence}b, and at \added[id=CL]{0.73--1.0} on every diagnostic grid in the double basin\added[id=CL]{, from $17 \times 17$ to $129 \times 129$}.
+Centered differences of these fields therefore do not converge: their relative residual stays at 0.95--1.04 for every mesh in Fig.~\ref{fig:verification_convergence}b, and at \added[id=CL]{0.73--1.0} on every diagnostic grid in the double basin\added[id=CL]{, from $17 \times 17$ to $129 \times 129$}.
 Instead we average each term over the diagnostic cell around each grid point.
 By Stokes' theorem, $\iint \hat{\mathbf{z}} \cdot \nabla \times \mathbf{F} \, dA = \oint \mathbf{F} \cdot \hat{\mathbf{t}} \, ds$ and $\iint J(a,b) \, dA = \oint a \, \nabla b \cdot \hat{\mathbf{t}} \, ds$, so every curl and Jacobian becomes an edge integral, for example $\oint p_b \, dH$ for the bottom-pressure torque.
 The advection terms $U \partial_x f + V \partial_y f$ and $J(f/H, \Psi) = -\mathbf{U} \cdot \nabla (f/H)$ use area quadrature.
@@ -1102,7 +1102,7 @@ Away from the coast and the bottom, the relative $L_2$ difference in the depth-i
 This is roughly first-order convergence in the horizontal grid spacing, consistent with the stair-stepped immersed coastline of the \texttt{Oceananigans.jl} grid.
 The buoyancy differences are $1.5 \times 10^{-3}$, $3.5 \times 10^{-4}$, and $3.5 \times 10^{-4}$, limited by the vertical resolution.
 Unlike buoyancy, which is column-local, $\mathbf{u}$ and $\mathbf{U}$ test the surface-pressure solve and the coastal condition.
-The PG solution takes under a second to compute, 25 to 150 times faster than the \texttt{Oceananigans.jl} run (Appendix~C).
+The PG solution takes about a second to compute, 25 to 150 times faster than the \texttt{Oceananigans.jl} run (Appendix~C).
 
 \begin{figure}
 \centering
