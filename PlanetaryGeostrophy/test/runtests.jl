@@ -148,6 +148,26 @@ end
         kernels, p, H, f, f_x, f_y, test_B, test_bs, H_x, H_y, x, y,
     )
     @test coefficient_transport ≈ direct_transport rtol=2e-7
+
+    # κ(0) in (52): b(0) = b_s, and the generated b_s kernels agree with
+    # the closed form, for non-uniform-unit κ and ν.
+    pκ = prototype.VelocityParameters(0.02, 0.2, 1.3, 1.7, 1.0, 0.1)
+    zero_B(xx, yy, z) = 0.0
+    @test prototype.buoyancy_from_forcing(pκ, H, zero_B, test_bs, x, y, 0.0) ≈
+        test_bs(x, y)
+    ψκ = prototype.ψ(pκ)
+    for ξ in (-H(x, y), -0.3)
+        @test kernels.inner_Gb_xi(ξ, H(x, y), ψκ, pκ.κ) ≈ prototype.split_quadgk(
+            z -> prototype.surface_buoyancy_kernel(z, H(x, y), pκ.κ, ψκ),
+            ξ, 0.0, (),
+        ) rtol=1e-10
+    end
+    fκ(xx, yy) = prototype.fcor(pκ, yy)
+    ps(xx, yy) = sin(0.7xx) * cos(0.4yy)
+    Hκ_x(xx, yy) = 0.05
+    @test prototype.velocity_b10(pκ, H, fκ, ps, τ, test_B, test_bs, x, y, -0.4) ≈
+        prototype.velocity_b23(kernels, pκ, H, fκ, ps, τ, test_B, test_bs,
+            Hκ_x, H_y, x, y, -0.4) rtol=2e-5
 end
 
 @testset "Vertical velocity reconstruction" begin
