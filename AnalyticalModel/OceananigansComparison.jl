@@ -11,7 +11,7 @@
 # Oceananigans cell centres, away from the coast and the bottom.
 #
 # Experiment A (flat bottom) is the validation: it converges with the
-# Oceananigans resolution. Experiment B (a Gaussian-bowl bottom with a 0.3-deep
+# Oceananigans resolution. Experiment B (a Gaussian-bowl bottom with a 0.40-deep
 # coastal wall) shows the sensitivity of the
 # z-level model to its bottom representation: stair-stepped or partial cells,
 # and grid-scale noise that only horizontal viscosity (absent from PG) damps.
