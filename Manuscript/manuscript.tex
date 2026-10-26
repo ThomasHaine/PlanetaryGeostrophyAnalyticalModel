@@ -53,6 +53,8 @@
 \definechangesauthor[name={Claude}, color=blue]{CL}
 % Review corrections of 2026-10-26, for checking.
 \definechangesauthor[name={Claude review}, color=magenta]{CR}
+% For mathematics in CR changes; remove with them.
+\newcommand{\CRnew}[1]{{\color{magenta}#1}}
 
 %% May use \\ to break lines in title:
 
@@ -74,10 +76,10 @@
 %
 % Enter your Abstract here
 
-\abstract{Planetary geostrophy (PG) with a prescribed density field, the robust-diagnostic approximation, determines the steady large-scale ocean circulation from the surface stress, the surface buoyancy, and a restoring buoyancy field. \replaced[id=CR]{We solve the linear robust-diagnostic PG equations in closed form in the vertical,}{We solve the linear robust-diagnostic PG equations exactly,} with vertical friction and diffusion, over arbitrary bathymetry and Coriolis parameter. Closed-form Green's functions give the buoyancy and horizontal velocity in each water column, resolving the surface and bottom Ekman layers even where they overlap. The surface pressure then satisfies one two-dimensional advection--diffusion equation with exact column-integral coefficients, which is solved with finite elements and no normal flow at the coast. The solution is verified by mesh convergence, by closure of the depth-integrated momentum and vorticity balances, and against a numerical primitive-equation model to 1--2\%, at 25 to 150 times lower cost. 
+\abstract{Planetary geostrophy (PG) with a prescribed density field, the robust-diagnostic approximation, determines the steady large-scale ocean circulation from the surface stress, the surface buoyancy, and a restoring buoyancy field. \added[id=CL]{We solve the linear robust-diagnostic PG equations in closed form in the vertical,} with vertical friction and diffusion, over arbitrary bathymetry and Coriolis parameter. Closed-form Green's functions give the buoyancy and horizontal velocity in each water column, resolving the surface and bottom Ekman layers even where they overlap. The surface pressure then satisfies one two-dimensional advection--diffusion equation with exact column-integral coefficients, which is solved with finite elements and no normal flow at the coast. The solution is verified by mesh convergence, by closure of the depth-integrated momentum and vorticity balances, and against a numerical primitive-equation model to 1--2\%, at 25 to 150 times lower cost. 
 It recovers the Sverdrup--Stommel gyre, $\beta$ plumes in open water and beside a coast, and topographic steering, and quantifies the corrections to these classical results.
 The Ekman drag varies as $f^{1/2}$ for Coriolis parameter $f$, and the bottom Ekman layer of depth $\delta_E$ acts as a displacement thickness so that the flow follows $f/(H - \delta_E/2)$ contours, where $H$ is the water depth.
-\replaced[id=CR]{Steering by these contours fails where $H$ is less than one to two Ekman depths $\delta_E$.}{Steering by these contours fails where $H \lessapprox 2 \delta_E$.} 
+\added[id=CL]{Steering by these contours fails where $H$ is less than one to two Ekman depths $\delta_E$.} 
 In a double basin joined by a strait, the integral constraint of N\o st and Isachsen on closed $f/H$ contours reproduces the bottom velocity to 3\% with the derived bottom stress, \added[id=CL]{but errs by more than 100\% with a calibrated isotropic drag.}
 One adjoint sensitivity solve maps the forcing that sets the strait transport. 
 }
@@ -101,8 +103,8 @@ One adjoint sensitivity solve maps the forcing that sets the strait transport.
 % Significance statement here.
 % Added by Claude (CL): draft significance statement.
 \statement
-\added[id=CL]{The large-scale ocean circulation is often explained by simple rules: currents follow contours of depth and latitude, friction at the sea floor acts as a linear drag, }\replaced[id=CR]{and the circulation around closed depth contours is set by the wind and the density field.}{and the circulation around closed depth contours is set by the wind.}\added[id=CL]{ }\replaced[id=CR]{We give an accurate solution, in closed form in the vertical, for the steady}{We give an exact solution for the steady}\added[id=CL]{ wind- and density-driven }\added[id=CL]{circulation of a model ocean with idealized but complex topography}\added[id=CL]{, in which the friction near the sea floor is resolved rather than assumed. 
-The solution agrees with a numerical ocean circulation model, and shows where the classical rules hold and where they fail, notably over shallow shelves and when the bottom drag is assumed. }\replaced[id=CR]{It is a fast and accurate baseline}{It is a fast and exact baseline}\added[id=CL]{ for interpreting ocean models and observations.}
+\added[id=CL]{The large-scale ocean circulation is often explained by simple rules: currents follow contours of depth and latitude, friction at the sea floor acts as a linear drag, }\added[id=CL]{and the circulation around closed depth contours is set by the wind and the density field.}\added[id=CL]{ }\added[id=CL]{We give an accurate solution, in closed form in the vertical, for the steady}\added[id=CL]{ wind- and density-driven }\added[id=CL]{circulation of a model ocean with idealized but complex topography}\added[id=CL]{, in which the friction near the sea floor is resolved rather than assumed. 
+The solution agrees with a numerical ocean circulation model, and shows where the classical rules hold and where they fail, notably over shallow shelves and when the bottom drag is assumed. }\added[id=CL]{It is a fast and accurate baseline}\added[id=CL]{ for interpreting ocean models and observations.}
 %
 % \capsule
 % Capsule summary here.
@@ -263,7 +265,7 @@ b = b_s
 where $b_s(x,y)$ is a known surface buoyancy field and at the sea floor ${\mathbf{\hat n}} = -(\partial_x H, \partial_y H, 1)/\sqrt{1 + (\partial_x H)^2 + (\partial_y H)^2 }$.
 Notice that the bottom boundary condition is no normal flux of buoyancy through the sea floor.
 At a sloping bottom boundary, this condition will lead to non-zero horizontal buoyancy gradients, and therefore a non-zero thermal wind (\citealt{peterson&callies26}; see, for example, \citealt{klinger&haine19} Sections 2.1.2 and 2.2.2 for the thermal wind, which is derived from the geostrophic and hydrostatic balances).
-\added[id=CL]{The same holds for the small-aspect-ratio form $\partial_z b = 0$ used below and by \citet{peterson&callies26}, }\replaced[id=CR]{because the no-flux condition makes the buoyancy profile in each column depend on the local depth, so that buoyancy varies horizontally along the sloping sea floor.}{because the depth at which isopycnals meet the sea floor varies horizontally.}\added[id=CL]{}
+\added[id=CL]{The same holds for the small-aspect-ratio form $\partial_z b = 0$ used below and by \citet{peterson&callies26}, }\added[id=CL]{because the no-flux condition makes the buoyancy profile in each column depend on the local depth, so that buoyancy varies horizontally along the sloping sea floor.}\added[id=CL]{}
 We retain both inhomogeneous sources of buoyancy, $b_s$ and $B$, for generality, although both of them are not always needed.
 
 The viscosity and diffusivity parameters in (\ref{eqn:u_mom_dim})--(\ref{eqn:v_mom_dim}) and (\ref{eqn:b_dim}) can vary in the vertical direction, for instance, to represent the effects of bottom-enhanced mixing (see Section \ref{sect:discussion}, \citealt{peterson&callies23,peterson&callies26}).
@@ -339,13 +341,13 @@ Table \ref{tab:dynamical_balances} summarizes salient properties of the diagnost
     3D momentum (3DM)    & (\ref{eqn:u_mom})--(\ref{eqn:v_mom}) & $u, v, p$, and implicitly $\tau, b, w$ & Axiomatic \\
      Depth-integrated momentum (DIM)    & (\ref{eqn:U_mom})--(\ref{eqn:V_mom}) & $U, V, p_b, \chi, \tau, \tau_b$ & Integrate 3DM vertically \\
       Barotropic vorticity (BV)   & (\ref{eqn:BVE}) & $U, V, p_b, \tau, \tau_b$ & Integrate 3DM  vertically, then take curl\\
-      Depth-integrated vorticity (DIV)   & (\ref{eqn:DIV}) & \replaced[id=CR]{$U, V, w_b, \tau, [\partial_z \zeta]_b$}{$U, V, p_b, \tau, \tau_b$} & Curl of 3DM, then integrate vertically \\
+      Depth-integrated vorticity (DIV)   & (\ref{eqn:DIV}) & \added[id=CL]{$U, V, w_b, \tau, [\partial_z \zeta]_b$} & Curl of 3DM, then integrate vertically \\
       Geostrophic contour vorticity balance (GCVB)   & (\ref{eqn:GCVB}) & $\Psi, \chi, \tau, \tau_b$ & Divide DIM by $H$, then take curl \\
     Transport divergence vorticity balance (TDVB)   & (\ref{eqn:TDVB}) & $p_b, \chi, \tau, \tau_b$ & Divide DIM by $f$, then take curl \\
     \end{tabular}
     \caption{Summary of diagnostic dynamical balances explained in Section \ref{sect:dynamical_balances}. 
     The starting point is the three-dimensional momentum (3DM) equations explained in Section \ref{sect:equations}.
-    The variables are: $(u,v,w)$ velocity, $(U,V)$ depth-integrated horizontal velocity, $p$ pressure, $b$ buoyancy, $\tau$ surface stress, $p_b$ bottom pressure, $\chi$ baroclinic potential energy, $\tau_b$ bottom stress, $\Psi$ streamfunction for depth-integrated horizontal velocity.\added[id=CR]{ For the DIV balance, $w_b$ is the vertical velocity and $[\partial_z \zeta]_b$ the vertical shear of relative vorticity at the sea floor; $p_b$ and $\tau_b$ enter through (\ref{eqn:bottom_vorticity_flux}).}}
+    The variables are: $(u,v,w)$ velocity, $(U,V)$ depth-integrated horizontal velocity, $p$ pressure, $b$ buoyancy, $\tau$ surface stress, $p_b$ bottom pressure, $\chi$ baroclinic potential energy, $\tau_b$ bottom stress, $\Psi$ streamfunction for depth-integrated horizontal velocity.\added[id=CL]{ For the DIV balance, $w_b$ is the vertical velocity and $[\partial_z \zeta]_b$ the vertical shear of relative vorticity at the sea floor; $p_b$ and $\tau_b$ enter through (\ref{eqn:bottom_vorticity_flux}).}}
     \label{tab:dynamical_balances}
 \end{table}
 
@@ -358,7 +360,7 @@ U & \equiv \int_{-H}^{0} u \; dz = - \int_{-H}^{0} z \, \partial_z u \; dz , \no
 V & \equiv \int_{-H}^{0} v \; dz = - \int_{-H}^{0} z \, \partial_z v \; dz ,
 \label{eqn:UV_defs}
 \end{align}
-where we exploit the bottom boundary condition (\ref{eqn:bot_uv_bc}) on $(u, v)$.
+where we exploit the bottom boundary condition (\ref{eqn:bot_uv_bc}) on $(u, v)$.\added[id=CR]{ We write $\mathbf{U} = (U, V)$ for the depth-integrated transport vector.}
 Consistent with the linearized small-surface-displacement approximation, $|\eta| \ll H$, used below, the upper limit of vertical integration is evaluated at $z=0$ (not $z = \eta$). 
 The equations for $(U, V)$ come from vertically integrating the three-dimensional momentum (3DM) equations (\ref{eqn:u_mom}), (\ref{eqn:v_mom}):
 \begin{align}
@@ -402,7 +404,7 @@ where
 \chi & = - \int_{-H}^{0} z b \; dz
 \label{eqn:baroclinic_PE}
 \end{align}
-is the baroclinic potential energy, and $- \nu \, \left. \partial_z (u,v) \right|_{z = -H}  \equiv (\tau^x_b, \tau^y_b) = \tau_b$ is the bottom stress on the fluid (see \citealt{hughes&killworth95} Eq.~(14) and \citealt{waldman&giordani23} Eq.~(9)).
+is the baroclinic potential energy, and $- \nu \, \left. \partial_z (u,v) \right|_{z = -H}  \equiv (\tau^x_b, \tau^y_b) = \CRnew{\boldsymbol{\tau}_b}$ is the bottom stress on the fluid (see \citealt{hughes&killworth95} Eq.~(14) and \citealt{waldman&giordani23} Eq.~(9)).
 The DIM equations relate the depth-integrated horizontal flow $(U,V)$ to the net stress, the gradient of bottom pressure $p_b$, and the gradient of baroclinic potential energy $\chi$.
 
 \subsection{Vorticity Balances for the Depth-Integrated Flow}
@@ -424,7 +426,7 @@ Recall that
 \partial_x \big\{ - H \, \partial_y p_b - \partial_y \chi + \mathrm{Ek} \big( \tau^y + \tau^y_b \big) \big\} - \nonumber \\
 & \; \partial_y \big\{ - H \, \partial_x p_b - \partial_x \chi + \mathrm{Ek} \big( \tau^x + \tau^x_b \big) \big\} \nonumber \\
 \implies
-f \left( \partial_x   U + \partial_y V \right) + U \partial_x f + V \partial_y f = & \; J(p_b, H) + \mathrm{Ek} \, \hat{\mathbf{z}} \cdot \left[ \nabla \times \left( \tau + \tau_b \right) \right] ,
+f \left( \partial_x   U + \partial_y V \right) + U \partial_x f + V \partial_y f = & \; J(p_b, H) + \mathrm{Ek} \, \hat{\mathbf{z}} \cdot \left[ \nabla \times \left( \CRnew{\boldsymbol{\tau} + \boldsymbol{\tau}_b} \right) \right] ,
 \label{eqn:BVE}
 \end{align}
 where $J(a,b) \equiv \partial_x a \, \partial_y b - \partial_y a \, \partial_x b = \left( \nabla a \times \nabla b \right) \cdot \hat{\mathbf{z}}$ is the Jacobian operator, $d f / dy = \beta$ on a $\beta$-plane, and $\hat{\mathbf{z}}$ is the unit upward vector.
@@ -438,7 +440,7 @@ This constraint comes from the non-divergence equation (\ref{eqn:non-divergent})
 \end{align}
 Thus, for time-independent solutions:
  \begin{align}
- J(p_b, H) + \mathrm{Ek} \, \hat{\mathbf{z}} \cdot \left[ \nabla \times \left( \tau + \tau_b \right) \right] -  U \partial_x f - V \partial_y f & = 0 .
+ J(p_b, H) + \mathrm{Ek} \, \hat{\mathbf{z}} \cdot \left[ \nabla \times \left( \CRnew{\boldsymbol{\tau} + \boldsymbol{\tau}_b} \right) \right] -  U \partial_x f - V \partial_y f & = 0 .
  \label{eqn:BVE_constraint}
 \end{align}
 % (see \citealt{nost&isachsen03} Eq.~(13)).
@@ -468,7 +470,7 @@ This depth-integrated vorticity (DIV) equation is a balance between advection of
 \added[id=CL]{Two features of the present problem simplify it.
 First, the no-slip condition (\ref{eqn:bot_uv_bc}) and the kinematic condition $w|_{z=-H} = -\left( u \, \partial_x H + v \, \partial_y H \right)|_{z=-H}$ give $w|_{z=-H} = 0$, so there is no vortex stretching at the sea floor.
 Second, the bottom term is not the curl of the bottom stress, because the curl does not commute with evaluation on the sloping sea floor $z = -H(x,y)$.
-Applying the chain rule to $\boldsymbol{\tau}_b(x,y) = - \nu \, \partial_z (u, v) |_{z = -H(x,y)}$, and using the momentum equations (\ref{eqn:u_mom})--(\ref{eqn:v_mom}) at the sea floor, where $u = v = 0$ and $\partial_x p |_{z=-H} = \partial_x p_b + b|_{z=-H} \, \partial_x H$}\replaced[id=CR]{ (and similarly for $y$), gives, for any $\nu(z)$,}{ (and similarly for $y$), gives, for uniform $\nu$,}\added[id=CL]{}
+Applying the chain rule to $\boldsymbol{\tau}_b(x,y) = - \nu \, \partial_z (u, v) |_{z = -H(x,y)}$, and using the momentum equations (\ref{eqn:u_mom})--(\ref{eqn:v_mom}) at the sea floor, where $u = v = 0$ and $\partial_x p |_{z=-H} = \partial_x p_b + b|_{z=-H} \, \partial_x H$}\added[id=CL]{ (and similarly for $y$), gives, for any $\nu(z)$,}\added[id=CL]{}
 {\color{blue}
 \begin{align}
 - \mathrm{Ek} \left[ \nu \, \partial_z \zeta \right]_{z=-H} & = \mathrm{Ek} \, \hat{\mathbf{z}} \cdot \left( \nabla \times \boldsymbol{\tau}_b \right) + J(p_b, H) .
@@ -476,7 +478,7 @@ Applying the chain rule to $\boldsymbol{\tau}_b(x,y) = - \nu \, \partial_z (u, v
 \end{align}
 }
 \added[id=CL]{With these two results, (\ref{eqn:DIV}) is identical to the BV constraint (\ref{eqn:BVE_constraint}): for a resolved, no-slip bottom boundary layer, the bottom pressure torque is the part of the viscous vorticity flux through the sea floor that arises from the slope of the sea floor.
-The form $U \partial_x f + V \partial_y f + f \, w|_{z=-H} = \mathrm{Ek} \, \hat{\mathbf{z}} \cdot \left[ \nabla \times \left( \boldsymbol{\tau} + \boldsymbol{\tau}_b \right) \right]$ used in model diagnostics \citep{waldman&giordani23} }\replaced[id=CR]{holds instead on a locally flat, stair-stepped model bottom with a drag law applied at the lowest level; over a continuous slope with a nonzero bottom velocity, the bottom term also contains $J(p_b, H)$.}{applies instead when the velocity at the sea floor is not zero, as for a drag law applied to the lowest model level.}\added[id=CL]{}
+The form $U \partial_x f + V \partial_y f + f \, w|_{z=-H} = \mathrm{Ek} \, \hat{\mathbf{z}} \cdot \left[ \nabla \times \left( \boldsymbol{\tau} + \boldsymbol{\tau}_b \right) \right]$ used in model diagnostics \citep{waldman&giordani23} }\added[id=CL]{holds instead on a locally flat, stair-stepped model bottom with a drag law applied at the lowest level; over a continuous slope with a nonzero bottom velocity, the bottom term also contains $J(p_b, H)$.}\added[id=CL]{}
 
 \subsubsection{Geostrophic Contour Vorticity Balance}
 The third option is to write the equation for the vorticity of the depth-averaged flow.
@@ -489,10 +491,10 @@ That is, divide the DIM equations (\ref{eqn:U_mom})--(\ref{eqn:V_mom}) by water 
 One finds that
 \begin{align}
 \partial_y \left(- \frac{f }{H} \partial_x \Psi \right) + \partial_x \left( \frac{f }{H} \partial_y\Psi \right) & = 
-- \partial_y \left( \frac{1}{H} \partial_x \chi \right) + \partial_x \left( \frac{1}{H} \partial_y \chi \right)  - \mathrm{Ek} \, {\hat{\mathbf z}} \cdot \left( \nabla \times \frac{{\mathbf \tau + \tau_b}}{H} \right), \nonumber \\
+- \partial_y \left( \frac{1}{H} \partial_x \chi \right) + \partial_x \left( \frac{1}{H} \partial_y \chi \right)  - \mathrm{Ek} \, {\hat{\mathbf z}} \cdot \left( \nabla \times \frac{\CRnew{\boldsymbol{\tau} + \boldsymbol{\tau}_b}}{H} \right), \nonumber \\
 \implies
 J\left( \frac{f}{H} , \Psi \right)  & =  J \left( \frac{1}{H}, \chi \right)
-- \mathrm{Ek} \, {\hat{\mathbf z}} \cdot \left( \nabla \times \frac{{\mathbf \tau + \tau_b}}{H} \right) ,
+- \mathrm{Ek} \, {\hat{\mathbf z}} \cdot \left( \nabla \times \frac{\CRnew{\boldsymbol{\tau} + \boldsymbol{\tau}_b}}{H} \right) ,
 \label{eqn:GCVB}
 \end{align}
 where the streamfunction of the depth-integrated horizontal flow $\Psi$ satisfies
@@ -513,10 +515,10 @@ Consider integrating (\ref{eqn:GCVB}) over the area $R$ enclosed by a $q = f/H$ 
 \added[id=CL]{The integral of the $J(f/H, \Psi)$ term then identically equals zero} and application of Stokes' theorem gives
 \begin{align}
 \iint_{R} J \left( \frac{1}{H}, \chi \right) \; dA & =
-\mathrm{Ek} \, \oint_{q} \frac{{\mathbf \tau + \tau_b}}{H} \cdot  \hat{\mathbf{t}} \; ds,
+\mathrm{Ek} \, \oint_{q} \frac{\CRnew{\boldsymbol{\tau} + \boldsymbol{\tau}_b}}{H} \cdot  \hat{\mathbf{t}} \; d\CRnew{t},
 \label{eqn:integrated_GCVB}
 \end{align}
-where $\hat{\mathbf{t}}$ is the unit tangent vector along the $q$ contour (running anticlockwise), and $s$ measures distance along it.
+where $\hat{\mathbf{t}}$ is the unit tangent vector along the $q$ contour (running anticlockwise), \replaced[id=CR]{and $t$ measures distance along it.}{and $s$ measures distance along it.}
 This formula is related to the so-called island rule \citep{godfrey89,krupitsky&cane97,cane_etal98}, which provides a useful independent check on the solutions \added[id=CL]{presented in Section~\ref{sect:results}.}
 
 \subsubsection{Transport Divergence Vorticity Balance}
@@ -526,7 +528,7 @@ This formula is related to the so-called island rule \citep{godfrey89,krupitsky&
 \partial_y \left[ \frac{H}{f} \partial_x p_b + \frac{1}{f} \partial_x \chi - \frac{\mathrm{Ek}}{f} \left( \tau^x + \tau^x_b \right) \right] 
 + \partial_x \left[ - \frac{H}{f} \partial_y p_b - \frac{1}{f} \partial_y \chi  + \frac{\mathrm{Ek}}{f} \left( \tau^y + \tau^y_b \right) \right], \\
 \implies
-0 & = J \left( p_b, \frac{H}{f} \right) +  J \left( \chi, \frac{1}{f} \right) + \mathrm{Ek} \, {\hat{\mathbf z}} \cdot \left( \nabla \times \frac{{\mathbf \tau + \tau_b}}{f} \right) .
+0 & = J \left( p_b, \frac{H}{f} \right) +  J \left( \chi, \frac{1}{f} \right) + \mathrm{Ek} \, {\hat{\mathbf z}} \cdot \left( \nabla \times \frac{\CRnew{\boldsymbol{\tau} + \boldsymbol{\tau}_b}}{f} \right) .
 \label{eqn:TDVB}
 \end{align}
 This equation is called the (linear, time-independent) transport divergence vorticity balance (TDVB; see \citealt{waldman&giordani23} Eq.~(16) and \citealt{nost&isachsen03} Eq.~(13), who call it a form of the ``depth-integrated vorticity equation'').
@@ -539,7 +541,7 @@ Nevertheless, knowledge of the derivatives of $p_b, \chi, \tau$, and $\tau_b$ re
 \subsection{Remarks on Dynamical Balances}
 The dynamical balances described in this section (and summarized in Table \ref{tab:dynamical_balances}) are useful because they expose relationships between the circulation and the imposed forcing (stress and buoyancy).
 In some cases, this approach leads to a direct algebraic link.
-For example, the flat-bottomed BV equations lead to the Sverdrup balance between the depth-integrated advection of planetary vorticity $\beta V$ and the wind stress curl $\hat{\mathbf{z}} \cdot \nabla \times \tau$ (see (\ref{eqn:BVE_constraint}); vanishing of the curl of the bottom stress $\hat{\mathbf{z}} \cdot \nabla \times \tau_b$ is assumed).
+For example, the flat-bottomed BV equations lead to the Sverdrup balance between the depth-integrated advection of planetary vorticity $\beta V$ and the wind stress curl $\hat{\mathbf{z}} \cdot \nabla \times \CRnew{\boldsymbol{\tau}}$ (see (\ref{eqn:BVE_constraint}); vanishing of the curl of the bottom stress $\hat{\mathbf{z}} \cdot \nabla \times \tau_b$ is assumed).
 As \citet{pedlosky96} says, this is ``an extraordinary result'' that has profound influence on understanding ocean general circulation (see also \citealt{pedlosky87b,vallis06}, and \citealt{klinger&haine19}).
 % Page 9 of pedlosky96.
 Another example concerns the TDVB equation.
@@ -575,7 +577,7 @@ The robust diagnostic approach defined in Sections \ref{sect:introduction} and \
 That computation requires solving the differential equation for $b$, which is achieved in this section with an analytical formula.
 The method is prototypical for the method to solve the PG equations in Section \ref{sect:PG_soln}.
 
-For time-independent, negligible buoyancy advection, and small aspect ratio, the buoyancy equation (\ref{eqn:b}), (\ref{eqn:top_b_bc}), (\ref{eqn:bot_b_bc}) reads:
+\replaced[id=CR]{For time-independent flow, negligible buoyancy advection ($\mathrm{Pr}\,\mathrm{Bu} \ll 1$ in (\ref{eqn:b})), and small aspect ratio,}{For time-independent, negligible buoyancy advection, and small aspect ratio,} the buoyancy equation (\ref{eqn:b}), (\ref{eqn:top_b_bc}), (\ref{eqn:bot_b_bc}) reads:
 \begin{align}
 \mathrm{Ek} \; \partial_z \left( \kappa \partial_ z b \right) - \Gamma b & = - \Gamma B , \label{eqn:steady_vertical_b} \\
 {\color{blue}b|_{z = 0}} & = b_s , \\
@@ -605,7 +607,7 @@ G_b (z; \xi) & = \frac{\mathrm{e}^{\psi \left(z + \xi\right)}}
 \end{cases}
 \label{eqn:b_Greens_fn}
 \end{align}
-with $\psi = \sqrt{\Gamma / \mathrm{Ek} } $. 
+with $\psi = \sqrt{\Gamma / \mathrm{Ek} } $.\added[id=CR]{ (The decay rate $\psi$ is unrelated to the streamfunction $\Psi$.)} 
 See \appbEqnSoln\ for the derivation of these results and Eq.~(\ref{eqn:dG_b_d_xi}) for the explicit form of $\partial_\xi G_b(z;\xi) |_{\xi = 0}$.
 
 This formula (\ref{eqn:b_solution}) for $b$ is a linear combination of contributions from the relaxation field $B$ and the surface buoyancy $b_s$.
@@ -667,7 +669,7 @@ For uniform vertical viscosity ($\nu = 1$),
  & \text{for}\: z \geq \xi .
 \end{cases}  \label{eqn:FG_Gsfn} 
 \end{align}
-\added[id=CL]{}\replaced[id=CR]{$\varphi = \sqrt{i f/ \mathrm{Ek}}$, the principal square root, which has a positive real part for either sign of $f$ (for $f > 0$, $\varphi = \sqrt{i} \, \phi$ with $\phi = \sqrt{f/\mathrm{Ek}}$),}{$\varphi = \sqrt{i} \, \phi = \sqrt{i f/ \mathrm{Ek}}$, with $\phi = \sqrt{f/\mathrm{Ek}}$,}\added[id=CL]{ is a function of $x$ and $y$ in general because $f$ varies,} and Equation (\ref{eqn:Guv0}) gives the formula for $G_{\mathfrak{u}} (z; 0)$.
+\added[id=CL]{}\added[id=CL]{$\varphi = \sqrt{i f/ \mathrm{Ek}}$, the principal square root, which has a positive real part for either sign of $f$ (for $f > 0$, $\varphi = \sqrt{i} \, \phi$ with $\phi = \sqrt{f/\mathrm{Ek}}$),}\added[id=CL]{ is a function of $x$ and $y$ in general because $f$ varies,} and Equation (\ref{eqn:Guv0}) gives the formula for $G_{\mathfrak{u}} (z; 0)$.
 
 Substituting for the pressure from (\ref{eqn:hydrostatic_p_pgf}) gives:
 \begin{align}
@@ -680,12 +682,12 @@ Substituting for the pressure from (\ref{eqn:hydrostatic_p_pgf}) gives:
 This formula expresses the velocity as being due to the sum of contributions from the surface pressure gradient (first term on the right hand side), the baroclinic pressure gradient (second term), and the surface stress (third term).
 The integral in the first right hand side term that multiplies the surface pressure gradient is given explicitly by (\ref{eqn:Guv_int_wrt_xi}) for the case of uniform viscosity.
 Recall that $p_s, b, \tau^x + i \tau^y$, and (therefore) $\mathfrak{u}$ are functions of horizontal $(x,y)$ position.
-The $G_{\mathfrak{u}}$ kernel depends on position \replaced[id=CR]{through the dependence of $f$ on position}{through the dependence of $f$ on latitude} and also on the variation of depth $H(x,y)$.
+The $G_{\mathfrak{u}}$ kernel depends on position \added[id=CL]{through the dependence of $f$ on position} and also on the variation of depth $H(x,y)$.
 Apart from the surface pressure, everything in (\ref{eqn:expanded_form_of_u}) is known: see Section \ref{sect:PG_soln}\ref{sect:PG_closure} to determine the surface pressure.
 
 \subsection{Bottom Stress}
 
-From (\ref{eqn:expanded_form_of_u}), the bottom stress $\tau_b$ can be computed as follows: $\tau_b \equiv  - \nu \, \partial_z \mathfrak{u}|_{z = -H}$, where
+From (\ref{eqn:expanded_form_of_u}), \replaced[id=CR]{the bottom stress, in the complex form $\tau_b = \tau^x_b + i \tau^y_b$ of the vector $\boldsymbol{\tau}_b$, can be computed as follows:}{the bottom stress $\tau_b$ can be computed as follows:} $\tau_b \equiv  - \nu \, \partial_z \mathfrak{u}|_{z = -H}$, where
 \begin{align}
 \partial_z \mathfrak{u}|_{z = -H} 
 & = \frac{1}{\mathrm{Ek}} \left(\partial_x  + i \partial_y \right) p_s \int_{-H}^{0} \partial_z G_{ \mathfrak{u}} (z; \xi)|_{z = -H} \; d \xi \nonumber \\
@@ -711,7 +713,7 @@ T & = - \frac{1}{\mathrm{Ek}} \int_{-H}^{0}
  \label{eqn:T_fn}
 \end{align} 
 % Notebook cell reference, now summarized in the code-availability statement: (see \texttt{FrictionalGeostrophicEquationSolution.ipynb} \#2.5 and \#2.6). 
-Notice that the direction of the bottom stress depends on position in a non-trivial way: \added[id=CL]{this is discussed in Section~\ref{sect:results}a (Fig.~\ref{fig:coefficient_regimes}d, e).}
+Notice that the direction of the bottom stress depends on position in a non-trivial way: \added[id=CL]{this is discussed in Section~\ref{sect:results}\ref{sect:kernels} (Fig.~\ref{fig:coefficient_regimes}d, e).}
 
 \subsection{Depth-Integrated Flow}
 
@@ -924,22 +926,22 @@ This is a forced advection-diffusion equation for the surface pressure: $p_s$ is
 % \end{equation}}
 % advecting velocity is nondivergent because of Jacobian form of advection operator: \mathfrak{A}^i is the streamfunction.
 Eq.~(\ref{eqn:A_fn}) shows that one part of $\mathfrak{A}^i$ is $H /f$ (recall that $\varphi^2 = i f / \mathrm{Ek}$), indicating advection of $p_s$ along $f/H$ contours, as expected.
-\replaced[id=CR]{Once $p_s$ is known, the equation (\ref{eqn:streamfunction_pde}) for the streamfunction of the depth-integrated flow is a Poisson equation.}{Similarly, the equation for the streamfunction of the depth-integrated flow is a forced advection-diffusion equation.}
+\added[id=CL]{Once $p_s$ is known, the equation (\ref{eqn:streamfunction_pde}) for the streamfunction of the depth-integrated flow is a Poisson equation.}
 This extends the GCVB (eq.~(\ref{eqn:GCVB})) because it has explicitly included the bottom stress by solving the frictional geostrophic equation.
 
 
 \Claude{ The surface pressure equation (\ref{eqn:ps}) requires a boundary condition at the coast.
 Mass conservation requires that the depth-integrated flow does not cross the coast, $\mathbf{U} \cdot \hat{\mathbf{n}} = 0$, where $\hat{\mathbf{n}}$ is the outward unit normal with Cartesian components $(n_x, n_y)$.
-Using $\Re \{ (n_x - i n_y) \mathfrak{U} \} = \mathbf{U} \cdot \hat{\mathbf{n}}$ and $(n_x - i n_y)(\partial_x + i \partial_y) = \partial_n + i \partial_s$, with $s$ the anticlockwise arc length along the coast, (\ref{eqn:UV_AB_def}) implies that
+Using $\Re \{ (n_x - i n_y) \mathfrak{U} \} = \mathbf{U} \cdot \hat{\mathbf{n}}$ and \replaced[id=CR]{$(n_x - i n_y)(\partial_x + i \partial_y) = \partial_n + i \partial_t$, with $t$ the anticlockwise arc length}{$(n_x - i n_y)(\partial_x + i \partial_y) = \partial_n + i \partial_s$, with $s$ the anticlockwise arc length} along the coast, (\ref{eqn:UV_AB_def}) implies that
 \begin{align}
-\mathfrak{A}^r \partial_n p_s - \mathfrak{A}^i \partial_s p_s + \mathfrak{B} \cdot \hat{\mathbf{n}} & = 0
+\mathfrak{A}^r \partial_n p_s - \mathfrak{A}^i \partial_{\CRnew{t}} p_s + \mathfrak{B} \cdot \hat{\mathbf{n}} & = 0
 \label{eqn:ps_bc}
 \end{align}
 on the coast, where $\mathfrak{B} \cdot \hat{\mathbf{n}} \equiv \mathfrak{B}^r n_x + \mathfrak{B}^i n_y$.
-This oblique-derivative condition contains the normal frictional (Ekman) transport $\mathfrak{A}^r \partial_n p_s$, the normal geostrophic transport $-\mathfrak{A}^i \partial_s p_s$, and the normal transport forced by the surface stress and the buoyancy field, $\mathfrak{B} \cdot \hat{\mathbf{n}}$.
-It determines $p_s$ up to an additive constant, which we fix by requiring $\iint p_s \, dA = 0$.
+This oblique-derivative condition contains the normal frictional (Ekman) transport $\mathfrak{A}^r \partial_n p_s$, \replaced[id=CR]{the normal geostrophic transport $-\mathfrak{A}^i \partial_t p_s$}{the normal geostrophic transport $-\mathfrak{A}^i \partial_s p_s$}, and the normal transport forced by the surface stress and the buoyancy field, $\mathfrak{B} \cdot \hat{\mathbf{n}}$.
+It determines $p_s$ up to an additive constant, \replaced[id=CR]{which we fix by requiring $\int_\Omega p_s \, dA = 0$ over the basin $\Omega$.}{which we fix by requiring $\iint p_s \, dA = 0$.}
 The constant does not affect the flow.
-Where the coast is a sloping beach ($H \rightarrow 0$), \replaced[id=CR]{$\mathfrak{A}$ and $\mathfrak{B}$ vanish, (\ref{eqn:ps}) degenerates, and (\ref{eqn:ps_bc}) is satisfied automatically by any $p_s$ with a bounded gradient.}{$\mathfrak{A}$ and $\mathfrak{B}$ vanish and (\ref{eqn:ps_bc}) is satisfied automatically.}
+Where the coast is a sloping beach ($H \rightarrow 0$), \added[id=CL]{$\mathfrak{A}$ and $\mathfrak{B}$ vanish, (\ref{eqn:ps}) degenerates, and (\ref{eqn:ps_bc}) is satisfied automatically by any $p_s$ with a bounded gradient.}
 Where the coast is a vertical wall ($H > 0$), (\ref{eqn:ps_bc}) is essential.
 A simpler Dirichlet condition such as $p_s = 0$ removes only the geostrophic part of the normal transport, and lets frictional and buoyancy-forced transport cross the wall.}
 
@@ -948,6 +950,7 @@ A simpler Dirichlet condition such as $p_s = 0$ removes only the geostrophic par
 \label{sect:results}
 
 \subsection{Buoyancy and Velocity Kernels}
+\label{sect:kernels}
 \begin{figure}
 \centering
 \includegraphics[width=14cm]{buoyancy_solutions_and_Greens_functions.pdf}
@@ -1017,11 +1020,11 @@ The influence of the surface pressure gradient extends throughout the water colu
 (f) Fraction of the surface stress that reaches the bed in $T$ (\ref{eqn:T_fn}), $|\mathrm{sech}\,\varphi H|$.
 Solid curves use $\mathrm{Ek} = 10^{-2}$ and dots $\mathrm{Ek} = 10^{-3}$; the coefficients collapse because they depend only on $s$.
 Dashed and dash-dotted lines are the deep ($s \gg 1$) and shallow ($s \ll 1$) asymptotes.
-Dotted vertical lines mark $s = 1$ and $s = 3$\added[id=CR]{; the dotted line in (a) is the inviscid value $H/f$ and that in (c) marks a ratio of one}.}
+Dotted vertical lines mark $s = 1$ and $s = 3$\added[id=CL]{; the dotted line in (a) is the inviscid value $H/f$ and that in (c) marks a ratio of one}.}
 \end{figure}
 
 \Claude{
-With uniform viscosity the column coefficients depend on depth only through $s = H/\delta_E$, \added[id=CL]{the depth measured in Ekman depths (not the arc length $s$ of the contour integrals in Section~\ref{sect:dynamical_balances}; Fig.~\ref{fig:coefficient_regimes},} $\delta_E = \sqrt{2 \nu \mathrm{Ek}/|f|}$ ).
+With uniform viscosity the column coefficients depend on depth only through $s = H/\delta_E$, \added[id=CL]{the depth measured in Ekman depths }\replaced[id=CR]{(}{(not the arc length $s$ of the contour integrals in Section~\ref{sect:dynamical_balances}; }\added[id=CL]{Fig.~\ref{fig:coefficient_regimes},} $\delta_E = \sqrt{2 \nu \mathrm{Ek}/|f|}$ ).
 For deep water ($s \gg 1$), $\mathfrak{A} \rightarrow [-\delta_E/2 + i(H - \delta_E/2)]/f$.
 %\added[id=CL]{This limit and those below follow from (\ref{eqn:A_fn}) and (\ref{eqn:S_fn}) with $\varphi = (1 + i)/\delta_E$ (for $f > 0$ and $\nu = 1$, so that $\varphi^2 \mathrm{Ek} = i f$): $\tanh \varphi H \rightarrow 1$ for $s \gg 1$, and $\tanh(\varphi H)/(\varphi H) - 1 \approx -(\varphi H)^2/3 + 2 (\varphi H)^4/15$ for $s \ll 1$.
 %The deep limits are the classical results for Ekman layers in water of finite depth \citep{ekman05, vallis06}.}
@@ -1098,7 +1101,7 @@ Mapping them requires care, however.
 They act on the bottom stress and transport, which contain $\nabla p_s$, and with continuous Lagrange elements $\nabla p_s$ is discontinuous across element edges.
 Centered differences of these fields therefore do not converge: their relative residual stays at 0.95--1.04 for every mesh in Fig.~\ref{fig:verification_convergence}b, and at \added[id=CL]{0.73--1.0} on every diagnostic grid in the double basin\added[id=CL]{, from $17 \times 17$ to $129 \times 129$}.
 Instead we average each term over the diagnostic cell around each grid point.
-By Stokes' theorem, $\iint \hat{\mathbf{z}} \cdot \nabla \times \mathbf{F} \, dA = \oint \mathbf{F} \cdot \hat{\mathbf{t}} \, ds$ and $\iint J(a,b) \, dA = \oint a \, \nabla b \cdot \hat{\mathbf{t}} \, ds$, so every curl and Jacobian becomes an edge integral, for example $\oint p_b \, dH$ for the bottom-pressure torque.
+By Stokes' theorem, $\iint \hat{\mathbf{z}} \cdot \nabla \times \mathbf{F} \, dA = \oint \mathbf{F} \cdot \hat{\mathbf{t}} \, d\CRnew{t}$ and $\iint J(a,b) \, dA = \oint a \, \nabla b \cdot \hat{\mathbf{t}} \, d\CRnew{t}$, so every curl and Jacobian becomes an edge integral, for example $\oint p_b \, dH$ for the bottom-pressure torque.
 The advection terms $U \partial_x f + V \partial_y f$ and $J(f/H, \Psi) = -\mathbf{U} \cdot \nabla (f/H)$ use area quadrature.
 No finite-element field is differentiated.
 Setting $\nabla \cdot \mathbf{U} = 0$ as in (\ref{eqn:BVE_constraint}), each cell-averaged residual equals the cell-averaged finite-element mass-conservation error: $-f \nabla \cdot \mathbf{U}$ for the BV and DIV balances, $(f/H) \nabla \cdot \mathbf{U}$ for the GCVB, and $-\nabla \cdot \mathbf{U}$ for the TDVB.
@@ -1113,7 +1116,7 @@ Appendix~C compares the solution with \texttt{Oceananigans.jl} \citep{wagner_eta
 The test uses an elliptical basin on a $\beta$-plane with $\mathrm{Ek} = 0.02$, a flat bottom of depth 0.65 bounded by a vertical coastal wall, weak zonal surface stress, and spatially varying surface and restoring buoyancy.
 The two models then solve the same linear equations and differ only in their discretizations.
 Away from the coast and the bottom, the relative $L_2$ difference in the depth-integrated transport $\mathbf{U}$ is 11\%, 4.3\%, and 1.5\% on $40 \times 30 \times 20$, $80 \times 60 \times 40$, and $160 \times 120 \times 40$ \texttt{Oceananigans.jl} grids, and in the horizontal velocity $\mathbf{u}$ it is 8.0\%, 3.4\%, and 1.1\% (Fig.~\ref{fig:oceananigans_comparison}).
-\replaced[id=CR]{This is convergence at order 1.2--1.6 in the horizontal grid spacing,}{This is roughly first-order convergence in the horizontal grid spacing,} consistent with the stair-stepped immersed coastline of the \texttt{Oceananigans.jl} grid.
+\added[id=CL]{This is convergence at order 1.2--1.6 in the horizontal grid spacing,} consistent with the stair-stepped immersed coastline of the \texttt{Oceananigans.jl} grid.
 The buoyancy differences are $1.5 \times 10^{-3}$, $3.5 \times 10^{-4}$, and $3.5 \times 10^{-4}$, limited by the vertical resolution.
 Unlike buoyancy, which is column-local, $\mathbf{u}$ and $\mathbf{U}$ test the surface-pressure solve and the coastal condition.
 The PG solution takes about a second to compute, 25 to 150 times faster than the \texttt{Oceananigans.jl} run (Appendix~C).
@@ -1138,15 +1141,15 @@ The PG solution takes about a second to compute, 25 to 150 times faster than the
 \paragraph{\added[id=CL]{Sverdrup interior and Stommel boundary layer.}}
 \added[id=CL]{A flat rectangular basin ($2 \times 1$, $H = 1$) on a $\beta$-plane, $f = 1 + 0.6\,y$, is forced by the zonal wind }\added[id=CL]{$\tau^x = -\tau_0 \cos (\pi \hat{y})$, with $\hat{y} = y + 1/2$,}\added[id=CL]{ and has no buoyancy forcing.
 The classical model is that of \citet{stommel48}, $r \nabla^2 \Psi + \beta \partial_x \Psi = \mathrm{Ek}\, \hat{\mathbf{z}} \cdot \nabla \times \boldsymbol{\tau}$ with $\Psi = 0$ on the coast, whose solution separates as }\added[id=CL]{$\Psi = X(x) \sin (\pi \hat{y})$}\added[id=CL]{.
-Its drag coefficient is not fitted: $r = f_0 \delta_E/(2H)$ is the deep limit of the PG bottom stress (Section~\ref{sect:results}a).
+Its drag coefficient is not fitted: $r = f_0 \delta_E/(2H)$ is the deep limit of the PG bottom stress (Section~\ref{sect:results}\ref{sect:kernels}).
 The PG streamfunction is integrated from the PG transport, $\Psi = -\int_x^{x_E} V \, dx'$, independently of the streamfunction solve (\ref{eqn:streamfunction_pde}).
 For $s = H/\delta_E = 28$, 14, 7, and 3.5 ($\mathrm{Ek}$ from $6.25 \times 10^{-4}$ to 0.04), the relative $L_2$ difference in $\Psi$ is 2.6\%, 3.3\%, 5.3\%, and 8.0\%.
 PG reproduces both the Sverdrup interior and the western boundary layer of width $r/\beta$ (Fig.~\ref{fig:stommel_comparison}).
 Two corrections, both implied by the PG bottom stress, account for most of the remaining difference.
 First, the Ekman drag varies with latitude, $r(y) = f \delta_E/(2H) \propto f^{1/2}$; with this local drag the difference falls to 1.0\% and 1.2\% for $s = 28$ and 14.
-Second, the bottom Ekman layer acts as a displacement thickness, so the drag acts on the velocity $\mathbf{U}/(H - \delta_E/2)$; with both corrections the difference at $s = 7$ falls from 5.3\% to 1.5\%}\added[id=CR]{, whereas at $s = 28$ and 14 the displacement thickness slightly increases the difference, to 1.2\% and 1.4\%}\added[id=CL]{.
+Second, the bottom Ekman layer acts as a displacement thickness, so the drag acts on the velocity $\mathbf{U}/(H - \delta_E/2)$; with both corrections the difference at $s = 7$ falls from 5.3\% to 1.5\%}\added[id=CL]{, whereas at $s = 28$ and 14 the displacement thickness slightly increases the difference, to 1.2\% and 1.4\%}\added[id=CL]{.
 The remaining 1\% is comparable to the error of evaluating the corrected model row by row, which neglects $\partial_y r$.
-}\replaced[id=CR]{At $s = 3.5$ the corrections help little (8.0\% to 7.1\%):}{At $s = 3.5$ neither correction helps (7\%):}\added[id=CL]{ the Ekman layers fill much of the column, the wind stress reaches the bed with weight $2 e^{-s} \approx 6\%$, and a layer model needs the exact coefficients $\mathfrak{A}$ and $S$ (Fig.~\ref{fig:coefficient_regimes}).}
+}\added[id=CL]{At $s = 3.5$ the corrections help little (8.0\% to 7.1\%):}\added[id=CL]{ the Ekman layers fill much of the column, the wind stress reaches the bed with weight $2 e^{-s} \approx 6\%$, and a layer model needs the exact coefficients $\mathfrak{A}$ and $S$ (Fig.~\ref{fig:coefficient_regimes}).}
 
 \begin{figure}
 \centering
@@ -1159,13 +1162,13 @@ The remaining 1\% is comparable to the error of evaluating the corrected model r
 
 \paragraph{\added[id=CL]{$\beta$ plumes.}}
 \added[id=CL]{An isolated Gaussian patch of positive wind-stress curl, of radius 0.2, in a flat $4 \times 2$ basin with $f = 1 + 0.3\,y$ drives the westward $\beta$ plume of \citet{stommel82}.
-The classical model is the frictional vorticity equation $\nabla \cdot (r \nabla \Psi) + \beta \partial_x \Psi = \mathrm{Ek}\, \hat{\mathbf{z}} \cdot \nabla \times \boldsymbol{\tau}$ with $\Psi = 0$ on the coast, solved by second-order finite differences in the same basin, }\replaced[id=CR]{so that the walls and a variable drag are treated consistently.}{so that the walls and a variable drag are treated exactly.}\added[id=CL]{
+The classical model is the frictional vorticity equation $\nabla \cdot (r \nabla \Psi) + \beta \partial_x \Psi = \mathrm{Ek}\, \hat{\mathbf{z}} \cdot \nabla \times \boldsymbol{\tau}$ with $\Psi = 0$ on the coast, solved by second-order finite differences in the same basin, }\added[id=CL]{so that the walls and a variable drag are treated consistently.}\added[id=CL]{
 With the constant derived drag $r = f_0 \delta_E/(2H)$, the relative $L_2$ difference in $\Psi$ is 1.5\%, 2.7\%, 6.5\%, and 8.8\% for $s = 26$, 13, 6.5, and 3.2.
 With the local Ekman drag acting over the displacement thickness, $r(y) = f \delta_E/[2(H - \delta_E/2)]$, it is 0.8\%, 1.3\%, 1.9\%, and 9.1\% (Fig.~\ref{fig:beta_plume_comparison}).
-As for the gyre, these two corrections, both implied by the PG bottom stress, }\replaced[id=CR]{reduce the difference by a factor of 1.9 to 3.4 wherever $s \gtrsim 6$,}{halve the difference or better wherever $s \gtrsim 6$,}\added[id=CL]{ and the layer model fails near $s \approx 3$.}
+As for the gyre, these two corrections, both implied by the PG bottom stress, }\added[id=CL]{reduce the difference by a factor of 1.9 to 3.4 wherever $s \gtrsim 6$,}\added[id=CL]{ and the layer model fails near $s \approx 3$.}
 
 \added[id=CL]{\citet{haine&fuller16} give the exact solution for a $\beta$ plume beside a straight coast inclined at angle $\theta$ to east--west, with Rayleigh drag $\lambda$: the free-space plume of the source minus a weighted image source reflected in the coast.
-In a basin cut by such a coast, a Gaussian source of radius 0.1 lies $5 \delta_S$ from it, where $\delta_S = \lambda/\beta$ is the Stommel length and $\lambda = f_0 \delta_E/(2H)$ is again derived ($s = 62$; $\beta = 0.1$, }\added[id=CL]{}\replaced[id=CR]{so that the drag varies by $-11$\% to $+7$\% over the domain}{so that the drag varies by less than about 10\% over the domain}\added[id=CL]{}\added[id=CL]{).
+In a basin cut by such a coast, a Gaussian source of radius 0.1 lies $5 \delta_S$ from it, where $\delta_S = \lambda/\beta$ is the Stommel length and $\lambda = f_0 \delta_E/(2H)$ is again derived ($s = 62$; $\beta = 0.1$, }\added[id=CL]{}\added[id=CL]{so that the drag varies by $-11$\% to $+7$\% over the domain}\added[id=CL]{}\added[id=CL]{).
 PG reproduces the exact solution, convolved with the source, to 0.7\% for $\theta = 30^\circ$ and 0.6\% for $\theta = 60^\circ$ (Fig.~\ref{fig:boundary_beta_plume_comparison}).
 Down-plume, along the line through the source parallel to the coast, the PG e-folding length (fitted after removing }\added[id=CL]{the $d^{-3/2}$ factor of the far-field asymptote, with $d$ the down-plume distance}\added[id=CL]{) is within 7\% and 3\% of that of the exact solution.
 Within the basin neither has yet reached the asymptotic e-folding length $2 \delta_S/(1 - \cos \theta)$.
@@ -1191,19 +1194,19 @@ Right: $|\Psi|$ along that line against down-plume distance in units of $\delta_
 \paragraph{\added[id=CL]{Topographic steering.}}
 \added[id=CL]{On an $f$-plane, a shelf of depth 0.1 in the north of a $4 \times 2$ basin falls across a slope, $H = 0.1 + 0.45 \left[ 1 - \tanh \left( (y - 0.3)/0.25 \right) \right]$, to depth 1 in the south.
 An isolated patch of wind-stress curl on the slope drives a topographic $\beta$ plume that runs west along the isobaths, with shallow water to the right.
-The classical layer model is the deep limit of the PG transport (Section~\ref{sect:results}a): geostrophic transport over a depth $H_g$ plus the bottom Ekman transport down the surface-pressure gradient, $f (\mathbf{U} - \mathbf{U}_E) = -(\delta_E/2) \nabla p_s + H_g \, \hat{\mathbf{z}} \times \nabla p_s$, with $\mathbf{U}_E$ the surface Ekman transport.
+The classical layer model is the deep limit of the PG transport (Section~\ref{sect:results}\ref{sect:kernels}): geostrophic transport over a depth $H_g$ plus the bottom Ekman transport down the surface-pressure gradient, $f (\mathbf{U} - \mathbf{U}_E) = -(\delta_E/2) \nabla p_s + H_g \, \hat{\mathbf{z}} \times \nabla p_s$, with $\mathbf{U}_E$ the surface Ekman transport.
 Eliminating $p_s$ gives an elliptic equation for $\Psi$ that, for $\delta_E \ll H_g$, steers $\Psi$ along contours of $f/H_g$ with drag $f \delta_E/(2 H_g^2)$; it is solved by finite differences in the same basin.
 With classical $f/H$ steering ($H_g = H$), the relative $L_2$ difference in $\Psi$ over the deep basin ($H > 0.6$) is 15\%, 4.3\%, and 2.0\% for $\mathrm{Ek} = 5 \times 10^{-3}$, $1.25 \times 10^{-3}$, and $2 \times 10^{-4}$, where the deep basin has $s = 10$, 20, and 50.
 Steering along $f/(H - \delta_E/2)$ ($H_g = H - \delta_E/2$), with the bottom Ekman layer as a displacement thickness, reduces it to 6.2\%, 2.0\%, and 0.2\% (Fig.~\ref{fig:topographic_steering_comparison}).
 On the shelf ($H < 0.2$), where $s = 1$, 2, and 5, the differences are 52\%, 13\%, and 4.4\% with $f/H$ steering, and 40\%, 13\%, and 0.6\% with $f/(H - \delta_E/2)$.
-}\replaced[id=CR]{Where the shelf is less than one to two Ekman depths deep,}{Where the shelf is less than about two Ekman depths deep,}\added[id=CL]{ the Ekman layers overlap, the transport becomes the lubrication flow down the pressure gradient of Section~\ref{sect:results}a, and neither steering depth recovers the PG solution.}
+}\added[id=CL]{Where the shelf is less than one to two Ekman depths deep,}\added[id=CL]{ the Ekman layers overlap, the transport becomes the lubrication flow down the pressure gradient of Section~\ref{sect:results}\ref{sect:kernels}, and neither steering depth recovers the PG solution.}
 
 \begin{figure}
 \centering
 \includegraphics[width=14cm]{topographic_steering_comparison.pdf}
 \caption{\added[id=CL]{\label{fig:topographic_steering_comparison} Topographic steering over a slope to a shallow shelf, on an $f$-plane.
 (a) PG streamfunction $\Psi$ for $\mathrm{Ek} = 1.25 \times 10^{-3}$ (shelf $s = 2$, deep $s = 20$), and (b) the layer model with steering along $f/H$, on the same contour levels. Gray dashed lines are isobaths $H = 0.2$, 0.4, 0.6, and 0.8, the black dash-dotted line is $\Psi = 0$, and the dotted circle marks the forcing patch.
-(c) Meridional sections of $\Psi$ at $x = -0.5$ for shelf $s = 1$, 2, and 5: PG (solid) and the layer model with $f/H$ steering (dashed), normalized by the PG extremum; }\replaced[id=CR]{the shaded band, $y > 0.8$ ($H < 0.12$), is the outer shelf.}{the shaded band is the shelf.}\added[id=CL]{
+(c) Meridional sections of $\Psi$ at $x = -0.5$ for shelf $s = 1$, 2, and 5: PG (solid) and the layer model with $f/H$ steering (dashed), normalized by the PG extremum; }\added[id=CL]{the shaded band, $y > 0.8$ ($H < 0.12$), is the outer shelf.}\added[id=CL]{
 (d) Relative $L_2$ difference between the PG and layer-model $\Psi$ over the deep basin ($H > 0.6$) and the shelf ($H < 0.2$), with steering along $f/H$ and along $f/(H - \delta_E/2)$, against the shelf $s$.}}
 \end{figure}
 
@@ -1213,7 +1216,7 @@ On the shelf ($H < 0.2$), where $s = 1$, 2, and 5, the differences are 52\%, 13\
 
 \added[id=CL]{To show the method on a less idealized geometry, Fig.~\ref{fig:double_basin_showcase} shows a double basin on an $f$-plane with $\mathrm{Ek} = 0.002$, so that $\delta_E = 0.063$.
 Two deep bowls are separated by a shallow ridge running west from the eastern shelf and joined by a deeper western strait, loosely modeled on the Nordic Seas and Fram Strait.
-The outer shelf is 0.26 deep, only 4.1 Ekman depths}\added[id=CL]{}\replaced[id=CR]{, so that the Ekman layers fill much of the shelf water column, although they overlap only below one to two Ekman depths (Section~\ref{sect:results}a),}{, close to the depth below which the Ekman layers begin to overlap (Section~\ref{sect:results}a),}\added[id=CL]{}\added[id=CL]{ and the deepest water is about 19 Ekman depths.
+The outer shelf is 0.26 deep, only 4.1 Ekman depths}\added[id=CL]{}\added[id=CL]{, so that the Ekman layers fill much of the shelf water column, although they overlap only below one to two Ekman depths (Section~\ref{sect:results}\ref{sect:kernels}),}\added[id=CL]{}\added[id=CL]{ and the deepest water is about 19 Ekman depths.
 Cyclonic wind-stress cells over each bowl, a meridional surface-buoyancy gradient, and uniform restoring stratification drive the circulation.
 The steady circulation consists of two cyclonic gyres steered by the closed isobaths of each bowl, joined through the strait, where the meridional velocity is nearly uniform with depth down to the bed (Fig.~\ref{fig:double_basin_showcase}a, b).}
 
@@ -1225,9 +1228,9 @@ The depth-integrated momentum balance closes to $10^{-5}$, and the cell-averaged
 On closed $f/H$ contours, the bottom geostrophic velocity follows from the forcing integrated over the enclosed area once a drag law is assumed.
 With a linear or quadratic isotropic drag, calibrated by least squares against the PG bottom stress itself, the predicted bottom velocity differs from the PG velocity by 103\% and 120\% (relative $L_2$, 2771 points), although the speeds remain correlated (0.92 and 0.88).
 With the drag derived from the PG bottom stress, }\added[id=CL]{$\tau_b^x + i \tau_b^y = S (\partial_x + i \partial_y) p_s + T$ (\ref{eqn:bottom_stress_ST_def})}\added[id=CL]{, which is rotated relative to the bottom velocity and includes the baroclinic and wind contributions, the same constraint reproduces the PG bottom velocity to 3\% (Fig.~\ref{fig:double_basin_showcase}c).
-}\replaced[id=CR]{Because the derived stress is taken from the PG solution itself, this is a consistency check, but it suggests that the drag closure, not the integral constraint, limits the classical method.}{The drag closure, not the integral constraint, limits the classical method.}\added[id=CL]{}
+}\added[id=CL]{Because the derived stress is taken from the PG solution itself, this is a consistency check, but it suggests that the drag closure, not the integral constraint, limits the classical method.}\added[id=CL]{}
 
-\added[id=CL]{Finally, one adjoint solve of the surface-pressure equation gives the sensitivity of the northward transport through the strait }\replaced[id=CR]{to the wind stress and the restoring buoyancy everywhere (Fig.~\ref{fig:double_basin_showcase}d--f).}{to the wind stress, surface buoyancy, and restoring buoyancy everywhere (Fig.~\ref{fig:double_basin_showcase}d--f).}\added[id=CL]{
+\added[id=CL]{Finally, one adjoint solve of the surface-pressure equation gives the sensitivity of the northward transport through the strait }\added[id=CL]{to the wind stress and the restoring buoyancy everywhere (Fig.~\ref{fig:double_basin_showcase}d--f).}\added[id=CL]{
 The adjoint identity holds to $10^{-14}$, }\added[id=CL]{and the adjoint solve and kernel sampling take 21~s.}\added[id=CL]{
 The kernels extend from the strait along the isobaths of the western slope and around the southern bowl, mapping the region whose forcing sets the strait transport.}
 
@@ -1258,7 +1261,7 @@ Adjoint sensitivity of the strait transport & \added[id=CL]{20.9} & \\
 (a) Transport streamfunction $\Psi$, with isobaths $H = 0.4$, 0.8, and 1.2 (gray) and the strait section (gold).
 (b) Meridional velocity $v$ (color) and buoyancy $b$ (contours) in a zonal section at $y = 0$; the strait section is shaded.
 (c) Bottom speed on closed $f/H$ contours from the \citet{nost&isachsen03} integral constraint against the PG bottom speed, with an assumed linear drag calibrated against the PG bottom stress (gray) and with the drag derived from the PG bottom stress (blue); percentages are relative $L_2$ velocity differences.
-(d--f) Adjoint sensitivity of the northward strait transport to the local wind stress $\tau^x$ and $\tau^y$, and to the restoring buoyancy $B$ at $z = -0.5$; color scales are clipped at the 97th percentile of the magnitude.}\added[id=CR]{ Positive values mean that increasing the local forcing increases the northward transport. The kernels are sampled within 0.94 of the semi-axes of the basin.}\added[id=CL]{}}
+(d--f) Adjoint sensitivity of the northward strait transport to the local wind stress $\tau^x$ and $\tau^y$, and to the restoring buoyancy $B$ at $z = -0.5$; color scales are clipped at the 97th percentile of the magnitude.}\added[id=CL]{ Positive values mean that increasing the local forcing increases the northward transport. The kernels are sampled within 0.94 of the semi-axes of the basin.}\added[id=CL]{}}
 \end{figure}
 
 % Added by Claude (CL): Section 6e, cost and dimensional parameters. Made by TheoryNotes/CostScaling.jl.
@@ -1275,8 +1278,8 @@ The column integrals are independent, and the solve at $h = 0.02$ takes 16.9~s o
 The Ekman numbers of the examples, $0.02$ to $1.3 \times 10^{-4}$, correspond to vertical viscosities of 32 to 0.2~m$^2$\,s$^{-1}$ and Ekman depths of 800 to 64~m.
 A realistic $\nu_0 \approx 10^{-2}$~m$^2$\,s$^{-1}$ gives $\mathrm{Ek} \approx 6 \times 10^{-6}$ and $\delta_E \approx 14$~m.
 Two costs limit such small Ekman numbers.
-The column integrals grow with $s$, which reaches about 300, and the mesh must resolve the frictional layers of width $\ell \approx \delta_E/(2|\nabla H|)$ }\replaced[id=CR]{over slopes (Section~\ref{sect:discussion})}{over slopes (Section~\ref{sect:results}\ref{sect:classical_limits})}\added[id=CL]{}\added[id=CL]{, about 0.1--1~km for continental slopes with $|\nabla H| \approx 0.01$--0.05 and a few kilometers only for gentle slopes of $10^{-3}$.}\added[id=CL]{
-Extrapolating linearly from $\mathrm{Ek} = 10^{-5}$ at $h = 0.04$, }\added[id=CL]{a uniform mesh of size $h = 0.005$ (5~km), fine enough only for gentle slopes, would take about 4~hours on 18 threads, and resolving continental slopes with a uniform mesh }\replaced[id=CR]{would cost $10^2$ to $10^3$ times more (for $h \approx \ell$),}{would cost $10^2$ to $10^4$ times more,}\added[id=CL]{ which is impractical, so realistic Ekman numbers call for meshes refined over steep slopes.}\added[id=CL]{}
+The column integrals grow with $s$, which reaches about 300, and the mesh must resolve the frictional layers of width $\ell \approx \delta_E/(2|\nabla H|)$ }\added[id=CL]{over slopes (Section~\ref{sect:discussion})}\added[id=CL]{}\added[id=CL]{, about 0.1--1~km for continental slopes with $|\nabla H| \approx 0.01$--0.05 and a few kilometers only for gentle slopes of $10^{-3}$.}\added[id=CL]{
+Extrapolating linearly from $\mathrm{Ek} = 10^{-5}$ at $h = 0.04$, }\added[id=CL]{a uniform mesh of size $h = 0.005$ (5~km), fine enough only for gentle slopes, would take about 4~hours on 18 threads, and resolving continental slopes with a uniform mesh }\added[id=CL]{would cost $10^2$ to $10^3$ times more (for $h \approx \ell$),}\added[id=CL]{ which is impractical, so realistic Ekman numbers call for meshes refined over steep slopes.}\added[id=CL]{}
 
 \begin{table}
 \caption{\added[id=CL]{\label{tab:cost_scaling} Wall-clock time of the PG solve (best of three, after compilation) in the test basin of Section~\ref{sect:results}\ref{sect:verification}, on 18 threads of an Apple M5 Max unless stated. The forcing evaluation computes the column integrals at the quadrature points of the surface-pressure mesh. The script is \texttt{TheoryNotes/CostScaling.jl}.}\added[id=CL]{ The mesh, Ekman-number, and thread rows are separate runs; run-to-run variation makes the 18-thread time at $h = 0.02$ 2.6~s in the first and 2.0~s in the last.}}
@@ -1326,13 +1329,13 @@ The three-dimensional problem reduces to closed-form Green's functions in each c
 The solution has been verified against independent implementations of the column solution, under mesh refinement, by closure of every depth-integrated balance, and against a primitive-equation model, }\added[id=CL]{and at the Ekman numbers used here it takes seconds to compute }\added[id=CL]{}\added[id=CL]{(Sections~\ref{sect:results}\ref{sect:verification} and \ref{sect:results}\ref{sect:cost})}\added[id=CL]{.
 }\added[id=CL]{Because the column solution is exact and the surface-pressure equation is solved by a converging finite-element method, the depth-integrated momentum and vorticity balances, the integral constraints on closed contours, and the sensitivities to the forcing can all be evaluated without a parameterized drag, with residuals set by the discretization alone.}\added[id=CL]{}
 
-\added[id=CL]{The exact coefficients also sharpen several classical rules of thumb }\added[id=CL]{(Sections~\ref{sect:results}a and \ref{sect:results}\ref{sect:classical_limits})}\added[id=CL]{.
+\added[id=CL]{The exact coefficients also sharpen several classical rules of thumb }\added[id=CL]{(Sections~\ref{sect:results}\ref{sect:kernels} and \ref{sect:results}\ref{sect:classical_limits})}\added[id=CL]{.
 First, the depth-integrated flow is steered along contours of $f/(H - \delta_E/2)$ rather than $f/H$, because the bottom Ekman layer acts as a displacement thickness; in the topographic steering test this correction reduces the error of the layer model from 2\% to 0.2\% at $s = H/\delta_E = 50$.
 Second, the bottom drag is not a free parameter: in deep water it is the linear drag $f \delta_E/(2H)$ of \citet{stommel48}, rotated by $45^\circ$, and it varies with latitude as $f^{1/2}$, which accounts for much of the difference between the PG solutions and the classical Stommel gyre and $\beta$ plume.
 Third, a single length, $\ell = |\mathfrak{A}^r| / |\nabla \mathfrak{A}^i| \approx \delta_E / \left[ 2 f \left| \nabla (H/f) \right| \right]$ for deep water $H \gg \delta_E$, namely, the ratio of the frictional diffusivity to the steering speed in the surface-pressure equation (\ref{eqn:ps}), }\added[id=CL]{sets, by the usual advection--diffusion boundary-layer scaling, the width of the frictional layer where the steering flow meets a coast, consistent with the western boundary layers of Section~\ref{sect:results}\ref{sect:classical_limits}.}\added[id=CL]{
-The $\ell$ formula yields Stommel's lengthscale $r/\beta$ on a flat $\beta$-plane, with $r = f \delta_E/(2H)$ the linear drag coefficient of Section~\ref{sect:results}a, and $\delta_E/(2|\nabla H|)$ over a slope.
+The $\ell$ formula yields Stommel's lengthscale $r/\beta$ on a flat $\beta$-plane, with $r = f \delta_E/(2H)$ the linear drag coefficient of Section~\ref{sect:results}\ref{sect:kernels}, and $\delta_E/(2|\nabla H|)$ over a slope.
 }\added[id=CL]{Along coasts parallel to the steering flow, the same scaling suggests that frictional layers instead widen as $\sqrt{\ell d}$ with along-coast distance $d$, as a diffusing tracer does; this was not tested here.}\added[id=CL]{
-}\replaced[id=CR]{Fourth, the deep-water layer coefficients are accurate where the water is deeper than about three Ekman depths, although a layer model built on them errs by several percent until $s \gtrsim 5$--7;}{Fourth, the classical layer picture holds where the water is deeper than about three Ekman depths;}\added[id=CL]{ }\added[id=CL]{where it is shallower than one to two,}\added[id=CL]{ the Ekman layers overlap, the transport becomes a lubrication flow down the pressure gradient, and $f/H$ contours no longer guide it.
+}\added[id=CL]{Fourth, the deep-water layer coefficients are accurate where the water is deeper than about three Ekman depths, although a layer model built on them errs by several percent until $s \gtrsim 5$--7;}\added[id=CL]{ }\added[id=CL]{where it is shallower than one to two,}\added[id=CL]{ the Ekman layers overlap, the transport becomes a lubrication flow down the pressure gradient, and $f/H$ contours no longer guide it.
 The double basin shows the practical consequence: the integral constraint of \citet{nost&isachsen03} }\added[id=CL]{reproduces the bottom velocity on closed $f/H$ contours to 3\% with the derived bottom stress (a consistency check, since that stress is taken from the PG solution itself), }\added[id=CL]{}\added[id=CL]{but errs by more than 100\% with an isotropic drag}\added[id=CL]{ calibrated against the same stress (Section~\ref{sect:results}\ref{sect:double_basin}).}
 
 \added[id=CL]{The solution has limitations, each of which involves some excluded physics.
@@ -1365,7 +1368,7 @@ Whether such an iteration converges, and what thermocline structure it selects, 
 
 Tarun Verma and Henry Peterson provided helpful feedback and discussion on the early stages of this work.
 Large language models (GPT 5.4 mini, GPT 5.5, GitHub \added[id=CL]{Copilot} version 1.1.21, Claude Opus 5.5) were used for assistance with Julia code, especially debugging and plotting of final figures, literature exploration, code generation, and some writing.
-The analytical results were supported by the \texttt{SymPy} and \texttt{Symbolics.jl} computer algebra systems \citep{meurer_etal17,gowda_etal21}.
+The analytical results were supported by the \replaced[id=CR]{\texttt{SymPy} (through \texttt{SymPy.jl}) and \texttt{Symbolics.jl} computer algebra}{\texttt{SymPy} and \texttt{Symbolics.jl} computer algebra} systems \citep{meurer_etal17,gowda_etal21}.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % DATA AVAILABILITY STATEMENT
@@ -1375,7 +1378,7 @@ The analytical results were supported by the \texttt{SymPy} and \texttt{Symbolic
 \datastatement
 \added[id=CL]{All code to reproduce} the analytical and numerical \added[id=CL]{results in this paper is available at} \texttt{github.com/ThomasHaine/PlanetaryGeostrophyAnalyticalModel}.
 \added[id=CL]{The repository contains the \texttt{PlanetaryGeostrophy} Julia package, which implements the solution, the diagnostics, and the adjoint, with its test suite.
-The Jupyter notebooks in \texttt{TheoryNotes/} derive the column solutions with \texttt{SymPy}: \texttt{BuoyancyEquationSolution.ipynb} derives the buoyancy Green's function and its integrals (Section~\ref{sect:b_solution} and Appendix~A; cells 1.1--1.31), and \texttt{FrictionalGeostrophicEquationSolution.ipynb} derives the velocity Green's function, its integrals, the bottom stress, and the coefficients $\mathfrak{A}$, $\mathfrak{B}$, $S$, and $T$ (Section~\ref{sect:PG_soln} and Appendix~B; cells 1.1--1.3 and 2.1--2.7).
+The Jupyter notebooks in \texttt{TheoryNotes/} }\replaced[id=CR]{derive the column solutions with \texttt{SymPy.jl}:}{derive the column solutions with \texttt{SymPy}:}\added[id=CL]{ \texttt{BuoyancyEquationSolution.ipynb} derives the buoyancy Green's function and its integrals (Section~\ref{sect:b_solution} and Appendix~A; cells 1.1--1.31), and \texttt{FrictionalGeostrophicEquationSolution.ipynb} derives the velocity Green's function, its integrals, the bottom stress, and the coefficients $\mathfrak{A}$, $\mathfrak{B}$, $S$, and $T$ (Section~\ref{sect:PG_soln} and Appendix~B; cells 1.1--1.3 and 2.1--2.7).
 \texttt{ComputeQuadratures.ipynb} and \texttt{SymbolicsTesting.jl} build and test the symbolic kernels of Appendix~B.
 The figures and tables of Sections~\ref{sect:results}b--e and Appendix~C }\added[id=CL]{are made by the scripts in \texttt{TheoryNotes} and by \texttt{AnalyticalModel/OceananigansComparison.jl}.}\added[id=CL]{}
 
@@ -1393,7 +1396,7 @@ The Green's function satisfies:
 \text{Bottom~}z = -H &: \partial_z G_b = 0 ,
 \label{eqn:Gsfn_botbc}
 \end{align}
-where $\delta(z - \xi)$ is the Dirac delta function.
+where $\delta(z - \xi)$ is the Dirac delta function\added[id=CR]{ (not the aspect ratio $\delta$)}.
 This is a second order linear ordinary differential equation with two boundary conditions, which can be solved exactly, at least for certain diffusivity profiles.
 The solution for uniform non-dimensional diffusivity is
 % Notebook cell reference, now summarized in the code-availability statement: (see \texttt{BuoyancyEquationSolution.ipynb} \#1.1, \#1.11)
@@ -1451,7 +1454,7 @@ We need these two terms:
 \bigg] \equiv G_{b,1}(\xi,\xi')
 \label{eqn:term1}
 \end{align}
-and
+and\added[id=CR]{, with $\sigma$ the source coordinate of $G_b$ (renamed from $\xi$, which is here the lower limit),}
 \begin{align}
 \int_{\xi}^{0} {\color{blue}\partial_\sigma G_b(z';\sigma) |_{\sigma = 0}} \; dz' & = 
 \frac{ \mathrm{e}^{2 \psi H} + \mathrm{e}^{ - \xi \psi} - \mathrm{e}^{\psi \left( \xi + 2 H \right)} - 1 }{\kappa \psi \left( 1 + \mathrm{e}^{2 \psi H}\right)} \equiv G_{b,2}(\xi)
@@ -1485,7 +1488,7 @@ We find that the solution for uniform non-dimensional viscosity $\nu$ is:
 \label{eqn:FG_Gsfn_app}
 \end{align}
 which is (\ref{eqn:FG_Gsfn}) for $\nu = 1$.
-\added[id=CL]{}\replaced[id=CR]{In this formula $\varphi = \sqrt{i f / (\nu \, \mathrm{Ek}) }$, the principal square root (for $f > 0$, $\varphi = \sqrt{i} \phi$ with $\phi = \sqrt{f/(\nu \, \mathrm{Ek})}$).}{In this formula $\varphi = \sqrt{i} \phi = \sqrt{i f / (\nu \, \mathrm{Ek}) } $, with $\phi = \sqrt{f/(\nu \, \mathrm{Ek})}$.}\added[id=CL]{}
+\added[id=CL]{}\added[id=CL]{In this formula $\varphi = \sqrt{i f / (\nu \, \mathrm{Ek}) }$, the principal square root (for $f > 0$, $\varphi = \sqrt{i} \phi$ with $\phi = \sqrt{f/(\nu \, \mathrm{Ek})}$).}\added[id=CL]{}
 % Notebook cell reference, now summarized in the code-availability statement: (see \texttt{FrictionalGeostrophicEquationSolution.ipynb} \#1.1)
 As for the buoyancy equation in \appbEqnSoln , the Green's function for exponential viscosity profiles can be found using hypergeometric functions.
 
@@ -1527,7 +1530,7 @@ We rewrite it in a more convenient form, as follows.
 & = - \frac{\Gamma}{\mathrm{Ek}} \int_{-H}^{0} \int_{\xi}^{0} G_b(z'; \xi') \; d z'\; B(\xi') \; d \xi'  + \int_{\xi}^{0} {\color{blue}\partial_\sigma G_b(z';\sigma) |_{\sigma = 0}} \;  \; dz'  \, b_s , \\
 & = {\color{blue}- \frac{\Gamma}{\mathrm{Ek}}} \int_{-H}^{0} G_{b,1}(\xi,\xi') B(\xi') \; d \xi'  + G_{b,2} (\xi)  \, b_s ,
 \end{align}
-where $G_{b,1}$ and $G_{b,2}$ are given by (\ref{eqn:term1}) and (\ref{eqn:term2}).
+where $G_{b,1}$ and $G_{b,2}$ are given by (\ref{eqn:term1}) and (\ref{eqn:term2}).\added[id=CR]{ Here and below, the horizontal arguments of $\Pi$ and $B$ are written only where they matter, as in $\Pi(y, \xi)$ when it is differentiated in $y$.}
 Hence, (\ref{eqn:appendix_fraku}) becomes:
 \begin{align}
 \mathrm{Ek} \, \mathfrak{u}
@@ -1656,7 +1659,7 @@ Moreover, the two versions are compared to each other to test the derivation and
 To compute solutions for the surface pressure field $p_s$ numerically, the weak form of (\ref{eqn:ps}) is required, as follows.
 \added[id=CL]{Take the divergence form of the equation, multiply by a real test function $v$, and integrate over the basin $\Omega$; the real part of the result is the weak form of (\ref{eqn:ps}):}
  \begin{align}
- \Re \Big\{ \int_{x,y} v
+ \Re \Big\{ \CRnew{\int_\Omega} v
 \left(
 \partial_x - i \partial_y
 \right)
@@ -1664,12 +1667,12 @@ To compute solutions for the surface pressure field $p_s$ numerically, the weak 
 \mathfrak{A} \,\left( \partial_x + i \partial_y \right) p_s
 \right]
  \; dy\; dx \Big\}
- & = \Re \Big\{ \int_{x,y} v \left(
+ & = \Re \Big\{ \CRnew{\int_\Omega} v \left(
 - \partial_x + i \partial_y
 \right) \mathfrak{B}
  \; dy\; dx \Big\} , \nonumber \\
  \implies
-  \Re \Big\{ \int_{x,y} 
+  \Re \Big\{ \CRnew{\int_\Omega} 
 \left(
 \partial_x - i \partial_y
 \right) v
@@ -1677,33 +1680,33 @@ To compute solutions for the surface pressure field $p_s$ numerically, the weak 
 \mathfrak{A} \,\left( \partial_x + i \partial_y \right) p_s
 \right]
  \; dy\; dx \Big\}
- & = \Re \Big\{ \int_{x,y} \mathfrak{B}\left(
+ & = \Re \Big\{ \CRnew{\int_\Omega} \mathfrak{B}\left(
 - \partial_x + i \partial_y
 \right) v
  \; dy\; dx \Big\}
  \label{eqn:ps_weak_form}
 \end{align}
 \Claude{ 
-The boundary term from the integration by parts, $\oint v \, \mathbf{U} \cdot \hat{\mathbf{n}} \, ds$, vanishes by the no-normal-flow condition (\ref{eqn:ps_bc}).
+The boundary term from the integration by parts, \replaced[id=CR]{$\oint v \, \mathbf{U} \cdot \hat{\mathbf{n}} \, dt$}{$\oint v \, \mathbf{U} \cdot \hat{\mathbf{n}} \, ds$}, vanishes by the no-normal-flow condition (\ref{eqn:ps_bc}).
 That condition is therefore natural in (\ref{eqn:ps_weak_form}), and no condition is imposed on $p_s$ or $v$ at the coast.
-The additive constant in $p_s$ is fixed with a Lagrange multiplier $\lambda$: the term $\lambda \iint v \, dA$ is added to the left-hand side of (\ref{eqn:ps_weak_form}), together with the constraint $\iint p_s \, dA = 0$.
+The additive constant in $p_s$ is fixed with a Lagrange multiplier $\lambda$: \replaced[id=CR]{the term $\lambda \int_\Omega v \, dA$}{the term $\lambda \iint v \, dA$} is added to the left-hand side of (\ref{eqn:ps_weak_form}), together with \replaced[id=CR]{the constraint $\int_\Omega p_s \, dA = 0$}{the constraint $\iint p_s \, dA = 0$}.
 The solvability condition, obtained by setting $v = 1$ in (\ref{eqn:ps_weak_form}), holds identically, so $\lambda = 0$ to round-off.
 }
 
 \added[id=CL]{Similarly, the weak form to find the streamfunction for the depth-integrated flow $\Psi$ is the real part of (\ref{eqn:streamfunction_pde}), multiplied by $v$ and integrated:}
  \begin{align}
- \int_{x,y} v
+ \CRnew{\int_\Omega} v
 \nabla^2 \Psi \; dy\; dx 
- & = \Re \Big\{ \int_{x,y} v \left(
+ & = \Re \Big\{ \CRnew{\int_\Omega} v \left(
 - \left( i \partial_x + \partial_y \right) \left[ \mathfrak{A}\,\left( \partial_x + i \partial_y \right) p_s  + \mathfrak{B} \right] 
 \right) \; dy\; dx \Big\} , \nonumber \\
  \implies 
- \int_{x,y} \nabla \Psi  \cdot \nabla v \; dy \; dx
- & = - \Re \Big\{ \int_\Omega \mathfrak{C} \, (i\partial_x + \partial_y)v \; d y \; dx \Big\} , \nonumber
+ \CRnew{\int_\Omega} \nabla \Psi  \cdot \nabla v \; dy \; dx
+ & = - \Re \Big\{ \int_\Omega \CRnew{\mathfrak{U}} \, (i\partial_x + \partial_y)v \; d y \; dx \Big\} , \nonumber
 \end{align}
-where
+where\added[id=CR]{, from (\ref{eqn:UV_AB_def}),}
 \begin{align}
-\mathfrak{C} = \mathfrak{A} (\partial_x + i\partial_y)p_s + \mathfrak{B} ,
+\CRnew{\mathfrak{U}} = \mathfrak{A} (\partial_x + i\partial_y)p_s + \mathfrak{B} ,
 \end{align}
 assuming that $\Psi$ and $v$ vanish on the boundaries.
 These weak form equations are used to construct solutions using the \added[id=CL]{\texttt{Gridap.jl}} Julia package \citep{badia&verdugo20}.\added[id=CL]{ Both use continuous second-order Lagrange elements on a triangular mesh of the basin generated by \texttt{Gmsh}, with a uniform target element size $h$ along the coast and in the interior. The gradient $\nabla p_s$ is that of the finite-element solution, and the streamfunction solve uses nodal interpolants of $\mathfrak{A}$, $\mathfrak{B}$, and $\nabla p_s$.}
@@ -1739,10 +1742,10 @@ The PG solution is sampled at the \texttt{Oceananigans.jl} cell }\added[id=CL]{c
 
 \Claude{
 Two bottoms are used.
-With a flat bottom of depth 0.65, \added[id=CL]{the differences in horizontal velocity and depth-integrated transport }\replaced[id=CR]{converge at order 1.2--1.6 as the}{converge at about first order as the}\added[id=CL]{ \texttt{Oceananigans.jl} grid is refined, to 1.1\% and 1.5\% at $160 \times 120 \times 40$, and the buoyancy difference falls to $3.5 \times 10^{-4}$, }\replaced[id=CR]{where it is limited by the vertical resolution (26 levels in the 0.65-deep water column)}{where it is limited by the 40 vertical levels}\added[id=CL]{} (Section~\ref{sect:results}\ref{sect:verification} and Fig.~\ref{fig:oceananigans_comparison}a--d).
+With a flat bottom of depth 0.65, \added[id=CL]{the differences in horizontal velocity and depth-integrated transport }\added[id=CL]{converge at order 1.2--1.6 as the}\added[id=CL]{ \texttt{Oceananigans.jl} grid is refined, to 1.1\% and 1.5\% at $160 \times 120 \times 40$, and the buoyancy difference falls to $3.5 \times 10^{-4}$, }\added[id=CL]{where it is limited by the vertical resolution (26 levels in the 0.65-deep water column)}\added[id=CL]{} (Section~\ref{sect:results}\ref{sect:verification} and Fig.~\ref{fig:oceananigans_comparison}a--d).
 With the Gaussian bowl $H = 0.3 + 0.7\, e^{-2\rho^2}$ (with $\rho$ the elliptical radius) \added[id=CL]{and a 0.40-deep coastal wall}, the comparison is limited by the representation of the sloping bottom in the $z$-level model (Fig.~\ref{fig:oceananigans_comparison}e).
 With a stair-stepped bottom, the transport difference is 29\% at $80 \times 60 \times 40$ \added[id=CL]{and rises to 58\% at $160 \times 120 \times 40$}, as grid-scale noise at the steps, undamped without horizontal viscosity, grows.
-\replaced[id=CR]{Partial bottom cells reduce the difference to 18\% at $80 \times 60 \times 40$, and a weak horizontal viscosity of $10^{-4}$ reduces it to 7.6\% at $160 \times 120 \times 40$.}{Partial bottom cells reduce the difference to 18\%, and a weak horizontal viscosity of $10^{-4}$ reduces it to 7.6\%.}
+\added[id=CL]{Partial bottom cells reduce the difference to 18\% at $80 \times 60 \times 40$, and a weak horizontal viscosity of $10^{-4}$ reduces it to 7.6\% at $160 \times 120 \times 40$.}
 The buoyancy differences are about 1\% in all these cases.
 On this basis, we presume that the PG solution is derived and coded accurately. 
 The test is important as parts of the PG solution are produced automatically using \added[id=CL]{\texttt{SymPy.jl}} and \texttt{Symbolics.jl}, and some of the software development employs artificial intelligence assistance.
