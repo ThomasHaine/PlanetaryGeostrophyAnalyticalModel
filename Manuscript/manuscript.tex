@@ -53,10 +53,6 @@
 \definechangesauthor[name={Claude}, color=blue]{CL}
 % Review corrections of 2026-10-26, for checking.
 \definechangesauthor[name={Claude review}, color=magenta]{CR}
-% For struck-out mathematics in CR changes; remove with them.
-\usepackage{cancel}
-\newcommand{\CRnew}[1]{{\color{magenta}#1}}
-\newcommand{\CRold}[1]{{\color{magenta}\cancel{#1}}}
 
 %% May use \\ to break lines in title:
 
@@ -343,7 +339,7 @@ Table \ref{tab:dynamical_balances} summarizes salient properties of the diagnost
     3D momentum (3DM)    & (\ref{eqn:u_mom})--(\ref{eqn:v_mom}) & $u, v, p$, and implicitly $\tau, b, w$ & Axiomatic \\
      Depth-integrated momentum (DIM)    & (\ref{eqn:U_mom})--(\ref{eqn:V_mom}) & $U, V, p_b, \chi, \tau, \tau_b$ & Integrate 3DM vertically \\
       Barotropic vorticity (BV)   & (\ref{eqn:BVE}) & $U, V, p_b, \tau, \tau_b$ & Integrate 3DM  vertically, then take curl\\
-      Depth-integrated vorticity (DIV)   & (\ref{eqn:DIV}) & \replaced[id=CR]{$U, V, p_b, \tau, \tau_b$}{$V,  w|_{z = -H}, \tau, \tau_b$} & Curl of 3DM, then integrate vertically \\
+      Depth-integrated vorticity (DIV)   & (\ref{eqn:DIV}) & \added[id=CL]{$U, V, p_b, \tau, \tau_b$} & Curl of 3DM, then integrate vertically \\
       Geostrophic contour vorticity balance (GCVB)   & (\ref{eqn:GCVB}) & $\Psi, \chi, \tau, \tau_b$ & Divide DIM by $H$, then take curl \\
     Transport divergence vorticity balance (TDVB)   & (\ref{eqn:TDVB}) & $p_b, \chi, \tau, \tau_b$ & Divide DIM by $f$, then take curl \\
     \end{tabular}
@@ -460,26 +456,26 @@ Using the non-divergence constraint (\ref{eqn:non-divergent}) implies that
 \begin{align}
 u \partial_x f + v \partial_y f - f \partial_z w  & = \mathrm{Ek} \; \partial_{z} \left( \nu \partial_z \zeta \right) .
 \end{align}
-\replaced[id=CR]{Integrating in the vertical, with $w|_{z=0} = 0$, gives}{Integrating in the vertical gives the Sverdrup relation} 
+\added[id=CL]{Integrating in the vertical, with $w|_{z=0} = 0$, gives} 
 % Pedlosky96 page 8
 \begin{align}
-U \partial_x f + V \partial_y f + f  w|_{z = -H} & = \CRold{\mathrm{Ek} \, \hat{\mathbf{z}} \cdot \left[ \nabla \times \left( \tau + \tau_b \right) \right]} \; \CRnew{\mathrm{Ek} \, \hat{\mathbf{z}} \cdot \left( \nabla \times \boldsymbol{\tau} \right) - \mathrm{Ek} \left[ \nu \, \partial_z \zeta \right]_{z=-H}} 
+U \partial_x f + V \partial_y f + f  w|_{z = -H} & = {\color{blue}\mathrm{Ek} \, \hat{\mathbf{z}} \cdot \left( \nabla \times \boldsymbol{\tau} \right) - \mathrm{Ek} \left[ \nu \, \partial_z \zeta \right]_{z=-H}} 
 \label{eqn:DIV}
 \end{align}
-(\citealt{pedlosky96} Eq.~(1.2.15); \citealt{waldman&giordani23} Eq.~(4))\added[id=CR]{, where $\left[ \cdot \right]_{z=-H}$ denotes evaluation at the sea floor after the horizontal derivatives in $\zeta$ have been taken at fixed $z$}.
+(\citealt{pedlosky96} Eq.~(1.2.15); \citealt{waldman&giordani23} Eq.~(4))\added[id=CL]{, where $\left[ \cdot \right]_{z=-H}$ denotes evaluation at the sea floor after the horizontal derivatives in $\zeta$ have been taken at fixed $z$}.
 % Also Bogden et al. (1993)
-This depth-integrated vorticity (DIV) equation is a balance between advection of planetary vorticity by the depth integrated flow, vortex stretching\replaced[id=CR]{ at the sea floor, and the viscous fluxes of relative vorticity through the surface and the sea floor.}{, and the net torque imposed by boundary stresses.}
-\added[id=CR]{Two features of the present problem simplify it.
+This depth-integrated vorticity (DIV) equation is a balance between advection of planetary vorticity by the depth integrated flow, vortex stretching\added[id=CL]{ at the sea floor, and the viscous fluxes of relative vorticity through the surface and the sea floor.}
+\added[id=CL]{Two features of the present problem simplify it.
 First, the no-slip condition (\ref{eqn:bot_uv_bc}) and the kinematic condition $w|_{z=-H} = -\left( u \, \partial_x H + v \, \partial_y H \right)|_{z=-H}$ give $w|_{z=-H} = 0$, so there is no vortex stretching at the sea floor.
 Second, the bottom term is not the curl of the bottom stress, because the curl does not commute with evaluation on the sloping sea floor $z = -H(x,y)$.
 Applying the chain rule to $\boldsymbol{\tau}_b(x,y) = - \nu \, \partial_z (u, v) |_{z = -H(x,y)}$, and using the momentum equations (\ref{eqn:u_mom})--(\ref{eqn:v_mom}) at the sea floor, where $u = v = 0$ and $\partial_x p |_{z=-H} = \partial_x p_b + b|_{z=-H} \, \partial_x H$ (and similarly for $y$), gives, for uniform $\nu$,}
-{\color{magenta}
+{\color{blue}
 \begin{align}
 - \mathrm{Ek} \left[ \nu \, \partial_z \zeta \right]_{z=-H} & = \mathrm{Ek} \, \hat{\mathbf{z}} \cdot \left( \nabla \times \boldsymbol{\tau}_b \right) + J(p_b, H) .
 \label{eqn:bottom_vorticity_flux}
 \end{align}
 }
-\added[id=CR]{With these two results, (\ref{eqn:DIV}) is identical to the BV constraint (\ref{eqn:BVE_constraint}): for a resolved, no-slip bottom boundary layer, the bottom pressure torque is the part of the viscous vorticity flux through the sea floor that arises from the slope of the sea floor.
+\added[id=CL]{With these two results, (\ref{eqn:DIV}) is identical to the BV constraint (\ref{eqn:BVE_constraint}): for a resolved, no-slip bottom boundary layer, the bottom pressure torque is the part of the viscous vorticity flux through the sea floor that arises from the slope of the sea floor.
 The form $U \partial_x f + V \partial_y f + f \, w|_{z=-H} = \mathrm{Ek} \, \hat{\mathbf{z}} \cdot \left[ \nabla \times \left( \boldsymbol{\tau} + \boldsymbol{\tau}_b \right) \right]$ used in model diagnostics \citep{waldman&giordani23} applies instead when the velocity at the sea floor is not zero, as for a drag law applied to the lowest model level.}
 
 \subsubsection{Geostrophic Contour Vorticity Balance}
@@ -553,7 +549,7 @@ Assuming that the bottom stress $\tau_b$ is simply related to the bottom current
 Knowledge of the bottom current then yields the current at other depths via the thermal wind.
 This balance has been exploited by \citet{nost&isachsen03,nilsson_etal05,nilsson_etal24} and \citet{aaboe&nost08} (see also \citealt{timmermans&marshall20}).
 
-More generally, the dynamical balances in Table \ref{tab:dynamical_balances} relate circulation variables with unknown fields, like the bottom stress $\tau_b$\replaced[id=CR]{ and the bottom pressure $p_b$.}{, the bottom pressure $p_b$, and the bottom vertical speed $w|_{z=-H}$.}
+More generally, the dynamical balances in Table \ref{tab:dynamical_balances} relate circulation variables with unknown fields, like the bottom stress $\tau_b$\added[id=CL]{ and the bottom pressure $p_b$.}
 These unknown fields are implicitly defined in terms of the forcing $\tau$ and $b$.
 For this reason, the dynamical balances in Table \ref{tab:dynamical_balances} have been applied \emph{diagnostically} to ocean general circulation model (OGCM) output (for example, see \citealt{hughes&killworth95, borowski_etal02,lecorre_etal20,waldman&giordani23}).
 Ambiguity remains, however, as it is unclear how accurately OGCMs respect the continuous equations they aim to represent.
@@ -1097,7 +1093,7 @@ $h$ & $p_s$ & $\mathbf{U}$ & $\boldsymbol{\tau}_b$ & $\mathbf{u}(-H/2)$ & $\Psi$
 \paragraph{Dynamical balances.}
 The depth-integrated momentum balance (\ref{eqn:U_mom})--(\ref{eqn:V_mom}) holds pointwise, because the column solution satisfies the momentum equations exactly.
 Evaluated with centered differences of step $10^{-5}$ for $\nabla p_b$ and $\nabla \chi$, its relative residual is about \added[id=CL]{$10^{-5}$} in the double basin\added[id=CL]{ of Section~\ref{sect:results}\ref{sect:double_basin}, two deep bowls on an $f$-plane joined by a strait, with a shelf only four Ekman depths deep (Fig.~\ref{fig:double_basin_showcase})}.
-The vorticity balances (\ref{eqn:BVE}), (\ref{eqn:DIV}), (\ref{eqn:GCVB}), and (\ref{eqn:TDVB}) are curls of that balance, so they also hold exactly for the continuous fields.\added[id=CR]{ For the present model the DIV balance is identical to the BV balance (Section~\ref{sect:dynamical_balances}), so it is not mapped separately.}
+The vorticity balances (\ref{eqn:BVE}), (\ref{eqn:DIV}), (\ref{eqn:GCVB}), and (\ref{eqn:TDVB}) are curls of that balance, so they also hold exactly for the continuous fields.\added[id=CL]{ For the present model the DIV balance is identical to the BV balance (Section~\ref{sect:dynamical_balances}), so it is not mapped separately.}
 Mapping them requires care, however.
 They act on the bottom stress and transport, which contain $\nabla p_s$, and with continuous Lagrange elements $\nabla p_s$ is discontinuous across element edges.
 Centered differences of these fields therefore do not converge: their relative residual stays at 0.95--1.04 for every mesh in Fig.~\ref{fig:verification_convergence}b, and at \added[id=CL]{0.73--1.0} on every diagnostic grid in the double basin\added[id=CL]{, from $17 \times 17$ to $129 \times 129$}.
@@ -1222,7 +1218,7 @@ Cyclonic wind-stress cells over each bowl, a meridional surface-buoyancy gradien
 The steady circulation consists of two cyclonic gyres steered by the closed isobaths of each bowl, joined through the strait, where the meridional velocity is nearly uniform with depth down to the bed (Fig.~\ref{fig:double_basin_showcase}a, b).}
 
 \added[id=CL]{Table~\ref{tab:double_basin} lists the cost of each stage on 18 threads.
-The solve on a mesh of size 0.02 takes }\replaced[id=CR]{7~s}{8~s}\added[id=CL]{, }\replaced[id=CR]{and the depth-integrated momentum balance and the three independent vorticity balances (BV, GCVB, and TDVB) take a further 15~s on a $65 \times 65$ diagnostic grid.}{and all five dynamical balances of Table~\ref{tab:dynamical_balances} take a further 19~s on a $65 \times 65$ diagnostic grid.}\added[id=CL]{
+The solve on a mesh of size 0.02 takes }\added[id=CL]{7~s}\added[id=CL]{, }\added[id=CL]{and the depth-integrated momentum balance and the three independent vorticity balances (BV, GCVB, and TDVB) take a further 15~s on a $65 \times 65$ diagnostic grid.}\added[id=CL]{
 The depth-integrated momentum balance closes to $10^{-5}$, and the cell-averaged vorticity balances to 3\%, the residual being set by the diagnostic grid (Section~\ref{sect:results}\ref{sect:verification}).}
 
 \added[id=CL]{The solution also tests the integral constraint of \citet{nost&isachsen03}.
@@ -1236,22 +1232,21 @@ The adjoint identity holds to $10^{-14}$, }\added[id=CL]{and the adjoint solve a
 The kernels extend from the strait along the isobaths of the western slope and around the southern bowl, mapping the region whose forcing sets the strait transport.}
 
 \begin{table}
-\caption{\added[id=CL]{\label{tab:double_basin} Wall-clock times on 18 threads (Apple M5 Max) for the double basin of Fig.~\ref{fig:double_basin_showcase}, and the closure of each balance as the relative $L_2$ residual on the $65 \times 65$ diagnostic grid.}\added[id=CR]{ The DIV balance is identical to the BV balance (Section~\ref{sect:dynamical_balances}) and is not listed.}}
+\caption{\added[id=CL]{\label{tab:double_basin} Wall-clock times on 18 threads (Apple M5 Max) for the double basin of Fig.~\ref{fig:double_basin_showcase}, and the closure of each balance as the relative $L_2$ residual on the $65 \times 65$ diagnostic grid.}\added[id=CL]{ The DIV balance is identical to the BV balance (Section~\ref{sect:dynamical_balances}) and is not listed.}}
 \centering
 \begin{tabular}{lcc}
 \hline
 Stage & Time (s) & Residual \\
 \hline
-PG solve, mesh 0.02 (153\,876 quadrature points) & \replaced[id=CR]{7.2}{7.7} & \\
+PG solve, mesh 0.02 (153\,876 quadrature points) & \added[id=CL]{7.2} & \\
 3-D sampling, $241 \times 3 \times 121$ points & 1.6 & \\
-Transport, bottom stress, and $\Psi$ & \replaced[id=CR]{5.4}{5.6} & \\
-Depth-integrated momentum (DIM) & \replaced[id=CR]{0.5}{0.6} & $1.0 \times 10^{-5}$ \\
-Barotropic vorticity (BV), cell averages & \replaced[id=CR]{11.6}{13.2} & 0.034 \\
-\deleted[id=CR]{Depth-integrated vorticity (DIV)} & \deleted[id=CR]{2.0} & \deleted[id=CR]{0.034} \\
+Transport, bottom stress, and $\Psi$ & \added[id=CL]{5.4} & \\
+Depth-integrated momentum (DIM) & \added[id=CL]{0.5} & $1.0 \times 10^{-5}$ \\
+Barotropic vorticity (BV), cell averages & \added[id=CL]{11.6} & 0.034 \\
 Geostrophic-contour vorticity (GCVB) & 1.6 & 0.027 \\
 Transport-divergence vorticity (TDVB) & 1.6 & 0.034 \\
 Nøst--Isachsen comparison & 1.6 & \\
-Adjoint sensitivity of the strait transport & \replaced[id=CR]{20.9}{21.1} & \\
+Adjoint sensitivity of the strait transport & \added[id=CL]{20.9} & \\
 \hline
 \end{tabular}
 \end{table}
@@ -1530,14 +1525,14 @@ Substitute using (\ref{eqn:b_solution})
 & =
 \int_{\xi}^{0} \left[ - \frac{\Gamma}{\mathrm{Ek}}  \int_{-H}^{0} G_b(z'; \xi') B(\xi') \; d \xi'  + \partial_\xi G_b(z';\xi) |_{\xi = 0} \, b_s  \right] \; dz' ,  \nonumber \\
 & = - \frac{\Gamma}{\mathrm{Ek}} \int_{-H}^{0} \int_{\xi}^{0} G_b(z'; \xi') \; d z'\; B(\xi') \; d \xi'  + \int_{\xi}^{0} \partial_\xi G_b(z';\xi) |_{\xi = 0} \;  \; dz'  \, b_s , \\
-& = \CRnew{- \frac{\Gamma}{\mathrm{Ek}}} \int_{-H}^{0} G_{b,1}(\xi,\xi') B(\xi') \; d \xi'  + G_{b,2} (\xi)  \, b_s ,
+& = {\color{blue}- \frac{\Gamma}{\mathrm{Ek}}} \int_{-H}^{0} G_{b,1}(\xi,\xi') B(\xi') \; d \xi'  + G_{b,2} (\xi)  \, b_s ,
 \end{align}
 where $G_{b,1}$ and $G_{b,2}$ are given by (\ref{eqn:term1}) and (\ref{eqn:term2}).
 Hence, (\ref{eqn:appendix_fraku}) becomes:
 \begin{align}
 \mathrm{Ek} \, \mathfrak{u}
 & = G_{\mathfrak{u},1}(z) \left(\partial_x  + i \partial_y \right) p_s  - \mathrm{Ek} \, G_{\mathfrak{u},2} (z)  \left( \tau^x + i \tau^y \right) \nonumber \\
-& - \int_{-H}^{0} G_{ \mathfrak{u}} (z; \xi) \left[ \left(\partial_x  + i \partial_y \right)  \left[ \CRnew{- \frac{\Gamma}{\mathrm{Ek}}} \int_{-H}^{0} G_{b,1}(\xi,\xi') B(\xi') \; d \xi'  + G_{b,2} (\xi)  \, b_s \right] \right] \; d \xi  .
+& - \int_{-H}^{0} G_{ \mathfrak{u}} (z; \xi) \left[ \left(\partial_x  + i \partial_y \right)  \left[ {\color{blue}- \frac{\Gamma}{\mathrm{Ek}}} \int_{-H}^{0} G_{b,1}(\xi,\xi') B(\xi') \; d \xi'  + G_{b,2} (\xi)  \, b_s \right] \right] \; d \xi  .
 \label{eqn:final_velocity_formula1}
 \end{align}
 This formula can be used to compute $\mathfrak{u}$, but it involves a double integral in the vertical direction (over $\xi$ and $\xi'$) for every $(x,y,z)$ point.
@@ -1557,10 +1552,10 @@ The $y$ derivative term is
 \end{align}
 using Leibniz' integration formula (footnote \ref{fn:Leibniz}) and recalling that $G_{ \mathfrak{u}}$ depends on position $y$ via the non-dimensional Coriolis parameter in $\varphi$ and on depth $H(x,y)$.
 
-The middle term on the right hand side of (\ref{eqn:Pi_y_derivative}) \replaced[id=CR]{vanishes, because $G_{\mathfrak{u}}$ is symmetric in its two arguments and satisfies the bottom boundary condition (\ref{eqn:G_u_bot_bc}):}{is straightforward as}
+The middle term on the right hand side of (\ref{eqn:Pi_y_derivative}) \added[id=CL]{vanishes, because $G_{\mathfrak{u}}$ is symmetric in its two arguments and satisfies the bottom boundary condition (\ref{eqn:G_u_bot_bc}):}
 \begin{align}
 G_{ \mathfrak{u}} ( z; -H) & =
-\CRold{-\frac{\sinh \varphi \left( H + z \right) }{\nu \varphi}} \; \CRnew{G_{ \mathfrak{u}} ( -H; z) = 0} .
+{\color{blue}G_{ \mathfrak{u}} ( -H; z) = 0} .
 \label{eqn:Guv_at_bottom}
 \end{align}
 
@@ -1641,15 +1636,15 @@ Thus, (\ref{eqn:appendix_fraku}) leads to
 \; - \; \mathrm{Ek} \, \underbrace{G_{\mathfrak{u},2} (z)}_{\text{(\ref{eqn:Guv0})}}  \left( \tau^x + i \tau^y \right)  \nonumber \\
 & - \left( \partial_x + i \partial_y \right) \bigg[ \int_{-H}^{0} \underbrace{G_{ \mathfrak{u}, b} ( z; \xi')}_{\text{(\ref{eqn:Guv_b_def})}}  B(\xi') \; d \xi' 
 + \underbrace{G_{ \mathfrak{u}, {b_\xi}} ( z)}_{\text{(\ref{eqn:Guv_b_xi_def})}} \; b_s \bigg] \nonumber \\
-& \CRold{+ \left[ \left( \partial_x + i \partial_y \right) H \right]  \underbrace{G_{ \mathfrak{u}} ( z; -H)}_{\text{(\ref{eqn:Guv_at_bottom})}} \, \bigg[ \int_{-H}^{0} \underbrace{G_{b,1}(-H,\xi')}_{\text{(\ref{eqn:term1})}} B(\xi') \; d \xi' + \underbrace{G_{b,2} (-H)}_{\text{(\ref{eqn:term2})}}  \, b_s \bigg]} \nonumber  \\
+&  \nonumber  \\
 & + \int_{-H}^{0} \underbrace{G_{ \mathfrak{u}_x, b} ( z; \xi') }_{\text{from (\ref{eqn:Guv_y_b_def})}} B(\xi') \; d \xi'
 + \underbrace{G_{ \mathfrak{u}_x, {b_\xi}} ( z)}_{\text{from (\ref{eqn:Guv_y_b_xi_def})}} \; b_s \nonumber \\
 & + i \int_{-H}^{0} \underbrace{G_{ \mathfrak{u}_y, b} ( z; \xi') }_{\text{(\ref{eqn:Guv_y_b_def})}} B(\xi') \; d \xi'
 + i \underbrace{G_{ \mathfrak{u}_y, {b_\xi}} ( z)}_{\text{(\ref{eqn:Guv_y_b_xi_def})}} \; b_s .
 \label{eqn:final_velocity_formula2}
 \end{align}
-Compared to (\ref{eqn:final_velocity_formula1}), this formula involves \replaced[id=CR]{three}{(four)} single integrals in the vertical direction for every $(x,y,z)$ point. 
-Although the latter expression for velocity is more complicated than the former one, it is \replaced[id=CR]{about 15 times faster to compute (Section~\ref{sect:results}\ref{sect:verification})}{25 times faster to compute for typical parameters}.
+Compared to (\ref{eqn:final_velocity_formula1}), this formula involves \added[id=CL]{three} single integrals in the vertical direction for every $(x,y,z)$ point. 
+Although the latter expression for velocity is more complicated than the former one, it is \added[id=CL]{about 15 times faster to compute (Section~\ref{sect:results}\ref{sect:verification})}.
 Moreover, the two versions are compared to each other to test the derivation and code: they agree to many significant figures (see \texttt{RunVelocityFieldPrototype.jl}).
 
 
