@@ -106,9 +106,11 @@ z3 = collect(range(-maximum(depth(xx, 0.0) for xx in x3 if problem.inside(xx, 0.
 section = timed("3-D sampling, zonal section (241 × 3 × 121)",
     () -> sample_solution(solution, x3, [section_y - 0.01, section_y, section_y + 0.01], z3))
 
-dx = range(-0.94ax, 0.94ax; length=65)
-dy = range(-0.94ay, 0.94ay; length=65)
-diagnostics = timed("transport, bottom stress, Ψ (65 × 65)", () -> compute_diagnostics(solution, dx, dy))
+# The diagnostic grid spans the whole basin (points outside the coast are dry),
+# with the spacing of the earlier 65 × 65 grid over 0.94 of each semi-axis.
+dx = range(-ax, ax; length=69)
+dy = range(-ay, ay; length=69)
+diagnostics = timed("transport, bottom stress, Ψ (69 × 69)", () -> compute_diagnostics(solution, dx, dy))
 dim = timed("DIM balance", () -> compute_dim_diagnostics(solution, diagnostics))
 bv = timed("BV balance (cell averages)", () -> compute_barotropic_vorticity_diagnostics(solution, diagnostics))
 vorticity = timed("depth-integrated vorticity", () -> compute_vorticity_diagnostics(solution, diagnostics))
@@ -145,7 +147,7 @@ for (label, t) in timings
     @printf("  %-52s %7.2f s\n", label, t)
 end
 @printf("Northward strait transport %.4e (x in %s, y = %.1f)\n", strait_transport, section_x, section_y)
-println("Balance closure (relative L2 residual on the 65 × 65 grid):")
+println("Balance closure (relative L2 residual on the 69 × 69 grid):")
 @printf("  DIM x %.1e, DIM y %.1e, BV %.2e, depth-integrated vorticity %.2e, GCVB %.2e, TDVB %.2e\n",
     dim.timings.x_relative_l2_residual, dim.timings.y_relative_l2_residual,
     bv.timings.relative_l2_residual, vorticity.timings.relative_l2_residual,
@@ -201,7 +203,7 @@ panel_c = scatter(r.pg_speed[r.theory_wet], r.linear_speed[r.theory_wet]; ms=1.5
     xlabel="PG bottom speed", ylabel="Nøst–Isachsen bottom speed",
     title="(c) closed-contour bottom velocity", legend=:topleft, style...)
 scatter!(panel_c, r.pg_speed[r.theory_wet], r.exact_speed[r.theory_wet]; ms=1.5, msw=0, alpha=0.5,
-    color=:steelblue, label=@sprintf("derived PG drag (%.0f%%)", 100m.exact_relative_l2_velocity_error))
+    color=:steelblue, label=@sprintf("derived PG drag (%.1f%%)", 100m.exact_relative_l2_velocity_error))
 plot!(panel_c, [0, speed_max], [0, speed_max]; color=:black, ls=:dash, label="")
 
 function kernel_panel(field, title)
