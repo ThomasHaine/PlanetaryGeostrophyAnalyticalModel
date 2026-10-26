@@ -1078,7 +1078,7 @@ $h$ & $p_s$ & $\mathbf{U}$ & $\boldsymbol{\tau}_b$ & $\mathbf{u}(-H/2)$ & $\Psi$
 
 \paragraph{Dynamical balances.}
 The depth-integrated momentum balance (\ref{eqn:U_mom})--(\ref{eqn:V_mom}) holds pointwise, because the column solution satisfies the momentum equations exactly.
-Evaluated with centered differences of step $10^{-5}$ for $\nabla p_b$ and $\nabla \chi$, its relative residual is about \added[id=CL]{$10^{-5}$} in the double basin\added[id=CL]{ of Section~\ref{sect:double_basin}, two deep bowls on an $f$-plane joined by a strait, with a shelf only four Ekman depths deep (Fig.~\ref{fig:double_basin_showcase})}.
+Evaluated with centered differences of step $10^{-5}$ for $\nabla p_b$ and $\nabla \chi$, its relative residual is about \added[id=CL]{$10^{-5}$} in the double basin\added[id=CL]{ of Section~\ref{sect:results}\ref{sect:double_basin}, two deep bowls on an $f$-plane joined by a strait, with a shelf only four Ekman depths deep (Fig.~\ref{fig:double_basin_showcase})}.
 The vorticity balances (\ref{eqn:BVE}), (\ref{eqn:DIV}), (\ref{eqn:GCVB}), and (\ref{eqn:TDVB}) are curls of that balance, so they also hold exactly for the continuous fields.
 Mapping them requires care, however.
 They act on the bottom stress and transport, which contain $\nabla p_s$, and with continuous Lagrange elements $\nabla p_s$ is discontinuous across element edges.
@@ -1262,7 +1262,7 @@ The column integrals are independent, and the solve at $h = 0.02$ takes 16.9~s o
 The Ekman numbers of the examples, $0.02$ to $1.3 \times 10^{-4}$, correspond to vertical viscosities of 32 to 0.2~m$^2$\,s$^{-1}$ and Ekman depths of 800 to 64~m.
 A realistic $\nu_0 \approx 10^{-2}$~m$^2$\,s$^{-1}$ gives $\mathrm{Ek} \approx 6 \times 10^{-6}$ and $\delta_E \approx 14$~m.
 Two costs limit such small Ekman numbers.
-The column integrals grow with $s$, which reaches about 300, and the mesh must resolve the frictional layers of width $\ell \approx \delta_E/(2|\nabla H|)$ over slopes (Section~\ref{sect:classical_limits}), a few kilometers for continental slopes.
+The column integrals grow with $s$, which reaches about 300, and the mesh must resolve the frictional layers of width $\ell \approx \delta_E/(2|\nabla H|)$ over slopes (Section~\ref{sect:results}\ref{sect:classical_limits}), a few kilometers for continental slopes.
 Extrapolating linearly from $\mathrm{Ek} = 10^{-5}$ at $h = 0.04$, a uniform mesh of size $h = 0.005$ (5~km) would take about 4~hours on 18 threads, so realistic Ekman numbers call for meshes refined only over steep slopes.}
 
 \begin{table}
@@ -1296,9 +1296,9 @@ The nondimensional $\beta = 0.15$ of the test basin is $1.5 \times 10^{-11}$~m$^
 Example & $\mathrm{Ek}$ & $\nu_0$ (m$^2$\,s$^{-1}$) & $\delta_E$ (m) \\
 \hline
 \texttt{Oceananigans.jl} comparison (Appendix C) & 0.02 & 32 & 800 \\
-Test basin (Section~\ref{sect:verification}) & 0.01 & 16 & 570 \\
-Double basin (Section~\ref{sect:double_basin}) & 0.002 & 3.2 & 250 \\
-Boundary $\beta$ plume (Section~\ref{sect:classical_limits}) & $1.3 \times 10^{-4}$ & 0.20 & 64 \\
+Test basin (Section~\ref{sect:results}\ref{sect:verification}) & 0.01 & 16 & 570 \\
+Double basin (Section~\ref{sect:results}\ref{sect:double_basin}) & 0.002 & 3.2 & 250 \\
+Boundary $\beta$ plume (Section~\ref{sect:results}\ref{sect:classical_limits}) & $1.3 \times 10^{-4}$ & 0.20 & 64 \\
 Realistic & $6 \times 10^{-6}$ & 0.01 & 14 \\
 \hline
 \end{tabular}
@@ -1350,7 +1350,7 @@ Whether such an iteration converges, and what thermocline structure it selects, 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \acknowledgments
 
-Tarun Verma and Henry Peterson provided useful feedback on the early stages of this work.
+Tarun Verma and Henry Peterson provided helpful feedback and discussion on the early stages of this work.
 Large language models (GPT 5.4 mini, GPT 5.5, GitHub Copliot version 1.1.21, Claude Opus 5.5) were used for assistance with Julia code, especially debugging and plotting of final figures, literature exploration, code generation, and some writing.
 The analytical results were supported by the \texttt{SymPy} and \texttt{Symbolics.jl} computer algebra systems \citep{meurer_etal17,gowda_etal21}.
 
