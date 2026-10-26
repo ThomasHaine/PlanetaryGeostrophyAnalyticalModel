@@ -251,7 +251,7 @@ end
 """
     buoyancy_transport_b23(kernels, p, H, f, f_x, f_y, B, bs, H_x, H_y, x, y)
 
-Evaluate the buoyancy-driven depth-integrated transport in equation (69).
+Evaluate the buoyancy-driven depth-integrated transport in equation (70).
 This is a general numerical B23 implementation that is suitable for checking
 new forcing fields before specialized vertically integrated kernels are added.
 """
@@ -411,7 +411,7 @@ end
     buoyancy_bottom_stress_b23(kernels, p, H, f, f_x, f_y, B, bs, H_x, H_y, x, y;
                                 vertical_step=1e-4)
 
-Evaluate the buoyancy-driven bottom stress in equation (65), using the
+Evaluate the buoyancy-driven bottom stress in equation (66), using the
 one-sided second-order approximation `-ν ∂u/∂z` at `z = -H`. It intentionally
 uses B23 velocity evaluations so variable bathymetry and general `f(x,y)` are
 treated consistently with the production velocity calculation.
