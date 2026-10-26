@@ -730,6 +730,11 @@ end
         )
         @test vorticity.residual[vorticity.wet] ≈
             bv.residual[bv.wet]
+        # The DIV balance is the BV balance: no-slip makes w_b = 0.
+        @test vorticity.bottom_vortex_stretching[vorticity.wet] ==
+            zeros(count(vorticity.wet))
+        @test vorticity.bottom_stress_curl[vorticity.wet] ≈
+            bv.bottom_pressure_torque[bv.wet] .+ bv.bottom_stress_curl[bv.wet]
         @test performance_summary(vorticity) == vorticity.timings
         @test isfinite(vorticity.timings.relative_l2_residual)
         @test size(gcvb.geostrophic_contour_advection) == shape
@@ -1453,6 +1458,13 @@ end
         @test cell.bv.wet == cell.gcvb.wet == cell.tdvb.wet
         @test cell.vorticity.residual[cell.vorticity.wet] ≈
               cell.bv.residual[cell.bv.wet]
+        @test cell.vorticity.wet == cell.bv.wet
+        # No-slip makes the bottom vortex stretching f w_b vanish, which is why
+        # the DIV balance reduces to the BV balance.
+        stretching = [PlanetaryGeostrophy.bottom_stretching(solution, x, y)
+                      for x in (-0.5, 0.0, 0.4), y in (-0.3, 0.0, 0.25)]
+        planetary_scale = maximum(abs, filter(isfinite, cell.bv.planetary_vorticity_advection))
+        @test maximum(abs, stretching) < 1e-10 * planetary_scale
         @test cell.bv.transport_divergence[cell.bv.wet] ==
               zeros(count(cell.bv.wet))
     end
