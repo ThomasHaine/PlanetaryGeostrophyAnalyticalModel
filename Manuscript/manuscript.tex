@@ -51,6 +51,8 @@
 % every change, load the package as \usepackage[final]{changes}.
 \usepackage{changes}
 \definechangesauthor[name={Claude}, color=blue]{CL}
+% Review corrections of 2026-10-26, for checking.
+\definechangesauthor[name={Claude review}, color=magenta]{CR}
 
 %% May use \\ to break lines in title:
 
@@ -76,7 +78,7 @@
 It recovers the Sverdrup--Stommel gyre, $\beta$ plumes in open water and beside a coast, and topographic steering, and quantifies the corrections to these classical results.
 The Ekman drag varies as $f^{1/2}$ for Coriolis parameter $f$, and the bottom Ekman layer of depth $\delta_E$ acts as a displacement thickness so that the flow follows $f/(H - \delta_E/2)$ contours, where $H$ is the water depth.
 Steering by these contours fails where $H \lessapprox 2 \delta_E$. 
-In a double basin joined by a strait, the integral constraint of N\o st and Isachsen on closed $f/H$ contours reproduces the bottom velocity to 3\% with the derived bottom stress, but errs by 100\% with a calibrated isotropic drag.
+In a double basin joined by a strait, the integral constraint of N\o st and Isachsen on closed $f/H$ contours reproduces the bottom velocity to 3\% with the derived bottom stress, \replaced[id=CR]{but errs by more than 100\% with a calibrated isotropic drag.}{but errs by 100\% with a calibrated isotropic drag.}
 One adjoint sensitivity solve maps the forcing that sets the strait transport. 
 }
 
@@ -99,7 +101,7 @@ One adjoint sensitivity solve maps the forcing that sets the strait transport.
 % Significance statement here.
 % Added by Claude (CL): draft significance statement.
 \statement
-\added[id=CL]{The large-scale ocean circulation is often explained by simple rules: currents follow contours of depth and latitude, friction at the sea floor acts as a linear drag, and the circulation around closed depth contours is set by the wind. We give an exact solution for the steady wind- and density-driven circulation of a model ocean with realistic topography, in which the friction near the sea floor is resolved rather than assumed. 
+\added[id=CL]{The large-scale ocean circulation is often explained by simple rules: currents follow contours of depth and latitude, friction at the sea floor acts as a linear drag, and the circulation around closed depth contours is set by the wind. We give an exact solution for the steady wind- and density-driven }\replaced[id=CR]{circulation of a model ocean with idealized but complex topography}{circulation of a model ocean with realistic topography}\added[id=CL]{, in which the friction near the sea floor is resolved rather than assumed. 
 The solution agrees with a numerical ocean circulation model, and shows where the classical rules hold and where they fail, notably over shallow shelves and when the bottom drag is assumed. It is a fast and exact baseline for interpreting ocean models and observations.}
 %
 % \capsule
@@ -1023,7 +1025,7 @@ They reproduce classical Ekman-layer theory, including the linear bottom-drag co
 For shallow water ($s \ll 1$), the Ekman layers overlap and $\mathfrak{A} \approx -H^3/(3\mathrm{Ek}) + i\,2 f H^5/(15\mathrm{Ek}^2)$.
 The transport is then a lubrication flow down the surface-pressure gradient, proportional to $H^3$, and the bottom stress is aligned with that gradient.
 Topographic steering is negligible: the ratio of steering to friction, $\mathfrak{A}^i/(-\mathfrak{A}^r)$, falls through one near $s \approx 1$ (panel c).
-Where the ocean is shallower than about one Ekman depth, therefore, $f/H$ contours no longer guide the depth-integrated flow, and classical layer models need the exact coefficients wherever $s \lesssim 3$.
+\replaced[id=CR]{Where the ocean is shallower than one to two Ekman depths,}{Where the ocean is shallower than about one Ekman depth,} therefore, $f/H$ contours no longer guide the depth-integrated flow, and classical layer models need the exact coefficients wherever $s \lesssim 3$.
 }
 
 \color{red}
@@ -1151,9 +1153,9 @@ With the local Ekman drag acting over the displacement thickness, $r(y) = f \del
 As for the gyre, these two corrections, both implied by the PG bottom stress, halve the difference or better wherever $s \gtrsim 6$, and the layer model fails near $s \approx 3$.}
 
 \added[id=CL]{\citet{haine&fuller16} give the exact solution for a $\beta$ plume beside a straight coast inclined at angle $\theta$ to east--west, with Rayleigh drag $\lambda$: the free-space plume of the source minus a weighted image source reflected in the coast.
-In a basin cut by such a coast, a Gaussian source of radius 0.1 lies $5 \delta_S$ from it, where $\delta_S = \lambda/\beta$ is the Stommel length and $\lambda = f_0 \delta_E/(2H)$ is again derived ($s = 62$; $\beta = 0.1$, so that the drag varies by only about $\pm 7\%$ over the domain).
+In a basin cut by such a coast, a Gaussian source of radius 0.1 lies $5 \delta_S$ from it, where $\delta_S = \lambda/\beta$ is the Stommel length and $\lambda = f_0 \delta_E/(2H)$ is again derived ($s = 62$; $\beta = 0.1$, }\replaced[id=CR]{so that the drag varies by less than about 10\% over the domain}{so that the drag varies by only about $\pm 7\%$ over the domain}\added[id=CL]{).
 PG reproduces the exact solution, convolved with the source, to 0.7\% for $\theta = 30^\circ$ and 0.6\% for $\theta = 60^\circ$ (Fig.~\ref{fig:boundary_beta_plume_comparison}).
-Down-plume, along the line through the source parallel to the coast, the PG e-folding length (fitted after removing the $(-s)^{-3/2}$ factor of the far-field asymptote) is within 7\% and 3\% of that of the exact solution.
+Down-plume, along the line through the source parallel to the coast, the PG e-folding length (fitted after removing }\replaced[id=CR]{the $d^{-3/2}$ factor of the far-field asymptote, with $d$ the down-plume distance}{the $(-s)^{-3/2}$ factor of the far-field asymptote}\added[id=CL]{) is within 7\% and 3\% of that of the exact solution.
 Within the basin neither has yet reached the asymptotic e-folding length $2 \delta_S/(1 - \cos \theta)$.
 This test also exercises the no-normal-flow condition on an inclined coast.}
 
@@ -1171,7 +1173,7 @@ This test also exercises the no-normal-flow condition on an inclined coast.}
 \includegraphics[width=16cm]{boundary_beta_plume_comparison.pdf}
 \caption{\added[id=CL]{\label{fig:boundary_beta_plume_comparison} Boundary $\beta$ plumes of \citet{haine&fuller16}, for a coast inclined at $\theta = 30^\circ$ (top) and $60^\circ$ (bottom) to east--west.
 Left: PG streamfunction $\Psi$. Centre: the exact solution of \citet{haine&fuller16} with the derived drag $\lambda = f_0 \delta_E/(2H)$, convolved with the Gaussian source, on the same contour levels. The dotted line runs through the source parallel to the coast.
-Right: $|\Psi|$ along that line against down-plume distance in units of $\delta_S = \lambda/\beta$, for PG (solid), the exact solution (dashed), and the far-field asymptote $\propto (-s)^{-3/2} \exp[-|s|(1 - \cos \theta)/2\delta_S]$ (gray).}}
+Right: $|\Psi|$ along that line against down-plume distance in units of $\delta_S = \lambda/\beta$, for PG (solid), the exact solution (dashed), and the far-field asymptote }\replaced[id=CR]{$\propto d^{-3/2} \exp[-d(1 - \cos \theta)/2\delta_S]$, with $d$ the down-plume distance}{$\propto (-s)^{-3/2} \exp[-|s|(1 - \cos \theta)/2\delta_S]$}\added[id=CL]{ (gray).}}
 \end{figure}
 
 \paragraph{\added[id=CL]{Topographic steering.}}
@@ -1199,7 +1201,7 @@ Where the shelf is less than about two Ekman depths deep, the Ekman layers overl
 
 \added[id=CL]{To show the method on a less idealized geometry, Fig.~\ref{fig:double_basin_showcase} shows a double basin on an $f$-plane with $\mathrm{Ek} = 0.002$, so that $\delta_E = 0.063$.
 Two deep bowls are separated by a shallow ridge running west from the eastern shelf and joined by a deeper western strait, loosely modeled on the Nordic Seas and Fram Strait.
-The outer shelf is 0.26 deep, only 4.1 Ekman depths, so the Ekman layers overlap there, and the deepest water is about 19 Ekman depths.
+The outer shelf is 0.26 deep, only 4.1 Ekman depths}\replaced[id=CR]{, close to the depth below which the Ekman layers begin to overlap (Section~\ref{sect:results}a),}{, so the Ekman layers overlap there,}\added[id=CL]{ and the deepest water is about 19 Ekman depths.
 Cyclonic wind-stress cells over each bowl, a meridional surface-buoyancy gradient, and uniform restoring stratification drive the circulation.
 The steady circulation consists of two cyclonic gyres steered by the closed isobaths of each bowl, joined through the strait, where the meridional velocity is nearly uniform with depth down to the bed (Fig.~\ref{fig:double_basin_showcase}a, b).}
 
@@ -1210,11 +1212,11 @@ The depth-integrated momentum balance closes to $10^{-5}$, and the cell-averaged
 \added[id=CL]{The solution also tests the integral constraint of \citet{nost&isachsen03}.
 On closed $f/H$ contours, the bottom geostrophic velocity follows from the forcing integrated over the enclosed area once a drag law is assumed.
 With a linear or quadratic isotropic drag, calibrated by least squares against the PG bottom stress itself, the predicted bottom velocity differs from the PG velocity by 103\% and 120\% (relative $L_2$, 2771 points), although the speeds remain correlated (0.92 and 0.88).
-With the drag derived from the PG bottom stress, $\boldsymbol{\tau}_b = S \nabla p_b + T$, which is rotated relative to the bottom velocity and includes the baroclinic and wind contributions, the same constraint reproduces the PG bottom velocity to 3\% (Fig.~\ref{fig:double_basin_showcase}c).
+With the drag derived from the PG bottom stress, }\replaced[id=CR]{$\tau_b^x + i \tau_b^y = S (\partial_x + i \partial_y) p_s + T$ (\ref{eqn:bottom_stress_ST_def})}{$\boldsymbol{\tau}_b = S \nabla p_b + T$}\added[id=CL]{, which is rotated relative to the bottom velocity and includes the baroclinic and wind contributions, the same constraint reproduces the PG bottom velocity to 3\% (Fig.~\ref{fig:double_basin_showcase}c).
 The drag closure, not the integral constraint, limits the classical method.}
 
 \added[id=CL]{Finally, one adjoint solve of the surface-pressure equation gives the sensitivity of the northward transport through the strait to the wind stress, surface buoyancy, and restoring buoyancy everywhere (Fig.~\ref{fig:double_basin_showcase}d--f).
-The adjoint identity holds to $10^{-14}$, and the solve takes 21~s.
+The adjoint identity holds to $10^{-14}$, }\replaced[id=CR]{and the adjoint solve and kernel sampling take 21~s.}{and the solve takes 21~s.}\added[id=CL]{
 The kernels extend from the strait along the isobaths of the western slope and around the southern bowl, mapping the region whose forcing sets the strait transport.}
 
 \begin{table}
@@ -1253,7 +1255,7 @@ Adjoint sensitivity of the strait transport & 21.1 & \\
 \label{sect:cost}
 
 \added[id=CL]{Table~\ref{tab:cost_scaling} shows how the wall-clock time cost of the solve scales, in the test basin of Section~\ref{sect:results}\ref{sect:verification} on 18 threads.
-The evaluation of the column integrals for $\mathfrak{A}$, $\mathfrak{B}$, $S$, and $T$ at the quadrature points of the surface-pressure mesh dominate the time cost; the finite-element assembly and linear solve take at most a fifth.
+The evaluation of the column integrals for $\mathfrak{A}$, $\mathfrak{B}$, $S$, and $T$ at the quadrature points of the }\replaced[id=CR]{surface-pressure mesh dominates the time cost}{surface-pressure mesh dominate the time cost}\added[id=CL]{; the finite-element assembly and linear solve take at most a fifth.
 At fixed $\mathrm{Ek}$, the cost is proportional to the number of quadrature points, from 0.22~s at $h = 0.08$ to 11.7~s at $h = 0.01$.
 At fixed mesh, it grows with $s = H/\delta_E$, because each column is split into $\lceil H/(4\delta_E) \rceil$ Gauss--Legendre panels: from 0.75~s at $\mathrm{Ek} = 10^{-2}$ to 202~s at $\mathrm{Ek} = 10^{-5}$, faster than $s$.
 The column integrals are independent, and the solve at $h = 0.02$ takes 16.9~s on one thread and 2.0~s on 18, a speed-up of 8.5 on a processor with 6 performance and 12 efficiency cores.}
@@ -1262,8 +1264,8 @@ The column integrals are independent, and the solve at $h = 0.02$ takes 16.9~s o
 The Ekman numbers of the examples, $0.02$ to $1.3 \times 10^{-4}$, correspond to vertical viscosities of 32 to 0.2~m$^2$\,s$^{-1}$ and Ekman depths of 800 to 64~m.
 A realistic $\nu_0 \approx 10^{-2}$~m$^2$\,s$^{-1}$ gives $\mathrm{Ek} \approx 6 \times 10^{-6}$ and $\delta_E \approx 14$~m.
 Two costs limit such small Ekman numbers.
-The column integrals grow with $s$, which reaches about 300, and the mesh must resolve the frictional layers of width $\ell \approx \delta_E/(2|\nabla H|)$ over slopes (Section~\ref{sect:results}\ref{sect:classical_limits}), a few kilometers for continental slopes.
-Extrapolating linearly from $\mathrm{Ek} = 10^{-5}$ at $h = 0.04$, a uniform mesh of size $h = 0.005$ (5~km) would take about 4~hours on 18 threads, so realistic Ekman numbers call for meshes refined only over steep slopes.}
+The column integrals grow with $s$, which reaches about 300, and the mesh must resolve the frictional layers of width $\ell \approx \delta_E/(2|\nabla H|)$ over slopes (Section~\ref{sect:results}\ref{sect:classical_limits})}\replaced[id=CR]{, about 0.1--1~km for continental slopes with $|\nabla H| \approx 0.01$--0.05 and a few kilometers only for gentle slopes of $10^{-3}$.}{, a few kilometers for continental slopes.}\added[id=CL]{
+Extrapolating linearly from $\mathrm{Ek} = 10^{-5}$ at $h = 0.04$, }\replaced[id=CR]{a uniform mesh of size $h = 0.005$ (5~km), fine enough only for gentle slopes, would take about 4~hours on 18 threads, and resolving continental slopes with a uniform mesh would cost $10^2$ to $10^4$ times more, so realistic Ekman numbers call for meshes refined over steep slopes.}{a uniform mesh of size $h = 0.005$ (5~km) would take about 4~hours on 18 threads, so realistic Ekman numbers call for meshes refined only over steep slopes.}\added[id=CL]{}
 
 \begin{table}
 \caption{\added[id=CL]{\label{tab:cost_scaling} Wall-clock time of the PG solve (best of three, after compilation) in the test basin of Section~\ref{sect:results}\ref{sect:verification}, on 18 threads of an Apple M5 Max unless stated. The forcing evaluation computes the column integrals at the quadrature points of the surface-pressure mesh. The script is \texttt{TheoryNotes/CostScaling.jl}.}}
@@ -1310,17 +1312,17 @@ Realistic & $6 \times 10^{-6}$ & 0.01 & 14 \\
 % Added by Claude (CL): Discussion drafted from the original bullet list.
 \added[id=CL]{The linear robust-diagnostic PG equations have been solved exactly for an arbitrary basin, bathymetry, and Coriolis parameter, with the surface and bottom Ekman layers resolved even where they overlap.
 The three-dimensional problem reduces to closed-form Green's functions in each column and one two-dimensional advection--diffusion equation for the surface pressure, whose coefficients $\mathfrak{A}$ and $\mathfrak{B}$ are exact column integrals.
-The solution has been verified against independent implementations of the column solution, under mesh refinement, by closure of every depth-integrated balance, and against a primitive-equation model, and it takes seconds to compute (Sections~\ref{sect:results}\ref{sect:verification}, \ref{sect:cost}).
+The solution has been verified against independent implementations of the column solution, under mesh refinement, by closure of every depth-integrated balance, and against a primitive-equation model, and it takes seconds to compute }\replaced[id=CR]{(Sections~\ref{sect:results}\ref{sect:verification} and \ref{sect:results}\ref{sect:cost})}{(Sections~\ref{sect:results}\ref{sect:verification}, \ref{sect:cost})}\added[id=CL]{.
 Because the solution is exact, the depth-integrated momentum and vorticity balances, the integral constraints on closed contours, and the sensitivities to the forcing can all be evaluated without a parameterized drag or a residual of unknown origin.}
 
-\added[id=CL]{The exact coefficients also sharpen several classical rules of thumb (Sections~\ref{sect:results}a, \ref{sect:classical_limits}).
+\added[id=CL]{The exact coefficients also sharpen several classical rules of thumb }\replaced[id=CR]{(Sections~\ref{sect:results}a and \ref{sect:results}\ref{sect:classical_limits})}{(Sections~\ref{sect:results}a, \ref{sect:classical_limits})}\added[id=CL]{.
 First, the depth-integrated flow is steered along contours of $f/(H - \delta_E/2)$ rather than $f/H$, because the bottom Ekman layer acts as a displacement thickness; in the topographic steering test this correction reduces the error of the layer model from 2\% to 0.2\% at $s = H/\delta_E = 50$.
 Second, the bottom drag is not a free parameter: in deep water it is the linear drag $f \delta_E/(2H)$ of \citet{stommel48}, rotated by $45^\circ$, and it varies with latitude as $f^{1/2}$, which accounts for much of the difference between the PG solutions and the classical Stommel gyre and $\beta$ plume.
 Third, a single length, $\ell = |\mathfrak{A}^r| / |\nabla \mathfrak{A}^i| \approx \delta_E / \left[ 2 f \left| \nabla (H/f) \right| \right]$ for deep water $H \gg \delta_E$, namely, the ratio of the frictional diffusivity to the steering speed in the surface-pressure equation (\ref{eqn:ps}), sets the width of the frictional layer where the steering flow meets a coast.
 The $\ell$ formula yields Stommel's lengthscale $r/\beta$ on a flat $\beta$-plane, with $r = f \delta_E/(2H)$ the linear drag coefficient of Section~\ref{sect:results}a, and $\delta_E/(2|\nabla H|)$ over a slope.
 Along coasts parallel to the steering flow, frictional layers instead widen as $\sqrt{\ell d}$ with along-coast distance $d$.
-Fourth, the classical layer picture holds where the water is deeper than about three Ekman depths; where it is shallower than about two, the Ekman layers overlap, the transport becomes a lubrication flow down the pressure gradient, and $f/H$ contours no longer guide it.
-The double basin shows the practical consequence: the integral constraint of \citet{nost&isachsen03} reproduces the bottom velocity on closed $f/H$ contours to 3\% with the derived bottom stress, but errs by 100\% with an isotropic drag calibrated against the same stress (Section~\ref{sect:results}\ref{sect:double_basin}).}
+Fourth, the classical layer picture holds where the water is deeper than about three Ekman depths; }\replaced[id=CR]{where it is shallower than one to two,}{where it is shallower than about two,}\added[id=CL]{ the Ekman layers overlap, the transport becomes a lubrication flow down the pressure gradient, and $f/H$ contours no longer guide it.
+The double basin shows the practical consequence: the integral constraint of \citet{nost&isachsen03} reproduces the bottom velocity on closed $f/H$ contours to 3\% with the derived bottom stress, }\replaced[id=CR]{but errs by more than 100\% with an isotropic drag}{but errs by 100\% with an isotropic drag}\added[id=CL]{ calibrated against the same stress (Section~\ref{sect:results}\ref{sect:double_basin}).}
 
 \added[id=CL]{The solution has limitations, each of which involves some excluded physics.
 Buoyancy is not advected, so the density field is prescribed through the restoring field $B$ and the surface buoyancy $b_s$.
@@ -1336,7 +1338,7 @@ The cost of small Ekman numbers is discussed in Section~\ref{sect:results}\ref{s
 \added[id=CL]{Within these limits the solution has several uses.
 It is a fast solver for the steady external mode given a density field, and could provide a dynamically consistent initial state for the spin-up of ocean general circulation models.
 Its exact vorticity budgets, evaluated as cell averages, are a baseline against which the budgets of models with momentum advection, time dependence, or horizontal dissipation can be compared.
-The adjoint gives, from one solve, the forcing that controls a chosen transport, as in the strait of the double basin, and it could similarly map the sources of topostrophy, the tendency of the flow to keep shallow water to its right \citep{merryfield&scott07,holloway08}.
+The adjoint gives, from one solve, the forcing that controls a chosen transport, as in the strait of the double basin, and it could similarly map the sources of topostrophy, the tendency of the flow }\replaced[id=CR]{to keep shallow water to its right in the Northern Hemisphere}{to keep shallow water to its right}\added[id=CL]{ \citep{merryfield&scott07,holloway08}.
 Applied to climatological density and wind-stress fields, the solution would infer the circulation in the spirit of \citet{nost&isachsen03}, but with a derived rather than a fitted drag.
 Horizontal friction, in contrast, would couple neighboring columns and so break the column separability on which the method rests.}
 
@@ -1364,7 +1366,7 @@ All codes to reproduce the analytical and numerical results in this paper are av
 \added[id=CL]{The repository contains the \texttt{PlanetaryGeostrophy} Julia package, which implements the solution, the diagnostics, and the adjoint, with its test suite.
 The Jupyter notebooks in \texttt{TheoryNotes/} derive the column solutions with \texttt{SymPy}: \texttt{BuoyancyEquationSolution.ipynb} derives the buoyancy Green's function and its integrals (Section~\ref{sect:b_solution} and Appendix~A; cells 1.1--1.31), and \texttt{FrictionalGeostrophicEquationSolution.ipynb} derives the velocity Green's function, its integrals, the bottom stress, and the coefficients $\mathfrak{A}$, $\mathfrak{B}$, $S$, and $T$ (Section~\ref{sect:PG_soln} and Appendix~B; cells 1.1--1.3 and 2.1--2.7).
 \texttt{ComputeQuadratures.ipynb} and \texttt{SymbolicsTesting.jl} build and test the symbolic kernels of Appendix~B.
-The figures and tables of Sections~\ref{sect:results}b--e and Appendix~C are made by the scripts in \texttt{TheoryNotes}.}
+The figures and tables of Sections~\ref{sect:results}b--e and Appendix~C }\replaced[id=CR]{are made by the scripts in \texttt{TheoryNotes} and by \texttt{AnalyticalModel/OceananigansComparison.jl}.}{are made by the scripts in \texttt{TheoryNotes}.}\added[id=CL]{}
 
 
 \section{Appendices}
@@ -1716,7 +1718,7 @@ $\mathfrak{B}$ is evaluated at every quadrature point of the finite-element mesh
 
 In order to test and validate the derivation of the solution method, the results for a test case are compared to an independently-derived solution.
 We use the \texttt{Oceananigans.jl} Julia package, and its hydrostatic free-surface model, which solves the hydrostatic Boussinesq equations \citep{wagner_etal25}.
-The test involves an elliptical basin on a $\beta$-plane, with smoothly varying topography and a 0.3-deep vertical sidewall at the coast. 
+The test involves an elliptical basin on a $\beta$-plane, \replaced[id=CR]{with either a flat bottom or smoothly varying topography, bounded by a vertical sidewall at the coast.}{with smoothly varying topography and a 0.3-deep vertical sidewall at the coast.} 
 The forcing consists of a zonal windstress that varies in the meridional direction, and varying surface buoyancy and relaxation buoyancy fields.
 The forcing amplitude is small so that buoyancy and momentum advection are weak and the linear PG equations are an accurate asymptotic approximation.
 \added[id=CL]{In \texttt{Oceananigans.jl}, advection is switched off, the vertical viscosity and diffusivity are $\mathrm{Ek}$ (implicit in time), the bottom is no-slip, the surface buoyancy is prescribed, and the buoyancy relaxes to its restoring field at rate $\Gamma$.
@@ -1726,9 +1728,9 @@ The PG solution is sampled at the \texttt{Oceananigans.jl} cell centres and comp
 
 \Claude{
 Two bottoms are used.
-With a flat bottom of depth 0.65, the differences in buoyancy, horizontal velocity, and depth-integrated transport converge at about first order as the \texttt{Oceananigans.jl} grid is refined, to $3.5 \times 10^{-4}$, 1.1\%, and 1.5\% at $160 \times 120 \times 40$ (Section~\ref{sect:results}\ref{sect:verification} and Fig.~\ref{fig:oceananigans_comparison}a--d).
-With the Gaussian bowl $H = 0.3 + 0.7\, e^{-2\rho^2}$ (with $\rho$ the elliptical radius) and a 0.3-deep coastal wall, the comparison is limited by the representation of the sloping bottom in the $z$-level model (Fig.~\ref{fig:oceananigans_comparison}e).
-With a stair-stepped bottom, the transport difference is 29\% at $80 \times 60 \times 40$ and grows to 58\% at $160 \times 120 \times 40$, as grid-scale noise at the steps, undamped without horizontal viscosity, grows.
+With a flat bottom of depth 0.65, \replaced[id=CR]{the differences in horizontal velocity and depth-integrated transport converge at about first order as the \texttt{Oceananigans.jl} grid is refined, to 1.1\% and 1.5\% at $160 \times 120 \times 40$, and the buoyancy difference falls to $3.5 \times 10^{-4}$, where it is limited by the 40 vertical levels}{the differences in buoyancy, horizontal velocity, and depth-integrated transport converge at about first order as the \texttt{Oceananigans.jl} grid is refined, to $3.5 \times 10^{-4}$, 1.1\%, and 1.5\% at $160 \times 120 \times 40$} (Section~\ref{sect:results}\ref{sect:verification} and Fig.~\ref{fig:oceananigans_comparison}a--d).
+With the Gaussian bowl $H = 0.3 + 0.7\, e^{-2\rho^2}$ (with $\rho$ the elliptical radius) \replaced[id=CR]{and a 0.40-deep coastal wall}{and a 0.3-deep coastal wall}, the comparison is limited by the representation of the sloping bottom in the $z$-level model (Fig.~\ref{fig:oceananigans_comparison}e).
+With a stair-stepped bottom, the transport difference is 29\% at $80 \times 60 \times 40$ \replaced[id=CR]{and rises to 58\% at $160 \times 120 \times 40$}{and grows to 58\% at $160 \times 120 \times 40$}, as grid-scale noise at the steps, undamped without horizontal viscosity, grows.
 Partial bottom cells reduce the difference to 18\%, and a weak horizontal viscosity of $10^{-4}$ reduces it to 7.6\%.
 The buoyancy differences are about 1\% in all these cases.
 On this basis, we presume that the PG solution is derived and coded accurately. 

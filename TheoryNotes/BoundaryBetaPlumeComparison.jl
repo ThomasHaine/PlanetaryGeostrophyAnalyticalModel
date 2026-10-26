@@ -15,7 +15,7 @@
 # as (-s)^{-3/2} exp(-|s| (1 - cos θ) / 2δ_S), with s the distance along C. The classical Ψ is the convolution of G_b
 # with Q over the source patch. The drag is λ = f0 δ_E / (2H), the deep limit
 # of the PG bottom stress, so there is no fitted parameter. β is small, so f,
-# and with it the Ekman drag, varies by only about ±7% over the domain.
+# and with it the Ekman drag, varies by less than about 10% over the domain.
 #
 # The PG basin is a box cut by C; the plume region is far from the other walls.
 # The PG streamfunction is integrated from the PG transport westward from the
@@ -155,7 +155,7 @@ function compare(θ)
     along, points = along[keep], points[keep]
     Ψ_line_pg = [interpolate_grid(x, y, Ψ_pg, p...) for p in points]
     Ψ_line_classical = [interpolate_grid(x, y, Ψ_classical, p...) for p in points]
-    # e-folding length down-plume, removing the (-s)^{-3/2} prefactor of the
+    # e-folding length down-plume, removing the d^{-3/2} prefactor (d = -s, the down-plume distance) of the
     # Haine and Fuller asymptote, where |Ψ| is above 1e-3 of its peak.
     fit = (along .< -1.5δ_S / (1 - cos(θ))) .& (abs.(Ψ_line_pg) .> 1e-3 * maximum(abs, Ψ_line_pg))
     efold(line) = sum(fit) > 5 ?
@@ -212,7 +212,7 @@ for c in cases
     plot!(b, first.(line), last.(line); color=:white, ls=:dot, label="")
     scale = maximum(abs, c.Ψ_line_classical)
     profile = plot(-c.along ./ δ_S, abs.(c.Ψ_line_pg) ./ scale; yscale=:log10, lw=2, color=:black,
-        label="PG", xlabel="distance down-plume, \$-s/\\delta_S\$", ylabel="\$|\\Psi| / \\max|\\Psi_{\\mathrm{HF}}|\$",
+        label="PG", xlabel="distance down-plume, \$d/\\delta_S\$", ylabel="\$|\\Psi| / \\max|\\Psi_{\\mathrm{HF}}|\$",
         title="along the line through the source, \$\\theta = $(degrees)^\\circ\$", legend=:bottomleft, style...)
     plot!(profile, -c.along ./ δ_S, abs.(c.Ψ_line_classical) ./ scale; lw=1.5, ls=:dash, color=1, label="Haine & Fuller")
     s_ref = -c.along[end÷2]
