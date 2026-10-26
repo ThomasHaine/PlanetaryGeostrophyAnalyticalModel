@@ -427,24 +427,28 @@ finite-element mass-conservation error (see
 
 ### Depth-integrated vorticity
 
-The depth-integrated vorticity diagnostic evaluates equation (41), generalized
-from the manuscript's beta plane to flexible $f(x,y)$:
+The depth-integrated vorticity (DIV) balance, equation (41), integrates the
+vorticity equation in the vertical:
 
 ```math
 U f_x + V f_y + f w_b
 =
-\mathrm{Ek}\,[\nabla\times(\boldsymbol{\tau}_b)]_z
-+ \mathrm{Ek}\,[\nabla\times\boldsymbol{\tau}]_z,
+\mathrm{Ek}\,[\nabla\times\boldsymbol{\tau}]_z
+- \mathrm{Ek}\,[\nu\,\partial_z\zeta]_{z=-H},
 ```
 
 where $w_b=-(u_bH_x+v_bH_y)$ follows from the bottom kinematic boundary
-condition. On a beta plane, $U f_x+V f_y=\beta V$. The plot shows these
-signed terms and the closure residual with one shared symmetric color scale.
-For sloping bathymetry, equation (41) requires the bottom vertical-vorticity
-flux with horizontal derivatives taken at fixed $z$. The diagnostic therefore
-corrects the curl of stress sampled along $z=-H(x,y)$ by
-$f w_b+J(p_b,H)$. Omitting this chain-rule correction gives a spuriously large
-DIV residual over topography, although the two curls coincide for flat depth.
+condition. With the resolved no-slip bottom boundary layer, $w_b=0$, and the
+viscous vorticity flux through the sloping sea floor is
+$\mathrm{Ek}\,[\nabla\times\boldsymbol{\tau}_b]_z + J(p_b,H)$ (equation 42),
+so the DIV balance is identical to the barotropic vorticity balance.
+`compute_vorticity_diagnostics` is therefore a thin alias for
+`compute_barotropic_vorticity_diagnostics`: it returns the BV planetary term,
+surface-stress curl, and residual, the bottom term $J(p_b,H) +
+\mathrm{Ek}\,[\nabla\times\boldsymbol{\tau}_b]_z$, and zero bottom stretching. The
+test suite checks that $f w_b$ vanishes. The pointwise
+`depth_integrated_vorticity_terms(solution, x, y)` still evaluates the terms
+separately, including the chain-rule correction $f w_b + J(p_b,H)$.
 
 ### Geostrophic-contour vorticity
 
