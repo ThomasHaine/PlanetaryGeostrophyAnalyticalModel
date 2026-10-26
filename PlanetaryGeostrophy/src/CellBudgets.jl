@@ -23,9 +23,7 @@ const CELL_AREA_TERMS = 2
 
 Quadrature for cell-averaged budgets: `edge_panels` composite Gauss--Legendre
 panels of `edge_points` nodes along each cell edge, and an
-`area_points × area_points` Gauss--Legendre rule over each cell. The bottom
-stretching `f w_b` uses the cell-centre value, because evaluating `u_b` needs
-a full velocity column; it vanishes under the no-slip condition (18).
+`area_points × area_points` Gauss--Legendre rule over each cell.
 """
 struct CellBudgetQuadrature
     edge_panels::Int
@@ -117,6 +115,8 @@ end
     bottom_stretching(solution, x, y)
 
 `f w_b` with `w_b = -(u_b H_x + v_b H_y)` from the bottom kinematic condition.
+It vanishes under the no-slip condition (18); the tests use it to check that
+the velocity at the sea floor is zero.
 """
 function bottom_stretching(solution::PGSolution, x, y)
     problem = solution.problem
@@ -244,7 +244,7 @@ function compute_cell_budget_samples(solution, diagnostics, q)
     end
 
     circulation = fill(NaN, nx, ny, CELL_EDGE_TERMS)
-    area = fill(NaN, nx, ny, CELL_AREA_TERMS + 1)
+    area = fill(NaN, nx, ny, CELL_AREA_TERMS)
     wet_values = fill(false, nx, ny)
     cells = [(i, j) for j in 2:ny-1, i in 2:nx-1 if candidate[i, j]]
     Threads.@threads for index in eachindex(cells)
@@ -255,13 +255,10 @@ function compute_cell_budget_samples(solution, diagnostics, q)
         xl, xr, yb, yt = xm[i-1], xm[i], ym[j-1], ym[j]
         integrals = cell_area_integral(solution, xl, xr, yb, yt, q)
         isnothing(integrals) && continue
-        stretching = evaluate_if_located(bottom_stretching, solution, x[i], y[j])
-        isnothing(stretching) && continue
         cell_area = (xr - xl) * (yt - yb)
         # Counter-clockwise: bottom (+x), right (+y), top (-x), left (-y).
         circulation[i, j, :] .= (bottom .+ right .- top .- left) ./ cell_area
-        area[i, j, 1:CELL_AREA_TERMS] .= integrals ./ cell_area
-        area[i, j, CELL_AREA_TERMS + 1] = stretching
+        area[i, j, :] .= integrals ./ cell_area
         wet_values[i, j] = true
     end
     return (; circulation, area, wet=BitMatrix(wet_values))
@@ -337,13 +334,13 @@ end
     compute_vorticity_diagnostics(solution, diagnostics;
         method=:cell_average, quadrature=CellBudgetQuadrature())
 
-Maps of the signed terms in the depth-integrated vorticity equation (41) and
-its closure residual, as cell averages by default. The fixed-`z` bottom
-vorticity flux is `Ek ∮ τ_b·t ds` (the curl following the seabed) plus the
-chain-rule correction `f w_b + J(p_b,H)`, with `J(p_b,H) = ∮ p_b ∇H·t ds`.
-`U f_x + V f_y` uses area quadrature and `f w_b` its cell-centre value. The residual equals the
-cell-averaged `-f ∇·U`, as for the BV balance. `method=:centered` gives the
-earlier centered-difference maps.
+The depth-integrated vorticity (DIV) balance (41). With the resolved no-slip
+bottom boundary layer, `w_b = -(u_b H_x + v_b H_y) = 0`, and the viscous
+vorticity flux through the sea floor equals `Ek ∇×τ_b + J(p_b,H)` (42), so the
+DIV balance is identical to the barotropic vorticity balance (38). This is
+therefore a thin alias for `compute_barotropic_vorticity_diagnostics`: the
+planetary term, surface-stress curl, and residual are those of the BV balance,
+the bottom term is `J(p_b,H) + Ek ∇×τ_b`, and the bottom stretching is zero.
 """
 function compute_vorticity_diagnostics(
     solution::PGSolution,
@@ -351,31 +348,13 @@ function compute_vorticity_diagnostics(
     method=:cell_average,
     quadrature::CellBudgetQuadrature=DEFAULT_CELL_BUDGET_QUADRATURE,
 )
-    check_budget_method(method)
-    method === :centered &&
-        return centered_vorticity_diagnostics(solution, diagnostics)
-    started = time()
-    samples = cell_budget_samples(solution, diagnostics; quadrature)
-    c, a = samples.circulation, samples.area
-    Ek = solution.problem.parameters.Ek
-    planetary = a[:, :, 1]
-    stretching = a[:, :, 3]
-    terrain_following_curl = Ek .* c[:, :, 5]
-    pressure_torque = c[:, :, 1]
-    bottom_curl = terrain_following_curl .+ stretching .+ pressure_torque
-    surface_curl = Ek .* c[:, :, 8]
-    residual = planetary .+ stretching .- bottom_curl .- surface_curl
-    # Normalize by the uncombined bottom terms, as the centered method does,
-    # because terrain-following curl and pressure torque largely cancel.
-    timings = budget_timings(
-        started, samples, residual,
-        (planetary, stretching, terrain_following_curl, pressure_torque,
-         surface_curl),
-    )
-    @info "Vorticity diagnostic calculation completed" method seconds=round(timings.total_seconds; digits=3) relative_l2_residual=round(timings.relative_l2_residual; sigdigits=4)
+    bv = compute_barotropic_vorticity_diagnostics(solution, diagnostics; method, quadrature)
+    stretching = fill(NaN, size(bv.wet))
+    stretching[bv.wet] .= 0.0
     return PGVorticityDiagnostics(
-        diagnostics.x, diagnostics.y, planetary, stretching, bottom_curl,
-        surface_curl, residual, copy(samples.wet), timings,
+        bv.x, bv.y, bv.planetary_vorticity_advection, stretching,
+        bv.bottom_pressure_torque .+ bv.bottom_stress_curl,
+        bv.surface_stress_curl, bv.residual, copy(bv.wet), bv.timings,
     )
 end
 
