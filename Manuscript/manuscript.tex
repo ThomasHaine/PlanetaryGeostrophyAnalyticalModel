@@ -80,7 +80,7 @@
 It recovers the Sverdrup--Stommel gyre, $\beta$ plumes in open water and beside a coast, and topographic steering, and quantifies the corrections to these classical results.
 The Ekman drag varies as $f^{1/2}$ for Coriolis parameter $f$, and the bottom Ekman layer of depth $\delta_E$ acts as a displacement thickness so that the flow follows $f/(H - \delta_E/2)$ contours, where $H$ is the water depth.
 \added[id=CL]{Steering by these contours fails where $H$ is less than one to two Ekman depths $\delta_E$.} 
-In a double basin joined by a strait, the integral constraint of N\o st and Isachsen on closed $f/H$ contours reproduces the bottom velocity to 3\% with the derived bottom stress, \added[id=CL]{but errs by more than 100\% with a calibrated isotropic drag.}
+In a double basin joined by a strait, the integral constraint of N\o st and Isachsen on closed $f/H$ contours \replaced[id=CR]{reproduces the bottom velocity to 4.5\% with the derived bottom stress, }{reproduces the bottom velocity to 3\% with the derived bottom stress, }\added[id=CL]{but errs by more than 100\% with a calibrated isotropic drag.}
 One adjoint sensitivity solve maps the forcing that sets the strait transport. 
 }
 
@@ -1221,13 +1221,13 @@ Cyclonic wind-stress cells over each bowl, a meridional surface-buoyancy gradien
 The steady circulation consists of two cyclonic gyres steered by the closed isobaths of each bowl, joined through the strait, where the meridional velocity is nearly uniform with depth down to the bed (Fig.~\ref{fig:double_basin_showcase}a, b).}
 
 \added[id=CL]{Table~\ref{tab:double_basin} lists the cost of each stage on 18 threads.
-The solve on a mesh of size 0.02 takes }\added[id=CL]{7~s}\added[id=CL]{, }\added[id=CL]{and the depth-integrated momentum balance and the three independent vorticity balances (BV, GCVB, and TDVB) take a further 15~s on a $65 \times 65$ diagnostic grid.}\added[id=CL]{
-The depth-integrated momentum balance closes to $10^{-5}$, and the cell-averaged vorticity balances to 3\%, the residual being set by the diagnostic grid (Section~\ref{sect:results}\ref{sect:verification}).}
+The solve on a mesh of size 0.02 takes }\added[id=CL]{7~s}\added[id=CL]{, }\added[id=CL]{and the depth-integrated momentum balance and the three independent vorticity balances (BV, GCVB, and TDVB) }\replaced[id=CR]{take a further 16~s on a $69 \times 69$ diagnostic grid that spans the basin.}{take a further 15~s on a $65 \times 65$ diagnostic grid.}\added[id=CL]{}\added[id=CL]{
+}\replaced[id=CR]{The depth-integrated momentum balance closes to $4 \times 10^{-6}$,}{The depth-integrated momentum balance closes to $10^{-5}$,}\added[id=CL]{ and the cell-averaged vorticity balances to 3\%, the residual being set by the diagnostic grid (Section~\ref{sect:results}\ref{sect:verification}).}
 
 \added[id=CL]{The solution also tests the integral constraint of \citet{nost&isachsen03}.
 On closed $f/H$ contours, the bottom geostrophic velocity follows from the forcing integrated over the enclosed area once a drag law is assumed.
-With a linear or quadratic isotropic drag, calibrated by least squares against the PG bottom stress itself, the predicted bottom velocity differs from the PG velocity by 103\% and 120\% (relative $L_2$, 2771 points), although the speeds remain correlated (0.92 and 0.88).
-With the drag derived from the PG bottom stress, }\added[id=CL]{$\tau_b^x + i \tau_b^y = S (\partial_x + i \partial_y) p_s + T$ (\ref{eqn:bottom_stress_ST_def})}\added[id=CL]{, which is rotated relative to the bottom velocity and includes the baroclinic and wind contributions, the same constraint reproduces the PG bottom velocity to 3\% (Fig.~\ref{fig:double_basin_showcase}c).
+With a linear or quadratic isotropic drag, calibrated by least squares against the PG bottom stress itself, the predicted bottom velocity differs from the PG velocity by 103\% and 120\% }\replaced[id=CR]{(relative $L_2$, 3008 points), although the speeds remain correlated (0.91 and 0.85).}{(relative $L_2$, 2771 points), although the speeds remain correlated (0.92 and 0.88).}\added[id=CL]{
+With the drag derived from the PG bottom stress, }\added[id=CL]{$\tau_b^x + i \tau_b^y = S (\partial_x + i \partial_y) p_s + T$ (\ref{eqn:bottom_stress_ST_def})}\added[id=CL]{, which is rotated relative to the bottom velocity and includes the baroclinic and wind contributions, }\replaced[id=CR]{the same constraint reproduces the PG bottom velocity to 4.5\% (Fig.}{the same constraint reproduces the PG bottom velocity to 3\% (Fig.}\added[id=CL]{~\ref{fig:double_basin_showcase}c).
 }\added[id=CL]{Because the derived stress is taken from the PG solution itself, this is a consistency check, but it suggests that the drag closure, not the integral constraint, limits the classical method.}\added[id=CL]{}
 
 \added[id=CL]{Finally, one adjoint solve of the surface-pressure equation gives the sensitivity of the northward transport through the strait }\added[id=CL]{to the wind stress and the restoring buoyancy everywhere (Fig.~\ref{fig:double_basin_showcase}d--f).}\added[id=CL]{
@@ -1235,21 +1235,21 @@ The adjoint identity holds to $10^{-14}$, }\added[id=CL]{and the adjoint solve a
 The kernels extend from the strait along the isobaths of the western slope and around the southern bowl, mapping the region whose forcing sets the strait transport.}
 
 \begin{table}
-\caption{\added[id=CL]{\label{tab:double_basin} Wall-clock times on 18 threads (Apple M5 Max) for the double basin of Fig.~\ref{fig:double_basin_showcase}, and the closure of each balance as the relative $L_2$ residual on the $65 \times 65$ diagnostic grid.}\added[id=CL]{ The DIV balance is identical to the BV balance (Section~\ref{sect:dynamical_balances}) and is not listed.}}
+\caption{\added[id=CL]{\label{tab:double_basin} Wall-clock times on 18 threads (Apple M5 Max) for the double basin of Fig.~\ref{fig:double_basin_showcase}, and the closure of each balance as the relative $L_2$ }\replaced[id=CR]{residual on the $69 \times 69$ diagnostic grid.}{residual on the $65 \times 65$ diagnostic grid.}\added[id=CL]{}\added[id=CL]{ The DIV balance is identical to the BV balance (Section~\ref{sect:dynamical_balances}) and is not listed.}}
 \centering
 \begin{tabular}{lcc}
 \hline
 Stage & Time (s) & Residual \\
 \hline
-PG solve, mesh 0.02 (153\,876 quadrature points) & \added[id=CL]{7.2} & \\
+PG solve, mesh 0.02 (153\,876 quadrature points) & \replaced[id=CR]{7.4}{7.2} & \\
 3-D sampling, $241 \times 3 \times 121$ points & 1.6 & \\
 Transport, bottom stress, and $\Psi$ & \added[id=CL]{5.4} & \\
-Depth-integrated momentum (DIM) & \added[id=CL]{0.5} & $1.0 \times 10^{-5}$ \\
-Barotropic vorticity (BV), cell averages & \added[id=CL]{11.6} & 0.034 \\
-Geostrophic-contour vorticity (GCVB) & 1.6 & 0.027 \\
+Depth-integrated momentum (DIM) & \replaced[id=CR]{0.6}{0.5} & \replaced[id=CR]{$3.6 \times 10^{-6}$}{$1.0 \times 10^{-5}$} \\
+Barotropic vorticity (BV), cell averages & \replaced[id=CR]{12.3}{11.6} & 0.034 \\
+Geostrophic-contour vorticity (GCVB) & 1.6 & \replaced[id=CR]{0.026}{0.027} \\
 Transport-divergence vorticity (TDVB) & 1.6 & 0.034 \\
 Nøst--Isachsen comparison & 1.6 & \\
-Adjoint sensitivity of the strait transport & \added[id=CL]{20.9} & \\
+Adjoint sensitivity of the strait transport & \replaced[id=CR]{21.5}{20.9} & \\
 \hline
 \end{tabular}
 \end{table}
@@ -1261,7 +1261,7 @@ Adjoint sensitivity of the strait transport & \added[id=CL]{20.9} & \\
 (a) Transport streamfunction $\Psi$, with isobaths $H = 0.4$, 0.8, and 1.2 (gray) and the strait section (gold).
 (b) Meridional velocity $v$ (color) and buoyancy $b$ (contours) in a zonal section at $y = 0$; the strait section is shaded.
 (c) Bottom speed on closed $f/H$ contours from the \citet{nost&isachsen03} integral constraint against the PG bottom speed, with an assumed linear drag calibrated against the PG bottom stress (gray) and with the drag derived from the PG bottom stress (blue); percentages are relative $L_2$ velocity differences.
-(d--f) Adjoint sensitivity of the northward strait transport to the local wind stress $\tau^x$ and $\tau^y$, and to the restoring buoyancy $B$ at $z = -0.5$; color scales are clipped at the 97th percentile of the magnitude.}\added[id=CL]{ Positive values mean that increasing the local forcing increases the northward transport. The kernels are sampled within 0.94 of the semi-axes of the basin.}\added[id=CL]{}}
+(d--f) Adjoint sensitivity of the northward strait transport to the local wind stress $\tau^x$ and $\tau^y$, and to the restoring buoyancy $B$ at $z = -0.5$; color scales are clipped at the 97th percentile of the magnitude.}\added[id=CL]{ Positive values mean that increasing the local forcing increases the northward transport.}\replaced[id=CR]{}{ The kernels are sampled within 0.94 of the semi-axes of the basin.}\added[id=CL]{}\added[id=CL]{}}
 \end{figure}
 
 % Added by Claude (CL): Section 6e, cost and dimensional parameters. Made by TheoryNotes/CostScaling.jl.
@@ -1336,7 +1336,7 @@ Third, a single length, $\ell = |\mathfrak{A}^r| / |\nabla \mathfrak{A}^i| \appr
 The $\ell$ formula yields Stommel's lengthscale $r/\beta$ on a flat $\beta$-plane, with $r = f \delta_E/(2H)$ the linear drag coefficient of Section~\ref{sect:results}\ref{sect:kernels}, and $\delta_E/(2|\nabla H|)$ over a slope.
 }\added[id=CL]{Along coasts parallel to the steering flow, the same scaling suggests that frictional layers instead widen as $\sqrt{\ell d}$ with along-coast distance $d$, as a diffusing tracer does; this was not tested here.}\added[id=CL]{
 }\added[id=CL]{Fourth, the deep-water layer coefficients are accurate where the water is deeper than about three Ekman depths, although a layer model built on them errs by several percent until $s \gtrsim 5$--7;}\added[id=CL]{ }\added[id=CL]{where it is shallower than one to two,}\added[id=CL]{ the Ekman layers overlap, the transport becomes a lubrication flow down the pressure gradient, and $f/H$ contours no longer guide it.
-The double basin shows the practical consequence: the integral constraint of \citet{nost&isachsen03} }\added[id=CL]{reproduces the bottom velocity on closed $f/H$ contours to 3\% with the derived bottom stress (a consistency check, since that stress is taken from the PG solution itself), }\added[id=CL]{}\added[id=CL]{but errs by more than 100\% with an isotropic drag}\added[id=CL]{ calibrated against the same stress (Section~\ref{sect:results}\ref{sect:double_basin}).}
+The double basin shows the practical consequence: the integral constraint of \citet{nost&isachsen03} }\added[id=CL]{}\replaced[id=CR]{reproduces the bottom velocity on closed $f/H$ contours to 4.5\% with the derived bottom stress}{reproduces the bottom velocity on closed $f/H$ contours to 3\% with the derived bottom stress}\added[id=CL]{ (a consistency check, since that stress is taken from the PG solution itself), }\added[id=CL]{}\added[id=CL]{but errs by more than 100\% with an isotropic drag}\added[id=CL]{ calibrated against the same stress (Section~\ref{sect:results}\ref{sect:double_basin}).}
 
 \added[id=CL]{The solution has limitations, each of which involves some excluded physics.
 Buoyancy is not advected, so the density field is prescribed through the restoring field $B$ and the surface buoyancy $b_s$.
