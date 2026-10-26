@@ -209,7 +209,7 @@ function fast_buoyancy(p, H, B, bs_value, x, y, z, q::ColumnQuadrature, panels)
         -H, 0.0, z, q, left, right,
     )
     return -p.Γ / p.Ek * interior +
-           VFP.dGb_dξ_at_surface(z, H, p.κ, ψvalue) * bs_value
+           VFP.surface_buoyancy_kernel(z, H, p.κ, ψvalue) * bs_value
 end
 
 """

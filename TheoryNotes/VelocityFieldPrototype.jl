@@ -109,6 +109,10 @@ function dGb_dξ_at_surface(z, H, κ, ψ)
            (κ * (1 + exp(-2 * ψ * H)))
 end
 
+# The surface-buoyancy kernel κ(0) ∂_ξ G_b(z; ξ)|_{ξ=0} of (52). The κ(0) is the
+# Green's-identity boundary term, so b(0) = b_s for any uniform κ.
+surface_buoyancy_kernel(z, H, κ, ψ) = κ * dGb_dξ_at_surface(z, H, κ, ψ)
+
 """
     buoyancy_from_forcing(p, H, B, bs, x, y, z)
 
@@ -124,7 +128,7 @@ function buoyancy_from_forcing(p, Hfun, B, bs, x, y, z)
         -H, 0.0, (z,),
     )
     return -p.Γ / p.Ek * interior +
-           dGb_dξ_at_surface(z, H, p.κ, ψvalue) * bs(x, y)
+           surface_buoyancy_kernel(z, H, p.κ, ψvalue) * bs(x, y)
 end
 
 function Gu_integral(z, H, ν, φ)
@@ -156,7 +160,7 @@ function Pi_direct(p, Hfun, b, bs, x, y, ξ)
     bsolution(zp) = -p.Γ / p.Ek *
         split_quadgk(ξp -> Gb(zp, ξp, H, p.κ, ψvalue) * b(x, y, ξp),
                       -H, 0.0, (zp,)) +
-        dGb_dξ_at_surface(zp, H, p.κ, ψvalue) * bs(x, y)
+        surface_buoyancy_kernel(zp, H, p.κ, ψvalue) * bs(x, y)
     return split_quadgk(bsolution, ξ, 0.0, ())
 end
 
@@ -203,17 +207,20 @@ end
 
 Load the analytical kernels exported by `ComputeQuadratures.ipynb`. Run that
 notebook first if the generated kernel source needs to be regenerated.
+
+The generated `_xi` kernels integrate `∂_ξ G_b|_{ξ=0}`, which carries `1/κ`;
+they are multiplied here by κ(0) = κ, the surface factor in (52).
 """
 function load_symbolic_kernels()
     return SymbolicKernels(
         (H, z, ξp, φ, ψ, κ, ν) -> generated_guvb(H, ψ, ξp, φ, z, κ, ν),
-        (H, z, φ, ψ, κ, ν) -> generated_guvb_xi(H, z, φ, ψ, κ, ν),
+        (H, z, φ, ψ, κ, ν) -> κ * generated_guvb_xi(H, z, φ, ψ, κ, ν),
         (H, z, ξp, φ, ψ, κ, ν, β, f, H_y) ->
             generated_guv_y_b(H, z, ξp, φ, ψ, κ, ν, β, f, H_y),
         (H, z, φ, ψ, κ, ν, β, f, H_y) ->
-            generated_guv_y_b_xi(H, z, φ, ψ, κ, ν, β, f, H_y),
+            κ * generated_guv_y_b_xi(H, z, φ, ψ, κ, ν, β, f, H_y),
         (ξ, ξp, H, ψ, κ) -> generated_inner_gb(H, ξ, ξp, ψ, κ),
-        (ξ, H, ψ, κ) -> generated_inner_gb_xi(H, ξ, ψ, κ),
+        (ξ, H, ψ, κ) -> κ * generated_inner_gb_xi(H, ξ, ψ, κ),
     )
 end
 
