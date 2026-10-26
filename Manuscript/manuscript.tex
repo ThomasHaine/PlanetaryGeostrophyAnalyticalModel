@@ -1097,7 +1097,7 @@ $h$ & $p_s$ & $\mathbf{U}$ & $\boldsymbol{\tau}_b$ & $\mathbf{u}(-H/2)$ & $\Psi$
 \paragraph{Dynamical balances.}
 The depth-integrated momentum balance (\ref{eqn:U_mom})--(\ref{eqn:V_mom}) holds pointwise, because the column solution satisfies the momentum equations exactly.
 Evaluated with centered differences of step $10^{-5}$ for $\nabla p_b$ and $\nabla \chi$, its relative residual is about \added[id=CL]{$10^{-5}$} in the double basin\added[id=CL]{ of Section~\ref{sect:results}\ref{sect:double_basin}, two deep bowls on an $f$-plane joined by a strait, with a shelf only four Ekman depths deep (Fig.~\ref{fig:double_basin_showcase})}.
-The vorticity balances (\ref{eqn:BVE}), (\ref{eqn:DIV}), (\ref{eqn:GCVB}), and (\ref{eqn:TDVB}) are curls of that balance, so they also hold exactly for the continuous fields.
+The vorticity balances (\ref{eqn:BVE}), (\ref{eqn:DIV}), (\ref{eqn:GCVB}), and (\ref{eqn:TDVB}) are curls of that balance, so they also hold exactly for the continuous fields.\added[id=CR]{ For the present model the DIV balance is identical to the BV balance (Section~\ref{sect:dynamical_balances}), so it is not mapped separately.}
 Mapping them requires care, however.
 They act on the bottom stress and transport, which contain $\nabla p_s$, and with continuous Lagrange elements $\nabla p_s$ is discontinuous across element edges.
 Centered differences of these fields therefore do not converge: their relative residual stays at 0.95--1.04 for every mesh in Fig.~\ref{fig:verification_convergence}b, and at \added[id=CL]{0.73--1.0} on every diagnostic grid in the double basin\added[id=CL]{, from $17 \times 17$ to $129 \times 129$}.
@@ -1222,7 +1222,7 @@ Cyclonic wind-stress cells over each bowl, a meridional surface-buoyancy gradien
 The steady circulation consists of two cyclonic gyres steered by the closed isobaths of each bowl, joined through the strait, where the meridional velocity is nearly uniform with depth down to the bed (Fig.~\ref{fig:double_basin_showcase}a, b).}
 
 \added[id=CL]{Table~\ref{tab:double_basin} lists the cost of each stage on 18 threads.
-The solve on a mesh of size 0.02 takes 8~s, and all five dynamical balances of Table~\ref{tab:dynamical_balances} take a further 19~s on a $65 \times 65$ diagnostic grid.
+The solve on a mesh of size 0.02 takes 8~s, }\replaced[id=CR]{and the depth-integrated momentum balance and the three independent vorticity balances (BV, GCVB, and TDVB) take a further 17~s on a $65 \times 65$ diagnostic grid.}{and all five dynamical balances of Table~\ref{tab:dynamical_balances} take a further 19~s on a $65 \times 65$ diagnostic grid.}\added[id=CL]{
 The depth-integrated momentum balance closes to $10^{-5}$, and the cell-averaged vorticity balances to 3\%, the residual being set by the diagnostic grid (Section~\ref{sect:results}\ref{sect:verification}).}
 
 \added[id=CL]{The solution also tests the integral constraint of \citet{nost&isachsen03}.
@@ -1236,7 +1236,7 @@ The adjoint identity holds to $10^{-14}$, }\added[id=CL]{and the adjoint solve a
 The kernels extend from the strait along the isobaths of the western slope and around the southern bowl, mapping the region whose forcing sets the strait transport.}
 
 \begin{table}
-\caption{\added[id=CL]{\label{tab:double_basin} Wall-clock times on 18 threads (Apple M5 Max) for the double basin of Fig.~\ref{fig:double_basin_showcase}, and the closure of each balance as the relative $L_2$ residual on the $65 \times 65$ diagnostic grid.}}
+\caption{\added[id=CL]{\label{tab:double_basin} Wall-clock times on 18 threads (Apple M5 Max) for the double basin of Fig.~\ref{fig:double_basin_showcase}, and the closure of each balance as the relative $L_2$ residual on the $65 \times 65$ diagnostic grid.}\added[id=CR]{ The DIV balance is identical to the BV balance (Section~\ref{sect:dynamical_balances}) and is not listed.}}
 \centering
 \begin{tabular}{lcc}
 \hline
@@ -1247,7 +1247,7 @@ PG solve, mesh 0.02 (153\,876 quadrature points) & 7.7 & \\
 Transport, bottom stress, and $\Psi$ & 5.6 & \\
 Depth-integrated momentum (DIM) & 0.6 & $1.0 \times 10^{-5}$ \\
 Barotropic vorticity (BV), cell averages & 13.2 & 0.034 \\
-Depth-integrated vorticity (DIV) & 2.0 & 0.034 \\
+\deleted[id=CR]{Depth-integrated vorticity (DIV)} & \deleted[id=CR]{2.0} & \deleted[id=CR]{0.034} \\
 Geostrophic-contour vorticity (GCVB) & 1.6 & 0.027 \\
 Transport-divergence vorticity (TDVB) & 1.6 & 0.034 \\
 Nøst--Isachsen comparison & 1.6 & \\
