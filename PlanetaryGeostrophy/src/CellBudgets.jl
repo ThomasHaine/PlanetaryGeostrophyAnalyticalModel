@@ -1,6 +1,6 @@
 # Cell-averaged (control-volume) vorticity budgets.
 #
-# The curls and Jacobians in the BV (36), DIV (41), GCVB (43), and TDVB (47)
+# The curls and Jacobians in the BV (36), DIV (41), GCVB (44), and TDVB (48)
 # balances act on fields that contain the finite-element surface-pressure
 # gradient. That gradient is discontinuous across element edges, so pointwise
 # or grid finite differences of the bottom stress or transport are not
@@ -362,7 +362,7 @@ end
     compute_geostrophic_contour_vorticity_diagnostics(solution, diagnostics;
         method=:cell_average, quadrature=CellBudgetQuadrature())
 
-Maps of the signed terms in the geostrophic-contour vorticity balance (43) and
+Maps of the signed terms in the geostrophic-contour vorticity balance (44) and
 its closure residual, as cell averages by default. `J(f/H,Ψ) = -U·∇(f/H)` uses
 area quadrature with the analytical transport. JEBAR is
 `J(1/H,χ) = ∮ χ ∇H·t / H² ds`, and the stress terms are `Ek ∮ (τ/H)·t ds`.
@@ -403,7 +403,7 @@ end
     compute_transport_divergence_vorticity_diagnostics(solution, diagnostics;
         method=:cell_average, quadrature=CellBudgetQuadrature())
 
-Maps of the signed terms in the transport-divergence vorticity balance (47)
+Maps of the signed terms in the transport-divergence vorticity balance (48)
 and its closure residual, as cell averages by default:
 `J(p_b,H/f) = ∮ p_b ∇(H/f)·t ds`, `J(χ,1/f) = ∮ χ ∇(1/f)·t ds`, and the stress
 terms are `Ek ∮ (τ/f)·t ds`. The residual equals the cell-averaged `-∇·U`.

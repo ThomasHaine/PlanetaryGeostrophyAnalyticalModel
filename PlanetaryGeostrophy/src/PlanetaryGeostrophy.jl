@@ -238,8 +238,8 @@ Generate or reuse a surface mesh, solve the Gridap surface-pressure equation,
 and construct callable Green-function solutions for buoyancy and horizontal
 velocity.
 
-`method=:fast` (the default) evaluates the transport forcing (69),
-bottom-stress forcing (65), velocity (B5), and buoyancy (51) as single
+`method=:fast` (the default) evaluates the transport forcing (70),
+bottom-stress forcing (66), velocity (B5), and buoyancy (52) as single
 vertical integrals with the fixed rule `quadrature`. Node and column work is
 threaded, so start Julia with `-t auto`. `forcing_assembly=:quadrature`
 evaluates `𝔅` at every finite-element quadrature point; `:nodal` interpolates
@@ -418,7 +418,7 @@ end
     bottom_stress(solution, x, y)
 
 Evaluate the non-dimensional bottom stress, including surface-pressure,
-buoyancy, and wind-stress contributions, using equations (63)--(65).
+buoyancy, and wind-stress contributions, using equations (64)--(66).
 """
 function bottom_stress(solution::PGSolution, x, y)
     H = require_water(solution, x, y)
@@ -1301,7 +1301,7 @@ end
 """
     geostrophic_contour_vorticity_terms(solution, x, y)
 
-Evaluate every signed term in the geostrophic-contour vorticity balance (43),
+Evaluate every signed term in the geostrophic-contour vorticity balance (44),
 
 `J(f/H, Ψ) = J(1/H, χ) - Ek curl((τ + τ_b)/H)`.
 
@@ -1361,7 +1361,7 @@ end
 """
     transport_divergence_vorticity_terms(solution, x, y)
 
-Evaluate every signed term in the transport-divergence vorticity balance (47),
+Evaluate every signed term in the transport-divergence vorticity balance (48),
 
 `0 = J(p_b, H/f) + J(χ, 1/f) + Ek curl((τ + τ_b)/f)`.
 
@@ -2806,7 +2806,7 @@ end
 Centered-difference form of `compute_geostrophic_contour_vorticity_diagnostics(...; method=:centered)`.
 
 Compute maps of all signed terms in the geostrophic-contour vorticity balance
-(43), together with its closure residual. Gradients of `f/H` and `1/H` use
+(44), together with its closure residual. Gradients of `f/H` and `1/H` use
 the specified analytical derivatives of `f` and `H`. The JEBAR and
 bottom-stress derivatives use centered diagnostic-grid differences, with
 bottom stress sampled from its continuous finite-element interpolant. The
@@ -2933,7 +2933,7 @@ end
 Centered-difference form of `compute_transport_divergence_vorticity_diagnostics(...; method=:centered)`.
 
 Compute maps of all signed terms in the transport-divergence vorticity balance
-(47), together with its closure residual. Gradients of `H/f` and `1/f` use
+(48), together with its closure residual. Gradients of `H/f` and `1/f` use
 the specified analytical derivatives of `H` and `f`. Bottom-pressure,
 baroclinic-potential-energy, and bottom-stress derivatives use centered
 diagnostic-grid differences, with bottom stress sampled from its continuous
@@ -3980,7 +3980,7 @@ end
     )
 
 Plot every signed term and the closure residual in the geostrophic-contour
-vorticity balance (43). The two stress panels include the equation's minus
+vorticity balance (44). The two stress panels include the equation's minus
 sign, so the first panel equals the sum of panels two through four. All
 physical terms and the residual share symmetric color limits.
 """
@@ -4039,7 +4039,7 @@ end
     )
 
 Plot every signed term and the closure residual in the transport-divergence
-vorticity balance (47). The four physical panels sum to zero, apart from the
+vorticity balance (48). The four physical panels sum to zero, apart from the
 reported residual. All physical terms and the residual share symmetric color
 limits.
 """
