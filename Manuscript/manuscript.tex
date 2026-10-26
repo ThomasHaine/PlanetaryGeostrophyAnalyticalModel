@@ -934,7 +934,9 @@ For deep water ($s \gg 1$), $\mathfrak{A} \rightarrow [-\delta_E/2 + i(H - \delt
 % relative errors of the deep limits at s = 1, 2, 3, 5 that are quoted below.
 The depth-integrated flow is then the geostrophic transport over an effective depth $H - \delta_E/2$, plus a down-gradient bottom Ekman transport with diffusivity $\delta_E/(2f)$.
 In other words, the surface pressure is advected along contours of $f/(H - \delta_E/2)$ and the bottom Ekman layer acts as a displacement thickness that modifies the classical $f/H$ steering (panel a).
-The bottom-stress coefficient tends to $\mathrm{Ek}\,S \rightarrow \delta_E (1 - i)/2$, a linear drag rotated by $45^\circ$ (panels d, e), and the surface stress reaches the bed with weight $2e^{-s}$ (panel f).
+The bottom-stress coefficient tends to $\mathrm{Ek}\,S \rightarrow \delta_E (1 - i)/2$.
+Its real part, $\delta_E / 2$, is the Stommel drag; the full coefficient is rotated by $45^\circ$ (panels d, e) and $\sqrt{2}$ larger.
+The surface stress reaches the bed with magnitude $2e^{-s}$ (panel f).
 These deep limits are accurate to better than 0.5\% for $s \geq 3$, the steering one to 0.15\% already at $s = 2$.
 They reproduce classical Ekman-layer theory, including the linear bottom-drag coefficient $r = f \delta_E/(2H)$ of \citet{stommel48}.
 For shallow water ($s \ll 1$), the Ekman layers overlap and $\mathfrak{A} \approx -H^3/(3\mathrm{Ek}) + i\,2 f H^5/(15\mathrm{Ek}^2)$.
@@ -1231,7 +1233,8 @@ The solution has been verified against independent implementations of the column
 
 \added[id=CL]{The exact coefficients also sharpen several classical rules of thumb }\added[id=CL]{(Sections~\ref{sect:results}\ref{sect:kernels} and \ref{sect:results}\ref{sect:classical_limits})}\added[id=CL]{.
 First, the depth-integrated flow is steered along contours of $f/(H - \delta_E/2)$ rather than $f/H$, because the bottom Ekman layer acts as a displacement thickness; in the topographic steering test this correction reduces the error of the layer model from 2\% to 0.2\% at $s = H/\delta_E = 50$.
-Second, the bottom drag is not a free parameter: in deep water it is the linear drag $f \delta_E/(2H)$ of \citet{stommel48}, rotated by $45^\circ$, and it varies with latitude as $f^{1/2}$, which accounts for much of the difference between the PG solutions and the classical Stommel gyre and $\beta$ plume.
+Second, the bottom drag is not a free parameter: in deep water its in-phase part is the linear drag $f \delta_E/(2H)$ of \citet{stommel48}, and the full drag is $\sqrt{2}$ larger and rotated by $45^\circ$. 
+The $f^{1/2}$ dependence accounts for much of the difference between the PG solutions and the classical Stommel gyre and $\beta$ plume.
 Third, a single length, $\ell = |\mathfrak{A}^r| / |\nabla \mathfrak{A}^i| \approx \delta_E / \left[ 2 f \left| \nabla (H/f) \right| \right]$ for deep water $H \gg \delta_E$, namely, the ratio of the frictional diffusivity to the steering speed in the surface-pressure equation (\ref{eqn:ps}), }\added[id=CL]{sets, by the usual advection--diffusion boundary-layer scaling, the width of the frictional layer where the steering flow meets a coast, consistent with the western boundary layers of Section~\ref{sect:results}\ref{sect:classical_limits}.}\added[id=CL]{
 The $\ell$ formula yields Stommel's lengthscale $r/\beta$ on a flat $\beta$-plane, with $r = f \delta_E/(2H)$ the linear drag coefficient of Section~\ref{sect:results}\ref{sect:kernels}, and $\delta_E/(2|\nabla H|)$ over a slope.
 }\added[id=CL]{Along coasts parallel to the steering flow, the same scaling suggests that frictional layers instead widen as $\sqrt{\ell d}$ with along-coast distance $d$, as a diffusing tracer does; this was not tested here.}\added[id=CL]{
