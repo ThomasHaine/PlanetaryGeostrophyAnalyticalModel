@@ -1222,7 +1222,7 @@ Cyclonic wind-stress cells over each bowl, a meridional surface-buoyancy gradien
 The steady circulation consists of two cyclonic gyres steered by the closed isobaths of each bowl, joined through the strait, where the meridional velocity is nearly uniform with depth down to the bed (Fig.~\ref{fig:double_basin_showcase}a, b).}
 
 \added[id=CL]{Table~\ref{tab:double_basin} lists the cost of each stage on 18 threads.
-The solve on a mesh of size 0.02 takes 8~s, }\replaced[id=CR]{and the depth-integrated momentum balance and the three independent vorticity balances (BV, GCVB, and TDVB) take a further 17~s on a $65 \times 65$ diagnostic grid.}{and all five dynamical balances of Table~\ref{tab:dynamical_balances} take a further 19~s on a $65 \times 65$ diagnostic grid.}\added[id=CL]{
+The solve on a mesh of size 0.02 takes }\replaced[id=CR]{7~s}{8~s}\added[id=CL]{, }\replaced[id=CR]{and the depth-integrated momentum balance and the three independent vorticity balances (BV, GCVB, and TDVB) take a further 15~s on a $65 \times 65$ diagnostic grid.}{and all five dynamical balances of Table~\ref{tab:dynamical_balances} take a further 19~s on a $65 \times 65$ diagnostic grid.}\added[id=CL]{
 The depth-integrated momentum balance closes to $10^{-5}$, and the cell-averaged vorticity balances to 3\%, the residual being set by the diagnostic grid (Section~\ref{sect:results}\ref{sect:verification}).}
 
 \added[id=CL]{The solution also tests the integral constraint of \citet{nost&isachsen03}.
@@ -1242,16 +1242,16 @@ The kernels extend from the strait along the isobaths of the western slope and a
 \hline
 Stage & Time (s) & Residual \\
 \hline
-PG solve, mesh 0.02 (153\,876 quadrature points) & 7.7 & \\
+PG solve, mesh 0.02 (153\,876 quadrature points) & \replaced[id=CR]{7.2}{7.7} & \\
 3-D sampling, $241 \times 3 \times 121$ points & 1.6 & \\
-Transport, bottom stress, and $\Psi$ & 5.6 & \\
-Depth-integrated momentum (DIM) & 0.6 & $1.0 \times 10^{-5}$ \\
-Barotropic vorticity (BV), cell averages & 13.2 & 0.034 \\
+Transport, bottom stress, and $\Psi$ & \replaced[id=CR]{5.4}{5.6} & \\
+Depth-integrated momentum (DIM) & \replaced[id=CR]{0.5}{0.6} & $1.0 \times 10^{-5}$ \\
+Barotropic vorticity (BV), cell averages & \replaced[id=CR]{11.6}{13.2} & 0.034 \\
 \deleted[id=CR]{Depth-integrated vorticity (DIV)} & \deleted[id=CR]{2.0} & \deleted[id=CR]{0.034} \\
 Geostrophic-contour vorticity (GCVB) & 1.6 & 0.027 \\
 Transport-divergence vorticity (TDVB) & 1.6 & 0.034 \\
 Nøst--Isachsen comparison & 1.6 & \\
-Adjoint sensitivity of the strait transport & 21.1 & \\
+Adjoint sensitivity of the strait transport & \replaced[id=CR]{20.9}{21.1} & \\
 \hline
 \end{tabular}
 \end{table}
