@@ -464,7 +464,7 @@ U \partial_x f + V \partial_y f + f  w|_{z = -H} & = {\color{blue}\mathrm{Ek} \,
 \end{align}
 (\citealt{pedlosky96} Eq.~(1.2.15); \citealt{waldman&giordani23} Eq.~(4))\added[id=CL]{, where $\left[ \cdot \right]_{z=-H}$ denotes evaluation at the sea floor after the horizontal derivatives in $\zeta$ have been taken at fixed $z$}.
 % Also Bogden et al. (1993)
-This depth-integrated vorticity (DIV) equation is a balance between advection of planetary vorticity \replaced[id=CR]{by the depth-integrated flow}{by the depth integrated flow}, vortex stretching\added[id=CL]{ at the sea floor, and the viscous fluxes of relative vorticity through the surface and the sea floor.}
+This depth-integrated vorticity (DIV) equation is a balance between advection of planetary vorticity \added[id=CL]{by the depth-integrated flow}, vortex stretching\added[id=CL]{ at the sea floor, and the viscous fluxes of relative vorticity through the surface and the sea floor.}
 \added[id=CL]{Two features of the present problem simplify it.
 First, the no-slip condition (\ref{eqn:bot_uv_bc}) and the kinematic condition $w|_{z=-H} = -\left( u \, \partial_x H + v \, \partial_y H \right)|_{z=-H}$ give $w|_{z=-H} = 0$, so there is no vortex stretching at the sea floor.
 Second, the bottom term is not the curl of the bottom stress, because the curl does not commute with evaluation on the sloping sea floor $z = -H(x,y)$.
@@ -507,7 +507,7 @@ Equation (\ref{eqn:GCVB}) is called the (linear, time-independent) geostrophic c
 The first term on the right hand side $J(1/H, \chi)$ is called the joint effect of baroclinicity and relief (JEBAR) term \citep{sarkisyan&ivanov71}.
 
 The GCVB (\ref{eqn:GCVB}) is an equation for the streamfunction of the depth-integrated flow $\Psi$ given the buoyancy field (and hence the JEBAR term) and the surface and bottom stresses.
-The GCVB shows how depth-integrated flow $\Psi$ across $f/H$ contours is driven by (i) the interaction between baroclinic potential energy and topography (JEBAR), \replaced[id=CR]{(ii) the curl of wind stress divided by $H$, and (iii) the curl of the bottom stress}{(ii) the curl of wind stress divided by $H$, (iii) curl of the bottom stress} divided by $H$.
+The GCVB shows how depth-integrated flow $\Psi$ across $f/H$ contours is driven by (i) the interaction between baroclinic potential energy and topography (JEBAR), \added[id=CL]{(ii) the curl of wind stress divided by $H$, and (iii) the curl of the bottom stress} divided by $H$.
 
 Consider integrating (\ref{eqn:GCVB}) over the area $R$ enclosed by a $q = f/H$ contour. 
 \added[id=CL]{The integral of the $J(f/H, \Psi)$ term then identically equals zero} and application of Stokes' theorem gives
@@ -573,7 +573,7 @@ It includes the Sverdrup balance and the $\beta$-plume as special cases.
 
 The robust diagnostic approach defined in Sections \ref{sect:introduction} and \ref{sect:equations}\ref{sect:dim_eqns} requires the relaxation field $B$ and the surface field $b_s$ from which the full buoyancy field $b$ is computed.
 That computation requires solving the differential equation for $b$, which is achieved in this section with an analytical formula.
-\replaced[id=CR]{The method is a prototype for the solution of the PG equations}{The method is prototypical for the method to solve the PG equations} in Section \ref{sect:PG_soln}.
+\added[id=CL]{The method is a prototype for the solution of the PG equations} in Section \ref{sect:PG_soln}.
 
 \added[id=CL]{For time-independent flow, negligible buoyancy advection ($\mathrm{Pr}\,\mathrm{Bu} \ll 1$ in (\ref{eqn:b})), and small aspect ratio,} the buoyancy equation (\ref{eqn:b}), (\ref{eqn:top_b_bc}), (\ref{eqn:bot_b_bc}) reads:
 \begin{align}
@@ -586,7 +586,7 @@ for buoyancy profile $B(x,y,z)$, relaxation coefficient $\Gamma $, surface buoya
 % See also: Notes on bottom buoyancy BC.tex
 } 
 Strictly, the surface boundary condition applies at $z = \eta$, but as $|\eta| \ll 1$ (equivalently, the dimensional surface height is very small compared to $H_0$), it is applied at $z = 0$.
-The boundary and internal buoyancy sources \replaced[id=CR]{allow non-trivial time-independent solutions.}{allow for time-independent solutions that have non-trivial solutions.}
+The boundary and internal buoyancy sources \added[id=CL]{allow non-trivial time-independent solutions.}
 %(the $t\rightarrow \infty$ solution to (\ref{eqn:b})--(\ref{eqn:bot_b_bc}) is vanishing $b$ everywhere; the \citealt{peterson&callies26} solutions are transient, relaxing to zero).
 This problem (\ref{eqn:steady_vertical_b})--(\ref{eqn:simple_bot_b_bc}) is solved exactly by
 % See BuoyancyEquationSolution.ipynb #1.4
@@ -621,7 +621,7 @@ This weighting operation ensures that $b$ satisfies the original buoyancy equati
 This section solves the frictional geostrophic equations by following the approach in Section \ref{sect:b_solution}.
 It relates to textbook Ekman theory \citep{ekman05,greenspan90,salmon98,vallis06}, which invokes asymptotic expansions in small Ekman number.
 The results here are exact, however, and include a water column of finite and variable depth,  buoyancy effects, and resolved surface and bottom Ekman layers.
-Exact results are attainable in the present system because (i) viscous effects only apply in the vertical direction, \replaced[id=CR]{and (ii) resolution of the bottom Ekman layer permits}{(ii) resolution of the bottom Ekman layer permits} the specification of vanishing flow at the sloping sea floor.
+Exact results are attainable in the present system because (i) viscous effects only apply in the vertical direction, \added[id=CL]{and (ii) resolution of the bottom Ekman layer permits} the specification of vanishing flow at the sloping sea floor.
 % No restriction on bottom slope if bottom bc is no flow (right?)
 These conditions imply that the momentum equations can be solved at each horizontal position independently, given the surface pressure gradient.
 The surface pressure gradient itself satisfies a two-dimensional differential equation, which is derived at the end of this section.
@@ -827,7 +827,7 @@ where the real and imaginary parts of functions $\mathfrak{A}$ and $\mathfrak{B}
 This is a forced advection-diffusion equation for the surface pressure: $p_s$ is advected by a (non-divergent) velocity $(\partial_y \mathfrak{A}^i, -\partial_x \mathfrak{A}^i)$ \added[id=CL]{(or, equivalently, by the streamfunction $-\mathfrak{A}^i$), diffused down-gradient with the positive diffusivity $-\mathfrak{A}^r$,} and forced with the convergence of the $(\mathfrak{B}^r, \mathfrak{B}^i)$ field.
 Eq.~(\ref{eqn:A_fn}) shows that one part of $\mathfrak{A}^i$ is $H /f$ (recall that $\varphi^2 = i f / \mathrm{Ek}$), indicating advection of $p_s$ along $f/H$ contours, as expected.
 \added[id=CL]{Once $p_s$ is known, the equation (\ref{eqn:streamfunction_pde}) for the streamfunction of the depth-integrated flow is a Poisson equation.}
-\replaced[id=CR]{This extends the GCVB (Eq.~(}{This extends the GCVB (eq.~(}\ref{eqn:GCVB})) because it has explicitly included the bottom stress by solving the frictional geostrophic equation.
+\added[id=CL]{This extends the GCVB (Eq.~(}\ref{eqn:GCVB})) because it has explicitly included the bottom stress by solving the frictional geostrophic equation.
 
 
 \Claude{ The surface pressure equation (\ref{eqn:ps}) requires a boundary condition at the coast.
@@ -860,7 +860,7 @@ A simpler Dirichlet condition such as $p_s = 0$ removes only the geostrophic par
 Examples of buoyancy solutions $b$ and buoyancy Green's functions $G_b$ are plotted in Figure \ref{fig:buoyancy_solutions}.
 Two Ekman numbers are shown ($\mathrm{Ek} =$ 0.25 and 0.025), according to the row of the subplot, and $H = \Gamma = \kappa = 1$ (so $\psi = \mathrm{Ek}^{-1/2}$ here).
 Four example $b$ profiles are shown for combinations of $b_s = 0$ and $b_s = 0.1$, and $B(z) = z$ and $B(z) = \mathrm{e}^{ 4 z/H} - 1$ (the $B(z)$ relaxation profiles are also plotted in Figure \ref{fig:buoyancy_solutions}a, c).
-The $b$ solutions match the $b_s$ surface value \replaced[id=CR]{and the no-flux bottom boundary condition}{and the no flux bottom boundary condition} (\ref{eqn:simple_bot_b_bc}).
+The $b$ solutions match the $b_s$ surface value \added[id=CL]{and the no-flux bottom boundary condition} (\ref{eqn:simple_bot_b_bc}).
 They are drawn towards the $B(z)$ profiles, especially for small $\mathrm{Ek}$, as expected from the buoyancy equation (\ref{eqn:steady_vertical_b}).
 The $b$ profiles smoothly interpolate between these constraints.
 Figure \ref{fig:buoyancy_solutions}b, d shows the $G_b(z; \xi)$ Green's functions for various $\xi$ source depths.
@@ -887,24 +887,24 @@ The $G_\mathfrak{u}$ magnitude is shown in the left column, and the phase in the
 Figure \ref{fig:velocity_Gsfn} also shows the vertically-integrated $G_\mathfrak{u}$ from (\ref{eqn:Guv_int_wrt_xi}).
 To interpret these results, first consider the case of vanishing pressure gradient and surface stress in the positive $x$ direction (eastward; $\tau^y = 0$).
 Eq.~(\ref{eqn:expanded_form_of_u}) shows that the surface velocity is then $- G_{\mathfrak{u}} (0; 0) \tau^x$.
-The component $G_{\mathfrak{u}} (0; 0)$ is on the $\xi / H = 0$ curve, and has a phase of about \replaced[id=CR]{$135^\circ$}{135$^\mathrm{o}$} for $\mathrm{Ek} = 0.025$ (Figure \ref{fig:velocity_Gsfn}d).
-Therefore, $-G_{\mathfrak{u}} (0; 0)$ has a phase of \replaced[id=CR]{$-45^\circ$}{-45$^\mathrm{o}$}, which is measured anti-clockwise from the direction of the stress.
+The component $G_{\mathfrak{u}} (0; 0)$ is on the $\xi / H = 0$ curve, and has a phase of about \added[id=CL]{$135^\circ$} for $\mathrm{Ek} = 0.025$ (Figure \ref{fig:velocity_Gsfn}d).
+Therefore, $-G_{\mathfrak{u}} (0; 0)$ has a phase of \added[id=CL]{$-45^\circ$}, which is measured anti-clockwise from the direction of the stress.
 % Notebook cell reference, now summarized in the code-availability statement: (see \texttt{FrictionalGeostrophicEquationSolution.ipynb})
-This corresponds to a surface current at \replaced[id=CR]{$45^\circ$}{45$^\mathrm{o}$} to the right of the stress \replaced[id=CR]{(in the Northern Hemisphere), consistent}{(in the northern hemisphere), consistent} with small Ekman number theory \citep{salmon98,vallis06}.
+This corresponds to a surface current at \added[id=CL]{$45^\circ$} to the right of the stress \added[id=CL]{(in the Northern Hemisphere), consistent} with small Ekman number theory \citep{salmon98,vallis06}.
 Next consider the case of vanishing surface stress and an imposed surface pressure gradient in the positive $x$ direction (sea level slopes up to the east).
 From (\ref{eqn:expanded_form_of_u}) the surface velocity is then proportional to $\int_{-H}^{0} G_{ \mathfrak{u}} (z; \xi) \; d \xi $.
-The component $\int_{-H}^{0} G_{ \mathfrak{u}} (z; \xi) \; d \xi $ is labeled Gu\_int and has a phase of about \replaced[id=CR]{$90^\circ$}{90$^\mathrm{o}$} for $\mathrm{Ek} = 0.025$ (Figure \ref{fig:velocity_Gsfn}d).
+The component $\int_{-H}^{0} G_{ \mathfrak{u}} (z; \xi) \; d \xi $ is labeled Gu\_int and has a phase of about \added[id=CL]{$90^\circ$} for $\mathrm{Ek} = 0.025$ (Figure \ref{fig:velocity_Gsfn}d).
 This corresponds to a surface geostrophic current flowing northwards with the pressure gradient force pushing westwards (opposite to the pressure gradient itself) and an equal and opposite Coriolis force pushing eastwards.
 Finally, for the same case (no stress, $\partial_x p_s > 0 $), consider the bottom stress.
 From (\ref{eqn:bottom_stress_ST_def}) and (\ref{eqn:S_fn}), 
 $\tau_b$ is proportional to $(1/\varphi) \tanh \left( \varphi H \right)$.
 Thus, as $\mathrm{Ek}$ gets small $\varphi = \sqrt{i f / \mathrm{Ek}} $ diverges, $\tanh \left( \varphi H \right) \rightarrow 1$ and $\tau_b$ becomes proportional to $i^{-1/2} = (1 - i)/\sqrt{2}$.
-The bottom stress $1 - i$ corresponds to a southeast direction, which is at \replaced[id=CR]{$135^\circ$}{135$^{\mathrm{o}}$} to the direction of the geostrophic current, consistent with textbook theory \citep{vallis06}.
+The bottom stress $1 - i$ corresponds to a southeast direction, which is at \added[id=CL]{$135^\circ$} to the direction of the geostrophic current, consistent with textbook theory \citep{vallis06}.
 
 These results establish the validity of the horizontal velocity Green's function $G_\mathfrak{u}$ in Figure \ref{fig:velocity_Gsfn} for familiar, special cases of (\ref{eqn:expanded_form_of_u}).
 More generally, Figure \ref{fig:velocity_Gsfn} shows that $G_\mathfrak{u}$ respects the homogeneous velocity boundary conditions (\ref{eqn:sfc_bcs_frak}) and (\ref{eqn:bot_bcs_frak}) of vanishing vertical derivative at the surface and vanishing magnitude at the bottom (see (\ref{eqn:G_u_sfc_bc}) and (\ref{eqn:G_u_bot_bc})).
-The kinked peaks at $z = \xi$ in $G_\mathfrak{u} (z; \xi )$ show how a pressure gradient causes a response in the horizontal velocity that is at \replaced[id=CR]{$135^\circ$}{135$^{\mathrm{o}}$} to the pressure gradient; that is, at \replaced[id=CR]{$-45^\circ$}{-45$^{\mathrm{o}}$} \replaced[id=CR]{to the pressure gradient force (in the Northern Hemisphere).}{to the pressure gradient force (in the northern hemisphere).}
-Therefore, the water moves at \replaced[id=CR]{$45^\circ$}{45$^{\mathrm{o}}$} to the right of the pressure gradient force.
+The kinked peaks at $z = \xi$ in $G_\mathfrak{u} (z; \xi )$ show how a pressure gradient causes a response in the horizontal velocity that is at \added[id=CL]{$135^\circ$} to the pressure gradient; that is, at \added[id=CL]{$-45^\circ$} \added[id=CL]{to the pressure gradient force (in the Northern Hemisphere).}
+Therefore, the water moves at \added[id=CL]{$45^\circ$} to the right of the pressure gradient force.
 This response decays with height above and below $z=\xi$ in clockwise spirals that represent internal Ekman layers.
 \added[id=CL]{The decay length scale is the Ekman depth, which is proportional to the square root of the Ekman number, as expected.}
 The influence of the surface pressure gradient extends throughout the water column until it decays to zero in the bottom Ekman layer (Figure \ref{fig:velocity_Gsfn} Gu\_int curves).
@@ -1170,7 +1170,7 @@ Adjoint sensitivity of the strait transport & \added[id=CL]{21.5} & \\
 \subsection{Cost and dimensional parameters}
 \label{sect:cost}
 
-\added[id=CL]{Table~\ref{tab:cost_scaling} shows how }\replaced[id=CR]{the wall-clock time of the solve scales}{the wall-clock time cost of the solve scales}\added[id=CL]{, in the test basin of Section~\ref{sect:results}\ref{sect:verification} on 18 threads.
+\added[id=CL]{Table~\ref{tab:cost_scaling} shows how }\added[id=CL]{the wall-clock time of the solve scales}\added[id=CL]{, in the test basin of Section~\ref{sect:results}\ref{sect:verification} on 18 threads.
 The evaluation of the column integrals for $\mathfrak{A}$, $\mathfrak{B}$, $S$, and $T$ at the quadrature points of the }\added[id=CL]{surface-pressure mesh dominates the time cost}\added[id=CL]{; the finite-element assembly and linear solve take at most a fifth.
 At fixed $\mathrm{Ek}$, the cost is proportional to the number of quadrature points, from 0.22~s at $h = 0.08$ to 11.7~s at $h = 0.01$.
 At fixed mesh, it grows with $s = H/\delta_E$, }\added[id=CL]{because each column is split into $\lceil H/(4\delta_E) \rceil$ Gauss--Legendre panels (Appendix~C; the buoyancy diffusion depth $(\kappa \mathrm{Ek}/\Gamma)^{1/2}$ exceeds $\delta_E$ here):}\added[id=CL]{}\added[id=CL]{ from 0.76~s at $\mathrm{Ek} = 10^{-2}$}\added[id=CL]{ to 202~s at $\mathrm{Ek} = 10^{-5}$, faster than $s$.
@@ -1270,7 +1270,7 @@ Whether such an iteration converges, and what thermocline structure it selects, 
 \acknowledgments
 
 Tarun Verma and Henry Peterson provided helpful feedback and discussion on the early stages of this work.
-Large language models \replaced[id=CR]{(GPT-5.4 mini, GPT-5.5,}{(GPT 5.4 mini, GPT 5.5,} GitHub \added[id=CL]{Copilot} version 1.1.21, Claude Opus 5.5) were used for assistance with Julia code, especially debugging and plotting of final figures, literature exploration, code generation, and some writing.
+Large language models \added[id=CL]{(GPT-5.4 mini, GPT-5.5,} GitHub \added[id=CL]{Copilot} version 1.1.21, Claude Opus 5.5) were used for assistance with Julia code, especially debugging and plotting of final figures, literature exploration, code generation, and some writing.
 The analytical results were supported by the \added[id=CL]{\texttt{SymPy} (through \texttt{SymPy.jl}) and \texttt{Symbolics.jl} computer algebra} systems \citep{meurer_etal17,gowda_etal21}.
 This study was supported with funding from the National Science Foundation grant \# 2242033 and Johns Hopkins University.
 
@@ -1555,7 +1555,7 @@ Thus, (\ref{eqn:appendix_fraku}) leads to
 \end{align}
 Compared to (\ref{eqn:final_velocity_formula1}), this formula involves \added[id=CL]{three} single integrals in the vertical direction for every $(x,y,z)$ point. 
 Although the latter expression for velocity is more complicated than the former one, it is \added[id=CL]{about 15 times faster to compute (Section~\ref{sect:results}\ref{sect:verification})}.
-Moreover, the two versions are compared to each other to test the derivation and code: they agree to many significant figures \replaced[id=CR]{(see \texttt{TheoryNotes/RunVelocityFieldPrototype.jl})}{(see \texttt{RunVelocityFieldPrototype.jl})}.
+Moreover, the two versions are compared to each other to test the derivation and code: they agree to many significant figures \added[id=CL]{(see \texttt{TheoryNotes/RunVelocityFieldPrototype.jl})}.
 
 
 \appendix[C]
