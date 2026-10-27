@@ -45,7 +45,7 @@ The reusable Julia API is a standalone package in the root-level
 `PlanetaryGeostrophy/` directory. Its project contains only the
 analytical solver dependencies; Oceananigans remains confined to the separate
 validation environment.
-It packages the B23 Green-function velocity and buoyancy kernels used by
+It packages the (B19) Green-function velocity and buoyancy kernels used by
 the original derivation notebook with a Gridap surface-pressure solve.
 
 ### Installation
@@ -159,13 +159,13 @@ files.timings
 By default (`method=:fast`), `solve_pg` evaluates every vertical integral in
 single-integral form:
 
-- the transport forcing 𝔅 from (69),
-- the bottom-stress forcing T from (65),
-- the velocity from (B5) with the closed-form G_𝔲 (60),
-- the buoyancy from (51).
+- the transport forcing 𝔅 from (61),
+- the bottom-stress forcing T from (58),
+- the velocity from (55) with the closed-form G_𝔲 (54),
+- the buoyancy from (45).
 
 Each of these needs only the baroclinic pressure
-`Π(ξ) = ∫_ξ^0 b dz`. Π comes from the closed-form kernels (A6)–(A7) with one
+`Π(ξ) = ∫_ξ^0 b dz`. Π comes from the closed-form kernels (A5)–(A6) with one
 quadrature. Vertical integrals use a fixed composite Gauss–Legendre rule
 (`ColumnQuadrature`). Its panels are scaled to the smaller of the Ekman depth
 and the buoyancy-diffusion depth, and it is split at kernel kinks.
@@ -185,7 +185,7 @@ using IJulia
 IJulia.installkernel("Julia (auto threads)", env=Dict("JULIA_NUM_THREADS" => "auto"))
 ```
 
-`method=:b23` restores the original B23 symbolic-kernel quadratures. The test
+`method=:b23` restores the original (B19) symbolic-kernel quadratures. The test
 suite checks that the two methods agree to about 1e-9.
 
 Timings for the `PG_Double_Basin_Prototype.ipynb` high-resolution setting
@@ -252,8 +252,8 @@ silently.
 ## Transport diagnostics
 
 Bottom stress, depth-integrated current, and its streamfunction are available
-as point queries or sampled maps. These use equations (63)--(70) and the
-streamfunction weak form (C2) in the model derivation:
+as point queries or sampled maps. These use equations (56)--(62) and the
+streamfunction weak form of Appendix C in the model derivation:
 
 ```julia
 stress = bottom_stress(solution, x, y)
@@ -273,7 +273,7 @@ plot_depth_integrated_current(diagnostics)
 plot_streamfunction(diagnostics)
 ```
 
-`depth_integrated_current` returns the direct analytical expression (67).
+`depth_integrated_current` returns the direct analytical expression (59).
 Because Gridap enforces its nondivergence only weakly, `compute_diagnostics`
 uses the discretely nondivergent current
 `(U, V) = (-∂yΨ, ∂xΨ)` for `transport_U` and `transport_V`, so plotted arrows
@@ -353,7 +353,7 @@ from the spatial functional derivatives returned by the adjoint API.
 
 ### Diagnostic API
 
-The depth-integrated momentum terms corresponding to equations (32)--(33),
+The depth-integrated momentum terms corresponding to equations (28)--(29),
 bottom pressure, and baroclinic potential energy are available through:
 
 ```julia
@@ -409,7 +409,7 @@ symmetric color limits.
 
 ### Barotropic vorticity
 
-The barotropic vorticity diagnostic evaluates equation (36):
+The barotropic vorticity diagnostic evaluates equation (31):
 
 ```math
 f(\partial_x U+\partial_y V)+U f_x+V f_y
@@ -427,7 +427,7 @@ finite-element mass-conservation error (see
 
 ### Depth-integrated vorticity
 
-The depth-integrated vorticity (DIV) balance, equation (41), integrates the
+The depth-integrated vorticity (DIV) balance, equation (36), integrates the
 vorticity equation in the vertical:
 
 ```math
@@ -452,7 +452,7 @@ separately, including the chain-rule correction $f w_b + J(p_b,H)$.
 
 ### Geostrophic-contour vorticity
 
-The geostrophic-contour vorticity diagnostic evaluates equation (43):
+The geostrophic-contour vorticity diagnostic evaluates equation (38):
 
 ```math
 J\left(\frac{f}{H},\Psi\right)
@@ -468,7 +468,7 @@ $f/H$ contours without bottom pressure.
 
 ### Transport-divergence vorticity
 
-The transport-divergence vorticity diagnostic evaluates equation (47):
+The transport-divergence vorticity diagnostic evaluates equation (41):
 
 ```math
 0
@@ -486,7 +486,7 @@ and the surface and bottom stresses.
 ### Surface-pressure equation
 
 The surface-pressure coefficient diagnostic evaluates the fields in equation
-(75):
+(63):
 
 ```math
 \nabla\mathbin{\cdot}(\mathfrak A_r\nabla p_s)
@@ -520,7 +520,7 @@ recovers $\mathfrak B$ from the previously sampled analytical transport rather
 than repeating its costly column quadrature. Its derivatives use centered
 diagnostic-grid differences, so unsupported edge and near-land cells are left
 blank. The reported residual is the sampled transport divergence, equivalent
-to the left-hand side minus the source in equation (75). Pointwise values are
+to the left-hand side minus the source in equation (63). Pointwise values are
 available from
 `surface_pressure_equation_coefficients(solution, x, y)`.
 
@@ -674,7 +674,7 @@ then a direct check on whether they recover the model's reference velocity.
   Nøst–Isachsen with assumed and derived drag, and the adjoint sensitivity of
   the strait transport (manuscript Section 6d).
 - `TheoryNotes/PlotCoefficientRegimes.jl` plots the column coefficients
-  $\mathfrak A$ (68), $S$ (64), and the surface-stress weight in $T$ (65)
+  $\mathfrak A$ (60), $S$ (57), and the surface-stress weight in $T$ (58)
   against $s = H/\delta_E$, with their deep and shallow asymptotes. It writes
   `TheoryNotes/coefficient_regimes.pdf`. Run it from the repository root with
   `julia --project=PlanetaryGeostrophy TheoryNotes/PlotCoefficientRegimes.jl`.

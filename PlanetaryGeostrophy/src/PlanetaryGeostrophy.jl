@@ -238,8 +238,8 @@ Generate or reuse a surface mesh, solve the Gridap surface-pressure equation,
 and construct callable Green-function solutions for buoyancy and horizontal
 velocity.
 
-`method=:fast` (the default) evaluates the transport forcing (70),
-bottom-stress forcing (66), velocity (B5), and buoyancy (52) as single
+`method=:fast` (the default) evaluates the transport forcing (61),
+bottom-stress forcing (58), velocity (55), and buoyancy (45) as single
 vertical integrals with the fixed rule `quadrature`. Node and column work is
 threaded, so start Julia with `-t auto`. `forcing_assembly=:quadrature`
 evaluates `𝔅` at every finite-element quadrature point; `:nodal` interpolates
@@ -418,7 +418,7 @@ end
     bottom_stress(solution, x, y)
 
 Evaluate the non-dimensional bottom stress, including surface-pressure,
-buoyancy, and wind-stress contributions, using equations (64)--(66).
+buoyancy, and wind-stress contributions, using equations (56)--(58).
 """
 function bottom_stress(solution::PGSolution, x, y)
     H = require_water(solution, x, y)
@@ -533,7 +533,7 @@ end
     baroclinic_potential_energy(solution, x, y)
 
 Evaluate the baroclinic potential energy
-`χ = -∫_{-H}^0 z b dz` from equation (34).
+`χ = -∫_{-H}^0 z b dz` from equation (30).
 """
 function baroclinic_potential_energy(solution::PGSolution, x, y)
     H = require_water(solution, x, y)
@@ -1117,7 +1117,7 @@ end
     depth_integrated_momentum_terms(solution, x, y)
 
 Evaluate every signed term in the two depth-integrated momentum equations
-corresponding to (32)--(33). Residuals are left-hand side minus the sum of
+corresponding to (28)--(29). Residuals are left-hand side minus the sum of
 right-hand-side terms.
 """
 function depth_integrated_momentum_terms(solution::PGSolution, x, y)
@@ -1172,7 +1172,7 @@ end
 """
     barotropic_vorticity_terms(solution, x, y)
 
-Evaluate every signed term in the barotropic vorticity equation (36),
+Evaluate every signed term in the barotropic vorticity equation (31),
 
 `f div(U) + U f_x + V f_y = J(p_b, H) + Ek curl(τ_b) + Ek curl(τ)`,
 
@@ -1231,12 +1231,12 @@ end
 """
     depth_integrated_vorticity_terms(solution, x, y)
 
-Evaluate every signed term in the depth-integrated vorticity equation (41),
+Evaluate every signed term in the depth-integrated vorticity equation (36),
 
 `U f_x + V f_y + f w_b = Ek curl(τ_b) + Ek curl(τ)`,
 
 where `w_b = -(u_b H_x + v_b H_y)` is the bottom vertical velocity and
-`curl(τ) = τ_y,x - τ_x,y`. At a sloping bottom, the bottom torque in (41)
+`curl(τ) = τ_y,x - τ_x,y`. At a sloping bottom, the bottom torque in (36)
 uses horizontal derivatives at fixed `z`, not derivatives following
 `z=-H(x,y)`. The chain-rule correction from the latter to the former is
 `f w_b + J(p_b,H)`. On a beta plane the first term is `β V`. The residual is
@@ -1301,7 +1301,7 @@ end
 """
     geostrophic_contour_vorticity_terms(solution, x, y)
 
-Evaluate every signed term in the geostrophic-contour vorticity balance (44),
+Evaluate every signed term in the geostrophic-contour vorticity balance (38),
 
 `J(f/H, Ψ) = J(1/H, χ) - Ek curl((τ + τ_b)/H)`.
 
@@ -1361,7 +1361,7 @@ end
 """
     transport_divergence_vorticity_terms(solution, x, y)
 
-Evaluate every signed term in the transport-divergence vorticity balance (48),
+Evaluate every signed term in the transport-divergence vorticity balance (41),
 
 `0 = J(p_b, H/f) + J(χ, 1/f) + Ek curl((τ + τ_b)/f)`.
 
@@ -1428,7 +1428,7 @@ end
     surface_pressure_equation_coefficients(solution, x, y)
 
 Evaluate the coefficients in the surface-pressure advection-diffusion equation
-(75),
+(63),
 
 `div(A_r grad(p_s)) + velocity ⋅ grad(p_s) = source`,
 
@@ -2587,7 +2587,7 @@ end
     compute_dim_diagnostics(solution, diagnostics)
 
 Compute maps of all signed terms in the depth-integrated momentum equations
-corresponding to (32)--(33), together with bottom pressure, baroclinic
+corresponding to (28)--(29), together with bottom pressure, baroclinic
 potential energy `χ`, and componentwise closure residuals.
 """
 function compute_dim_diagnostics(
@@ -2666,7 +2666,7 @@ end
 
 Centered-difference form of `compute_barotropic_vorticity_diagnostics(...; method=:centered)`.
 
-Compute maps of all signed terms in the barotropic vorticity equation (36),
+Compute maps of all signed terms in the barotropic vorticity equation (31),
 together with its closure residual. Bottom stress is sampled from its
 continuous finite-element interpolant, surface-stress curl is differentiated
 analytically, and remaining derivatives use centered diagnostic-grid
@@ -2806,7 +2806,7 @@ end
 Centered-difference form of `compute_geostrophic_contour_vorticity_diagnostics(...; method=:centered)`.
 
 Compute maps of all signed terms in the geostrophic-contour vorticity balance
-(44), together with its closure residual. Gradients of `f/H` and `1/H` use
+(38), together with its closure residual. Gradients of `f/H` and `1/H` use
 the specified analytical derivatives of `f` and `H`. The JEBAR and
 bottom-stress derivatives use centered diagnostic-grid differences, with
 bottom stress sampled from its continuous finite-element interpolant. The
@@ -2933,7 +2933,7 @@ end
 Centered-difference form of `compute_transport_divergence_vorticity_diagnostics(...; method=:centered)`.
 
 Compute maps of all signed terms in the transport-divergence vorticity balance
-(48), together with its closure residual. Gradients of `H/f` and `1/f` use
+(41), together with its closure residual. Gradients of `H/f` and `1/f` use
 the specified analytical derivatives of `H` and `f`. Bottom-pressure,
 baroclinic-potential-energy, and bottom-stress derivatives use centered
 diagnostic-grid differences, with bottom stress sampled from its continuous
@@ -3068,13 +3068,13 @@ end
     compute_surface_pressure_equation_diagnostics(solution, diagnostics)
 
 Sample the velocity, diffusivity, and source fields in the surface-pressure
-advection-diffusion equation (75). The exact analytical transport coefficients
+advection-diffusion equation (63). The exact analytical transport coefficients
 `A` and `B` used by the pressure solve are recovered from the already sampled
 analytical transport and pressure gradient; their derivatives are then
 evaluated with centered diagnostic-grid differences. The total advection
 velocity is accompanied by its inviscid `A_i = H/f` and frictional
 components. The residual is the sampled transport divergence, equivalent to
-the left-hand side minus source in (75). Edge points and points adjoining land
+the left-hand side minus source in (63). Edge points and points adjoining land
 are omitted because a centered stencil is unavailable.
 """
 function compute_surface_pressure_equation_diagnostics(
@@ -3510,7 +3510,7 @@ end
 
 Plot the inviscid, frictional, and total advection-velocity magnitudes and
 vectors on a common scale, plus diffusivity and the separate baroclinic and
-surface-stress source terms in the surface-pressure equation (75).
+surface-stress source terms in the surface-pressure equation (63).
 """
 function plot_surface_pressure_equation_diagnostics(
     diagnostics::PGSurfacePressureEquationDiagnostics;
@@ -3711,7 +3711,7 @@ end
 """
     plot_baroclinic_potential_energy(dim; output=nothing)
 
-Plot `χ = -∫_{-H}^0 z b dz` from equation (34).
+Plot `χ = -∫_{-H}^0 z b dz` from equation (30).
 """
 function plot_baroclinic_potential_energy(
     dim::PGDIMDiagnostics;
@@ -3818,7 +3818,7 @@ end
     plot_dim_balance(dim; component=:both, output=nothing)
 
 Plot every signed term and the closure residual corresponding to equations
-(32)--(33). `component` may be `:x`, `:y`, or `:both`. Terms in each momentum
+(28)--(29). `component` may be `:x`, `:y`, or `:both`. Terms in each momentum
 component share symmetric color limits so their magnitudes can be compared
 directly.
 """
@@ -3869,7 +3869,7 @@ end
     plot_barotropic_vorticity_balance(diagnostics; output=nothing)
 
 Plot the nonzero signed terms and closure residual in the barotropic vorticity
-equation (36). The exact fixed-lid transport divergence is retained in the
+equation (31). The exact fixed-lid transport divergence is retained in the
 diagnostic data and residual but omitted from the figure. All plotted physical
 terms and the residual share symmetric color limits.
 """
@@ -3924,7 +3924,7 @@ end
     plot_vorticity_balance(diagnostics; output=nothing)
 
 Plot every signed term and the closure residual in the depth-integrated
-vorticity equation (41). All physical terms and the residual share symmetric
+vorticity equation (36). All physical terms and the residual share symmetric
 color limits.
 """
 function plot_vorticity_balance(
@@ -3980,7 +3980,7 @@ end
     )
 
 Plot every signed term and the closure residual in the geostrophic-contour
-vorticity balance (44). The two stress panels include the equation's minus
+vorticity balance (38). The two stress panels include the equation's minus
 sign, so the first panel equals the sum of panels two through four. All
 physical terms and the residual share symmetric color limits.
 """
@@ -4039,7 +4039,7 @@ end
     )
 
 Plot every signed term and the closure residual in the transport-divergence
-vorticity balance (48). The four physical panels sum to zero, apart from the
+vorticity balance (41). The four physical panels sum to zero, apart from the
 reported residual. All physical terms and the residual share symmetric color
 limits.
 """

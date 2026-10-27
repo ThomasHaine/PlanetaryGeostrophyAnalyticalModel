@@ -2,7 +2,7 @@
     GCVBDiagnostics
 
 Two independent, closure-free-where-possible tests built from the
-geostrophic-contour vorticity balance (GCVB, equation (43)),
+geostrophic-contour vorticity balance (GCVB, equation (38)),
 
     J(f/H, Ψ) = J(1/H, χ) - Ek·curl((τ + τ_b)/H),
 
