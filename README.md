@@ -656,25 +656,40 @@ then a direct check on whether they recover the model's reference velocity.
 
 - `AnalyticalModel/OceananigansComparison.jl` compares the PG solution with
   Oceananigans in an elliptical basin, with flat and sloping bottoms, and times
-  both (manuscript Section 6b and Appendix C).
+  both (manuscript Section 6b and Appendix C, Fig. 10 and Table 6).
+- `TheoryNotes/VerificationConvergence.jl` refines the surface-pressure mesh
+  in the verification basin and maps the vorticity-budget residuals
+  (manuscript Section 6b, Fig. 4 and Table 2).
+- `TheoryNotes/ColumnMethodTimings.jl` times the three implementations of the
+  column solution, and `TheoryNotes/DoubleBasinBudgets.jl` closes the
+  vorticity budgets in the double basin (manuscript Section 6b).
 - `TheoryNotes/StommelComparison.jl` compares the PG gyre in a flat
   rectangular β-plane basin with Stommel (1948), using the derived drag
-  r = fδ_E/(2H), over a range of H/δ_E (manuscript Section 6c).
+  r = fδ_E/(2H), over a range of H/δ_E (manuscript Section 6c, Fig. 5).
 - `TheoryNotes/BetaPlumeComparison.jl` compares the PG β plume with the
   frictional Stommel (1982) plume, solved by finite differences in the same
-  basin, with constant and corrected derived drag (manuscript Section 6c).
+  basin, with constant and corrected derived drag (manuscript Section 6c, Fig. 6).
 - `TheoryNotes/BoundaryBetaPlumeComparison.jl` compares PG with the exact
   boundary β plume of Haine and Fuller (2016) beside an inclined coast
-  (manuscript Section 6c).
+  (manuscript Section 6c, Fig. 7).
 - `TheoryNotes/TopographicSteeringComparison.jl` compares PG with the
   Ekman-layer model (steering along f/H or f/(H - δ_E/2)) for a topographic β
-  plume over a slope to a shallow shelf (manuscript Section 6c).
+  plume over a slope to a shallow shelf (manuscript Section 6c, Fig. 8).
 - `TheoryNotes/DoubleBasinShowcase.jl` reruns the double basin of
   `PG_Double_Basin_Prototype.ipynb`: timed solve, all five balances,
   Nøst–Isachsen with assumed and derived drag, and the adjoint sensitivity of
-  the strait transport (manuscript Section 6d).
+  the strait transport (manuscript Section 6d, Fig. 9 and Table 3).
+- `TheoryNotes/CostScaling.jl` times the solve against mesh size, Ekman
+  number and thread count (manuscript Section 6e, Table 4).
+- `TheoryNotes/VerificationBasin.jl` defines the verification basin shared by
+  `VerificationConvergence.jl`, `CostScaling.jl` and `ColumnMethodTimings.jl`;
+  `TheoryNotes/ComparisonTools.jl` holds the streamfunction, interpolation,
+  Gaussian-curl stress and error helpers shared by the comparison scripts; and
+  `AnalyticalModel/ContourGeometry.jl` holds the contour-tracing helpers that
+  each of the Nøst–Isachsen, GCVB and isobath diagnostic modules includes.
 - `TheoryNotes/PlotCoefficientRegimes.jl` plots the column coefficients
   $\mathfrak A$ (56), $S$ (53), and the surface-stress weight in $T$ (54)
-  against $s = H/\delta_E$, with their deep and shallow asymptotes. It writes
+  against $s = H/\delta_E$, with their deep and shallow asymptotes (manuscript
+  Section 6a, Fig. 3). It writes
   `TheoryNotes/coefficient_regimes.pdf`. Run it from the repository root with
   `julia --project=PlanetaryGeostrophy TheoryNotes/PlotCoefficientRegimes.jl`.

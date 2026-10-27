@@ -159,7 +159,7 @@ function fast_baroclinic_transport(
     H = Hfun(x, y)
     H > 0 || return 0.0 + 0.0im
     f = ffun(x, y)
-    qv = sqrt(im * f / (p.ν * p.Ek))
+    qv = VFP.φ_from_f(p, f)
     panels = panel_count(q, p, f, H)
     eH = exp(qv * H)
     integrand(ξ) =
@@ -182,7 +182,7 @@ function fast_bottom_stress_forcing(
     H = Hfun(x, y)
     H > 0 || return 0.0 + 0.0im
     f = ffun(x, y)
-    qv = sqrt(im * f / (p.ν * p.Ek))
+    qv = VFP.φ_from_f(p, f)
     panels = panel_count(q, p, f, H)
     denominator = 1 + exp(2 * qv * H)
     integrand(ξ) =

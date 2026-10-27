@@ -28,6 +28,7 @@ using Logging
 using PlanetaryGeostrophy
 using Plots
 using Printf
+include("ComparisonTools.jl")
 
 global_logger(ConsoleLogger(stderr, Logging.Warn))
 
@@ -67,18 +68,6 @@ function stommel_X(Ek, r)
     A, B = M \ [-Xp, -Xp]
     return x -> Xp + A * exp(m1 * (x + Lx / 2)) + B * exp(m2 * (x - Lx / 2))
 end
-
-# PG streamfunction from the transport: Ψ(x, y) = -∫_x^{east} V dx'.
-function pg_streamfunction(solution, x, y)
-    V = [depth_integrated_current(solution, xx, yy).V for xx in x, yy in y]
-    Ψ = zeros(length(x), length(y))
-    for j in eachindex(y), i in length(x)-1:-1:1
-        Ψ[i, j] = Ψ[i+1, j] - 0.5 * (V[i, j] + V[i+1, j]) * (x[i+1] - x[i])
-    end
-    return Ψ
-end
-
-relative_l2(a, b) = sqrt(sum(abs2, a .- b) / sum(abs2, b))
 
 function compare(Ek; mesh_resolution)
     seconds = @elapsed solution = solve_pg(problem(Ek);

@@ -21,12 +21,12 @@
 # Writes TheoryNotes/beta_plume_comparison.{pdf,png}.
 
 ENV["GKSwstype"] = "100"
-using LinearAlgebra
 using Logging
 using PlanetaryGeostrophy
 using Plots
 using Printf
 using SparseArrays
+include("ComparisonTools.jl")
 
 global_logger(ConsoleLogger(stderr, Logging.Warn))
 
@@ -38,15 +38,8 @@ const centre = (0.8, 0.0)
 const radius = 0.2
 const curl_amplitude = 8e-4
 
-radius_squared(x, y) = (x - centre[1])^2 + (y - centre[2])^2
-# Azimuthal stress whose curl is exactly the Gaussian below.
-function stress_factor(x, y)
-    r2 = radius_squared(x, y)
-    r2 < 1e-14 && return curl_amplitude / 2
-    return curl_amplitude * radius^2 * (-expm1(-r2 / (2radius^2))) / r2
-end
-tau(x, y) = complex(-stress_factor(x, y) * (y - centre[2]), stress_factor(x, y) * (x - centre[1]))
-wind_curl(x, y) = curl_amplitude * exp(-radius_squared(x, y) / (2radius^2))
+# Azimuthal stress whose curl is a Gaussian.
+const tau, wind_curl = gaussian_curl_stress(centre, radius, curl_amplitude)
 
 coriolis(y) = f0 + beta * y
 ekman_depth(Ek, f) = sqrt(2Ek / f)
@@ -92,32 +85,6 @@ function stommel_fd(Ek, drag; Δ=0.005)
     return x, y, Ψ
 end
 
-# Bilinear interpolation of a grid field.
-function interpolate(xg, yg, F, x, y)
-    Δx, Δy = step(xg), step(yg)
-    i = clamp(floor(Int, (x - first(xg)) / Δx) + 1, 1, length(xg) - 1)
-    j = clamp(floor(Int, (y - first(yg)) / Δy) + 1, 1, length(yg) - 1)
-    a, b = (x - xg[i]) / Δx, (y - yg[j]) / Δy
-    return (1 - a) * (1 - b) * F[i, j] + a * (1 - b) * F[i+1, j] +
-        (1 - a) * b * F[i, j+1] + a * b * F[i+1, j+1]
-end
-
-function pg_streamfunction(solution, x, y)
-    V = zeros(length(x), length(y))
-    Threads.@threads for j in eachindex(y)
-        for i in eachindex(x)
-            V[i, j] = depth_integrated_current(solution, x[i], y[j]).V
-        end
-    end
-    Ψ = zeros(length(x), length(y))
-    for j in eachindex(y), i in length(x)-1:-1:1
-        Ψ[i, j] = Ψ[i+1, j] - 0.5 * (V[i, j] + V[i+1, j]) * (x[i+1] - x[i])
-    end
-    return Ψ
-end
-
-relative_l2(a, b) = sqrt(sum(abs2, a .- b) / sum(abs2, b))
-
 function compare(Ek; mesh_resolution=min(0.04, classical_drag(Ek)(0.0, 0.0) / beta / 3))
     ℓ = classical_drag(Ek)(0.0, 0.0) / beta
     seconds = @elapsed solution = solve_pg(problem(Ek);
@@ -127,7 +94,7 @@ function compare(Ek; mesh_resolution=min(0.04, classical_drag(Ek)(0.0, 0.0) / be
     Ψ_pg = pg_streamfunction(solution, x, y)
     classical = stommel_fd(Ek, classical_drag(Ek))
     corrected = stommel_fd(Ek, corrected_drag(Ek))
-    on_grid(model) = [interpolate(model..., xx, yy) for xx in x, yy in y]
+    on_grid(model) = [interpolate_grid(model..., xx, yy) for xx in x, yy in y]
     Ψ_classical, Ψ_corrected = on_grid(classical), on_grid(corrected)
     # The plume: west of the source, away from the western boundary layer.
     plume = (x .> -Lx / 2 + 6ℓ) .& (x .< centre[1] - 2radius)

@@ -1,6 +1,6 @@
 # How the cost of the PG solve scales with the surface-pressure mesh, the Ekman
 # number, and the number of threads (manuscript Section 6e), in the
-# verification basin of VerificationConvergence.jl.
+# verification basin of VerificationBasin.jl.
 #
 # The cost has two parts. The forcing evaluation computes the column integrals
 # for the coefficients at every quadrature point of the mesh; each column uses
@@ -19,17 +19,8 @@ using Printf
 
 global_logger(ConsoleLogger(stderr, Logging.Warn))
 
-const ax, ay = 1.0, 0.75
-depth(x, y) = 0.8 + 0.25x + 0.1y + 0.3exp(-((x - 0.2)^2 + y^2) / 0.05)
-problem(Ek) = PGProblem(
-    parameters=PGParameters(Ek, 0.2),
-    depth=depth,
-    coriolis=(x, y) -> 1.0 + 0.15y,
-    wind_stress=(x, y) -> 1e-3cos(pi * y / 1.5) + 2e-4im * sin(x),
-    restoring_buoyancy=(x, y, z) -> 1e-2z + 2e-3x * exp(2z),
-    surface_buoyancy=(x, y) -> 2e-3y,
-    boundary=ellipse_boundary(ax, ay; points=64),
-)
+include("VerificationBasin.jl")
+const problem = verification_problem
 
 solve(Ek, h) = solve_pg(problem(Ek); mesh_resolution=h, overwrite_mesh=true,
     mesh_file=joinpath(tempdir(), "cost_scaling_$(Threads.nthreads()).msh"))

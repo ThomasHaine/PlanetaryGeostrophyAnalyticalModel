@@ -25,26 +25,7 @@ function centered_gradient(values, wet, xs, ys)
     return (; x=value_x, y=value_y, wet=stencil_wet)
 end
 
-signed_polygon_area(xs, ys) = 0.5sum(
-    xs[index] * ys[index + 1] - xs[index + 1] * ys[index]
-    for index in 1:(length(xs) - 1)
-)
-
-polygon_area(xs, ys) = abs(signed_polygon_area(xs, ys))
-
-function contour_contains(x, y, xs, ys)
-    inside = false
-    previous = length(xs) - 1
-    for current in 1:(length(xs) - 1)
-        crosses = (ys[current] > y) != (ys[previous] > y)
-        if crosses && x < (xs[previous] - xs[current]) *
-                (y - ys[current]) / (ys[previous] - ys[current]) + xs[current]
-            inside = !inside
-        end
-        previous = current
-    end
-    return inside
-end
+include("ContourGeometry.jl")
 
 function contour_denominators(problem, xs, ys)
     linear = 0.0
@@ -67,37 +48,7 @@ function contour_denominators(problem, xs, ys)
     return (; linear, quadratic)
 end
 
-function interpolate_contour_function(q_value, contour_q, values)
-    contour_q[1] <= q_value <= contour_q[end] || return NaN
-    upper = searchsortedfirst(contour_q, q_value)
-    upper == 1 && return values[1]
-    lower = upper - 1
-    weight = (q_value - contour_q[lower]) /
-        (contour_q[upper] - contour_q[lower])
-    return (1 - weight) * values[lower] + weight * values[upper]
-end
 
-"""
-    bilinear_interpolate(xs, ys, field, xq, yq)
-
-Bilinearly interpolate the complex-valued `field` sampled on the rectilinear
-grid `xs × ys` at the query point `(xq, yq)`. Returns `NaN + 0im` outside the
-grid or whenever any of the four surrounding samples is non-finite.
-"""
-function bilinear_interpolate(xs, ys, field, xq, yq)
-    (xs[1] <= xq <= xs[end] && ys[1] <= yq <= ys[end]) ||
-        return NaN + 0.0im
-    i = clamp(searchsortedlast(xs, xq), 1, length(xs) - 1)
-    j = clamp(searchsortedlast(ys, yq), 1, length(ys) - 1)
-    tx = (xq - xs[i]) / (xs[i + 1] - xs[i])
-    ty = (yq - ys[j]) / (ys[j + 1] - ys[j])
-    corners = (
-        field[i, j], field[i + 1, j], field[i, j + 1], field[i + 1, j + 1],
-    )
-    all(isfinite, corners) || return NaN + 0.0im
-    return (1 - tx) * (1 - ty) * corners[1] + tx * (1 - ty) * corners[2] +
-           (1 - tx) * ty * corners[3] + tx * ty * corners[4]
-end
 
 """
     exact_drag_contour_integrals(problem, p, xs, ys, grid_x, grid_y, T_star_over_f)
@@ -234,41 +185,21 @@ function compute_nost_isachsen_diagnostics(
 
     ni_forcing = tdvb.surface_stress_curl .+ tdvb.baroclinic_torque
     dxdy = (x[2] - x[1]) * (y[2] - y[1])
-    q_for_contours = copy(q)
-    q_for_contours[.!isfinite.(q_for_contours)] .= maximum(q[diagnostics.wet])
-    # `Contour.contours(xs, ys, z)` requires `z` sized `(length(xs),
-    # length(ys))` with `z[i, j] == f(xs[i], ys[j])` -- i.e. the same
-    # orientation as `q_for_contours` itself. Passing the transpose here
-    # silently swaps the x/y axes of every traced contour line (verified
-    # against the Contour.jl source), which went unnoticed on the
-    # roughly-square smoke-test grids used during development but badly
-    # distorts contours, enclosed-forcing areas, and the exact-theory line
-    # integrals on elongated domains (e.g. the double-basin geometry).
-    contour_set = Contour.contours(x, y, q_for_contours, contour_levels)
     contour_q = Float64[]
     linear_G = Float64[]
     quadratic_G = Float64[]
     exact_G = Float64[]
-    for contour_level in Contour.levels(contour_set)
-        closed_lines = Tuple{Vector{Float64},Vector{Float64}}[]
-        for line in Contour.lines(contour_level)
-            line_x, line_y = Contour.coordinates(line)
-            hypot(line_x[end] - line_x[1], line_y[end] - line_y[1]) <
-                1e-10 || continue
-            push!(closed_lines, (collect(line_x), collect(line_y)))
-        end
-        isempty(closed_lines) && continue
-        line_x, line_y = closed_lines[
-            argmax(polygon_area(xs, ys) for (xs, ys) in closed_lines)
-        ]
-        # Stokes' theorem needs a consistent counter-clockwise traversal so
-        # that the line integrals D(q)/F_T(q) below correspond to the same
-        # orientation as the area integral `enclosed_forcing`; the contour
-        # tracer does not guarantee this, so flip the line when needed.
-        if signed_polygon_area(line_x, line_y) < 0
-            reverse!(line_x)
-            reverse!(line_y)
-        end
+    # Closed q contours, oriented counter-clockwise so that the line
+    # integrals D(q) and F_T(q) below match the orientation of the area
+    # integral `enclosed_forcing`.
+    # The filled field is also returned for plotting the contours.
+    q_for_contours = copy(q)
+    q_for_contours[.!isfinite.(q_for_contours)] .= maximum(q[diagnostics.wet])
+    for contour in traced_closed_contours(
+        x, y, q_for_contours, diagnostics.wet; contour_levels,
+        fill_value=maximum(q[diagnostics.wet]),
+    )
+        line_x, line_y = contour.x, contour.y
         enclosed_forcing = 0.0
         for j in eachindex(y), i in eachindex(x)
             tdvb.wet[i, j] || continue
@@ -279,7 +210,7 @@ function compute_nost_isachsen_diagnostics(
         exact = exact_drag_contour_integrals(
             problem, p_internal, line_x, line_y, x, y, T_star_over_f,
         )
-        push!(contour_q, Contour.level(contour_level))
+        push!(contour_q, contour.level)
         push!(linear_G, enclosed_forcing / (linear_drag * denominators.linear))
         push!(quadratic_G, sign(enclosed_forcing) * sqrt(
             abs(enclosed_forcing) / (quadratic_drag * denominators.quadratic),

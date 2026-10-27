@@ -7,9 +7,9 @@ geostrophic-contour vorticity balance (GCVB, equation (34)),
     J(f/H, Ψ) = J(1/H, χ) - Ek·curl((τ + τ_b)/H),
 
 as a counterpart to the bottom-pressure `G(q) = dp_b/dq` theory in
-`NostIsachsenDiagnostics.jl`. This module is self-contained (it duplicates
-the handful of small contour-geometry helpers it needs rather than importing
-them) so it can be included or omitted independently of that file.
+`NostIsachsenDiagnostics.jl`. This module is self-contained (it includes
+its own copy of `ContourGeometry.jl`) so it can be included or omitted
+independently of that file.
 
 1. `compute_gcvb_area_consistency`: GCVB's advection term `J(f/H, Ψ)` is the
    Jacobian of `q = f/H` with the *actual* transport streamfunction `Ψ`.
@@ -45,42 +45,7 @@ using Statistics
 import Contour
 import Plots
 
-# ---------------------------------------------------------------------------
-# Small, self-contained contour-geometry helpers. Deliberately duplicated
-# (not imported) from `NostIsachsenDiagnostics.jl` so this module stays
-# switchable in/out independently -- see the module docstring.
-# ---------------------------------------------------------------------------
-
-signed_polygon_area(xs, ys) = 0.5sum(
-    xs[index] * ys[index + 1] - xs[index + 1] * ys[index]
-    for index in 1:(length(xs) - 1)
-)
-
-polygon_area(xs, ys) = abs(signed_polygon_area(xs, ys))
-
-function contour_contains(x, y, xs, ys)
-    inside = false
-    previous = length(xs) - 1
-    for current in 1:(length(xs) - 1)
-        crosses = (ys[current] > y) != (ys[previous] > y)
-        if crosses && x < (xs[previous] - xs[current]) *
-                (y - ys[current]) / (ys[previous] - ys[current]) + xs[current]
-            inside = !inside
-        end
-        previous = current
-    end
-    return inside
-end
-
-function interpolate_contour_function(q_value, contour_q, values)
-    contour_q[1] <= q_value <= contour_q[end] || return NaN
-    upper = searchsortedfirst(contour_q, q_value)
-    upper == 1 && return values[1]
-    lower = upper - 1
-    weight = (q_value - contour_q[lower]) /
-        (contour_q[upper] - contour_q[lower])
-    return (1 - weight) * values[lower] + weight * values[upper]
-end
+include("ContourGeometry.jl")
 
 """
     cumulative_trapezoid(xs, ys)
@@ -100,45 +65,11 @@ end
 """
     traced_q_contours(x, y, q, wet; contour_levels)
 
-Trace closed `q = f/H` contours on the rectilinear grid `x × y`. At each
-level, keep only the largest-area closed loop (multiply-connected `q`-levels,
-e.g. separate per-basin loops, are a known shared limitation -- see
-`NostIsachsenDiagnostics.jl`) and orient it counter-clockwise so downstream
-Green's/Stokes'-theorem line integrals have a consistent sign. Returns a
-vector of `(level, x, y)` named tuples sorted by level.
-
-`q` must be sized `(length(x), length(y))` with `q[i, j] == f(x[i], y[j])`
--- i.e. *not* transposed -- matching `Contour.contours`' expected layout.
+Closed `q = f/H` contours, one per level (see `traced_closed_contours`).
 """
-function traced_q_contours(x, y, q, wet; contour_levels=20)
-    q_for_contours = copy(q)
-    q_for_contours[.!isfinite.(q_for_contours)] .= maximum(q[wet])
-    contour_set = Contour.contours(x, y, q_for_contours, contour_levels)
-    traced = NamedTuple{(:level, :x, :y),
-        Tuple{Float64,Vector{Float64},Vector{Float64}}}[]
-    for contour_level in Contour.levels(contour_set)
-        closed_lines = Tuple{Vector{Float64},Vector{Float64}}[]
-        for line in Contour.lines(contour_level)
-            line_x, line_y = Contour.coordinates(line)
-            hypot(line_x[end] - line_x[1], line_y[end] - line_y[1]) <
-                1e-10 || continue
-            push!(closed_lines, (collect(line_x), collect(line_y)))
-        end
-        isempty(closed_lines) && continue
-        line_x, line_y = closed_lines[
-            argmax(polygon_area(xs, ys) for (xs, ys) in closed_lines)
-        ]
-        if signed_polygon_area(line_x, line_y) < 0
-            reverse!(line_x)
-            reverse!(line_y)
-        end
-        push!(
-            traced,
-            (level=Contour.level(contour_level), x=line_x, y=line_y),
-        )
-    end
-    return sort!(traced; by=t -> t.level)
-end
+traced_q_contours(x, y, q, wet; contour_levels=20) = traced_closed_contours(
+    x, y, q, wet; contour_levels, fill_value=maximum(q[wet]),
+)
 
 """
     enclosed_area_integral(field, x, y, wet, line_x, line_y)

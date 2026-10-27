@@ -2,7 +2,7 @@
     IsobathCirculationDiagnostics
 
 A third, independent, closure-free consistency test built from the
-barotropic vorticity balance (BV, equation (36)),
+barotropic vorticity balance (BV, equation (27)),
 
     J(f, Ψ) = J(H, p_b) - Ek·curl(τ + τ_b),
 
@@ -46,87 +46,17 @@ module IsobathCirculationDiagnostics
 import Contour
 import Plots
 
-# ---------------------------------------------------------------------------
-# Small, self-contained contour-geometry and interpolation helpers.
-# Deliberately duplicated (not imported) from `GCVBDiagnostics.jl` /
-# `NostIsachsenDiagnostics.jl` so this module stays switchable in/out
-# independently -- see the module docstring.
-# ---------------------------------------------------------------------------
-
-signed_polygon_area(xs, ys) = 0.5sum(
-    xs[index] * ys[index + 1] - xs[index + 1] * ys[index]
-    for index in 1:(length(xs) - 1)
-)
-
-polygon_area(xs, ys) = abs(signed_polygon_area(xs, ys))
+include("ContourGeometry.jl")
 
 """
     traced_isobath_contours(x, y, H, wet; contour_levels)
 
-Trace closed `H = const` isobaths on the rectilinear grid `x × y`. At each
-level, keep only the largest-area closed loop and orient it counter-
-clockwise, exactly as `GCVBDiagnostics.traced_q_contours` does for `q = f/H`
-contours (see there for why: consistent line-integral sign, and a documented
-shared limitation for multiply-connected levels). Returns a vector of
-`(level, x, y)` named tuples sorted by level.
-
-`H` must be sized `(length(x), length(y))` with `H[i, j] == depth(x[i],
-y[j])` -- i.e. *not* transposed -- matching `Contour.contours`' expected
-layout.
+Closed `H = const` isobaths, one per level (see `traced_closed_contours`).
 """
-function traced_isobath_contours(x, y, H, wet; contour_levels=20)
-    H_for_contours = copy(H)
-    H_for_contours[.!isfinite.(H_for_contours)] .= minimum(H[wet])
-    contour_set = Contour.contours(x, y, H_for_contours, contour_levels)
-    traced = NamedTuple{(:level, :x, :y),
-        Tuple{Float64,Vector{Float64},Vector{Float64}}}[]
-    for contour_level in Contour.levels(contour_set)
-        closed_lines = Tuple{Vector{Float64},Vector{Float64}}[]
-        for line in Contour.lines(contour_level)
-            line_x, line_y = Contour.coordinates(line)
-            hypot(line_x[end] - line_x[1], line_y[end] - line_y[1]) <
-                1e-10 || continue
-            push!(closed_lines, (collect(line_x), collect(line_y)))
-        end
-        isempty(closed_lines) && continue
-        line_x, line_y = closed_lines[
-            argmax(polygon_area(xs, ys) for (xs, ys) in closed_lines)
-        ]
-        if signed_polygon_area(line_x, line_y) < 0
-            reverse!(line_x)
-            reverse!(line_y)
-        end
-        push!(
-            traced,
-            (level=Contour.level(contour_level), x=line_x, y=line_y),
-        )
-    end
-    return sort!(traced; by=t -> t.level)
-end
+traced_isobath_contours(x, y, H, wet; contour_levels=20) = traced_closed_contours(
+    x, y, H, wet; contour_levels, fill_value=minimum(H[wet]),
+)
 
-"""
-    bilinear_interpolate(x, y, field, xq, yq)
-
-Bilinearly interpolate the rectilinear grid `field` (sized `(length(x),
-length(y))`, `field[i, j]` at `(x[i], y[j])`) at the point `(xq, yq)`.
-Returns `NaN` if the query point falls outside `[x[1], x[end]] × [y[1],
-y[end]]`, or if any of the four enclosing grid corners is non-finite (e.g.
-masked out near the domain wall or a dry cell) -- which simply excludes that
-contour segment from the line integral below, rather than silently
-extrapolating across the mask.
-"""
-function bilinear_interpolate(x, y, field, xq, yq)
-    (x[1] <= xq <= x[end] && y[1] <= yq <= y[end]) || return NaN
-    i = clamp(searchsortedlast(x, xq), 1, length(x) - 1)
-    j = clamp(searchsortedlast(y, yq), 1, length(y) - 1)
-    tx = (xq - x[i]) / (x[i + 1] - x[i])
-    ty = (yq - y[j]) / (y[j + 1] - y[j])
-    c00, c10 = field[i, j], field[i + 1, j]
-    c01, c11 = field[i, j + 1], field[i + 1, j + 1]
-    all(isfinite, (c00, c10, c01, c11)) || return NaN
-    return (1 - tx) * (1 - ty) * c00 + tx * (1 - ty) * c10 +
-        (1 - tx) * ty * c01 + tx * ty * c11
-end
 
 # ---------------------------------------------------------------------------
 # Isobath circulation consistency check (closure-free).

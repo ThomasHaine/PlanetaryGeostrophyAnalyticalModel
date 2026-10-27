@@ -19,16 +19,9 @@ using Printf
 
 global_logger(ConsoleLogger(stderr, Logging.Warn))
 
-const ax, ay = 1.0, 0.75
-problem = PGProblem(
-    parameters=PGParameters(0.01, 0.2),
-    depth=(x, y) -> 0.8 + 0.25x + 0.1y + 0.3exp(-((x - 0.2)^2 + y^2) / 0.05),
-    coriolis=(x, y) -> 1.0 + 0.15y,
-    wind_stress=(x, y) -> 1e-3cos(pi * y / 1.5) + 2e-4im * sin(x),
-    restoring_buoyancy=(x, y, z) -> 1e-2z + 2e-3x * exp(2z),
-    surface_buoyancy=(x, y) -> 2e-3y,
-    boundary=ellipse_boundary(ax, ay; points=64),
-)
+include("VerificationBasin.jl")
+include("ComparisonTools.jl")
+problem = verification_problem()
 
 resolutions = [0.16, 0.08, 0.04, 0.02]
 reference_resolution = 0.01
@@ -71,7 +64,6 @@ function sample_fields(solution)
     )
 end
 
-relative_l2(a, b) = sqrt(sum(abs2, a .- b) / sum(abs2, b))
 
 # Orders are computed from the realized mesh size, the mean triangle edge
 # length reported by `solve_pg`, which is close to `mesh_resolution`.
