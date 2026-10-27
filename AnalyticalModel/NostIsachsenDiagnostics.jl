@@ -192,8 +192,11 @@ function compute_nost_isachsen_diagnostics(
     # Closed q contours, oriented counter-clockwise so that the line
     # integrals D(q) and F_T(q) below match the orientation of the area
     # integral `enclosed_forcing`.
+    # The filled field is also returned for plotting the contours.
+    q_for_contours = copy(q)
+    q_for_contours[.!isfinite.(q_for_contours)] .= maximum(q[diagnostics.wet])
     for contour in traced_closed_contours(
-        x, y, q, diagnostics.wet; contour_levels,
+        x, y, q_for_contours, diagnostics.wet; contour_levels,
         fill_value=maximum(q[diagnostics.wet]),
     )
         line_x, line_y = contour.x, contour.y
