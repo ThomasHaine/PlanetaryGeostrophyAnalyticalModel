@@ -53,6 +53,16 @@
 \definechangesauthor[name={Claude}, color=blue]{CL}
 % Review corrections of 2026-10-26, for checking.
 \definechangesauthor[name={Claude review}, color=magenta]{CR}
+% Review markup for CR changes; remove with them.
+\usepackage{cancel}
+\newcommand{\CRnew}[1]{{\color{magenta}#1}}
+\newcommand{\CRold}[1]{{\color{magenta}\cancel{#1}}}
+% Deleted passages, including display equations: faded, bracketed, and numbered
+% "del" so that the surrounding equations already carry their final numbers.
+\newcounter{CRsavedeq}
+\newenvironment{CRdeleted}{\setcounter{CRsavedeq}{\value{equation}}\renewcommand{\theequation}{del}%
+  \renewcommand{\myfootnote}[1]{\textsf{\small (footnote)}}\renewcommand{\added}[2][]{##2}\color{magenta!55}\textsf{\small [deleted:} }%
+  {\textsf{\small ]}\setcounter{equation}{\value{CRsavedeq}}}
 
 %% May use \\ to break lines in title:
 
@@ -365,6 +375,8 @@ The equations for $(U, V)$ come from vertically integrating the three-dimensiona
 % Assumes the term p_s \partial_x H vanishes because p_s = 0
 f  U & = -  \int_{-H}^{0} \partial_y p \; dz + \mathrm{Ek}  \int_{-H}^{0} \partial_ z \left( \nu \partial_z v \right) \; dz . \label{eqn:V_mom0}
 \end{align}
+\added[id=CR]{Using the Leibniz rule, integration by parts, and the hydrostatic relation (\ref{eqn:hydrostasy}), the depth-integrated pressure gradient is $\int_{-H}^{0} \partial_x p \; dz = H \, \partial_x p_b - \partial_x \int_{-H}^{0} z b \; dz$ (and similarly in $y$), where $p_b = p(x,y,-H)$ is the bottom pressure. With the leading-order surface condition (\ref{eqn:top_uv_bc}) at $z = 0$, the viscous term integrates to $\tau^x - \nu \, \partial_z u|_{z=-H}$.}
+\begin{CRdeleted}
 The depth-integrated pressure gradient is, for example, in the $x$ direction:
 \begin{align}
  \int_{-H}^{0} \partial_x p \; dz & = - p_b \, \partial_x H +  \partial_x \int_{-H}^{0} p \; dz , \\
@@ -389,6 +401,7 @@ and the hydrostatic relation (\ref{eqn:hydrostasy}).
   \int_{-H}^{0} \partial_ z \left( \nu \, \partial_z u \right) \; dz & = \left[  \nu \,\partial_z u  \right]_{-H}^{0}  = \tau^x  - \left. \nu \, \partial_z u \right|_{z = -H} ,
  \end{align}
 which uses the leading order form of the boundary condition (\ref{eqn:top_uv_bc}), evaluated at $z=0$.
+\end{CRdeleted}
   
 Therefore, (\ref{eqn:U_mom0}) and (\ref{eqn:V_mom0}) lead to the (time-independent, linear) depth-integrated momentum (DIM, also called the barotropic momentum) equations:
 % Waldman & Giordani Section 2.3. What's an earlier reference?
@@ -412,27 +425,32 @@ The DIM equations relate the depth-integrated horizontal flow $(U,V)$ to the net
 \subsubsection{Barotropic Vorticity Equation}
 \label{sect:BVE}
 The first option is to take the curl of the DIM equations $\partial_x$(\ref{eqn:V_mom})-$\partial_y$(\ref{eqn:U_mom}), which gives:
+\begin{CRdeleted}
 \myfootnote{
 Recall that 
 \begin{align}
 {\hat{\mathbf z}} \cdot \left( \nabla \times {\mathbf U} \right) & = \partial_x V - \partial_y U .
 \end{align}
 }
- \begin{align}
+\end{CRdeleted}
+\begin{CRdeleted}
+\begin{align*}
 \partial_x \left\{ f  U \right\} - \partial_y \left\{ - f V \right\} =  & \;
 \partial_x \big\{ - H \, \partial_y p_b - \partial_y \chi + \mathrm{Ek} \big( \tau^y + \tau^y_b \big) \big\} - \nonumber \\
-& \; \partial_y \big\{ - H \, \partial_x p_b - \partial_x \chi + \mathrm{Ek} \big( \tau^x + \tau^x_b \big) \big\} \nonumber \\
-\implies
+& \; \partial_y \big\{ - H \, \partial_x p_b - \partial_x \chi + \mathrm{Ek} \big( \tau^x + \tau^x_b \big) \big\}
+\end{align*}
+\end{CRdeleted}
+\begin{align}
 f \left( \partial_x   U + \partial_y V \right) + U \partial_x f + V \partial_y f = & \; J(p_b, H) + \mathrm{Ek} \, \hat{\mathbf{z}} \cdot \left[ \nabla \times \left( \boldsymbol{\tau} + \boldsymbol{\tau}_b \right) \right] ,
 \label{eqn:BVE}
 \end{align}
 where $J(a,b) \equiv \partial_x a \, \partial_y b - \partial_y a \, \partial_x b = \left( \nabla a \times \nabla b \right) \cdot \hat{\mathbf{z}}$ is the Jacobian operator, $d f / dy = \beta$ on a $\beta$-plane, and $\hat{\mathbf{z}}$ is the unit upward vector.
 This is the time-independent, linear equation for the vorticity of the depth-integrated flow, also called the barotropic vorticity (BV) equation (see \citealt{waldman&giordani23} Eq.~(10)).
 For the time-independent case, the horizontal divergence of the vertically-integrated flow (the first term on the left hand side of (\ref{eqn:BVE})) vanishes.
-This constraint comes from the non-divergence equation (\ref{eqn:non-divergent}), which implies that
+\replaced[id=CR]{It follows from integrating the non-divergence equation (\ref{eqn:non-divergent}) over the column, which has impermeable top and bottom:}{This constraint comes from the non-divergence equation (\ref{eqn:non-divergent}), which implies that}
 \begin{align}
-\int_{-H}^{0} \partial_x u + \partial_y v + \partial_z w \; dz &= 0 , \nonumber \\
-\implies \partial_x U + \partial_y V & = 0 .
+\CRold{\int_{-H}^{0} \partial_x u + \partial_y v + \partial_z w \; dz} & \CRold{= 0 ,} \nonumber \\
+\CRold{\implies} \partial_x U + \partial_y V & = 0 .
 \label{eqn:divUiszero}
 \end{align}
 Thus, for time-independent solutions:
@@ -479,17 +497,22 @@ The form $U \partial_x f + V \partial_y f + f \, w|_{z=-H} = \mathrm{Ek} \, \hat
 
 \subsubsection{Geostrophic Contour Vorticity Balance}
 The third option is to write the equation for the vorticity of the depth-averaged flow.
-That is, divide the DIM equations (\ref{eqn:U_mom})--(\ref{eqn:V_mom}) by water depth $H$ and take the curl:
+That is, divide the DIM equations (\ref{eqn:U_mom})--(\ref{eqn:V_mom}) by water depth $H$ and take the curl\replaced[id=CR]{, which gives}{:}
+\begin{CRdeleted}
 \begin{align}
 \partial_y \left( - \frac{f V}{H} \right)  - \partial_x \left(\frac{f  U}{H} \right) & = 
 \partial_y \left[ - \partial_x p_b - \frac{1}{H} \partial_x \chi  + \frac{\mathrm{Ek}}{H} \left( \tau^x + \tau^x_b \right) \right]
 -  \partial_x \left[ - \partial_y p_b - \frac{1}{H} \partial_y \chi + \frac{\mathrm{Ek}}{H} \left( \tau^y + \tau^y_b \right) \right].
 \end{align}
-One finds that
-\begin{align}
+\end{CRdeleted}
+\deleted[id=CR]{One finds that}
+\begin{CRdeleted}
+\begin{align*}
 \partial_y \left(- \frac{f }{H} \partial_x \Psi \right) + \partial_x \left( \frac{f }{H} \partial_y\Psi \right) & = 
-- \partial_y \left( \frac{1}{H} \partial_x \chi \right) + \partial_x \left( \frac{1}{H} \partial_y \chi \right)  - \mathrm{Ek} \, {\hat{\mathbf z}} \cdot \left( \nabla \times \frac{\boldsymbol{\tau} + \boldsymbol{\tau}_b}{H} \right), \nonumber \\
-\implies
+- \partial_y \left( \frac{1}{H} \partial_x \chi \right) + \partial_x \left( \frac{1}{H} \partial_y \chi \right)  - \mathrm{Ek} \, {\hat{\mathbf z}} \cdot \left( \nabla \times \frac{\boldsymbol{\tau} + \boldsymbol{\tau}_b}{H} \right),
+\end{align*}
+\end{CRdeleted}
+\begin{align}
 J\left( \frac{f}{H} , \Psi \right)  & =  J \left( \frac{1}{H}, \chi \right)
 - \mathrm{Ek} \, {\hat{\mathbf z}} \cdot \left( \nabla \times \frac{\boldsymbol{\tau} + \boldsymbol{\tau}_b}{H} \right) ,
 \label{eqn:GCVB}
@@ -519,12 +542,15 @@ where $\hat{\mathbf{t}}$ is the unit tangent vector along the $q$ contour (runni
 This formula is related to the so-called island rule \citep{godfrey89,krupitsky&cane97,cane_etal98}, which provides a useful independent check on the solutions \added[id=CL]{presented in Section~\ref{sect:results}.}
 
 \subsubsection{Transport Divergence Vorticity Balance}
-\added[id=CL]{The fourth option is to divide} the DIM equations (\ref{eqn:U_mom})--(\ref{eqn:V_mom}) by the Coriolis parameter $f$ and take the curl:
-\begin{align}
+\added[id=CL]{The fourth option is to divide} the DIM equations (\ref{eqn:U_mom})--(\ref{eqn:V_mom}) by the Coriolis parameter $f$ and take the curl\replaced[id=CR]{, which gives}{:}
+\begin{CRdeleted}
+\begin{align*}
 \partial_y V  + \partial_x U & = 
 \partial_y \left[ \frac{H}{f} \partial_x p_b + \frac{1}{f} \partial_x \chi - \frac{\mathrm{Ek}}{f} \left( \tau^x + \tau^x_b \right) \right] 
-+ \partial_x \left[ - \frac{H}{f} \partial_y p_b - \frac{1}{f} \partial_y \chi  + \frac{\mathrm{Ek}}{f} \left( \tau^y + \tau^y_b \right) \right], \\
-\implies
++ \partial_x \left[ - \frac{H}{f} \partial_y p_b - \frac{1}{f} \partial_y \chi  + \frac{\mathrm{Ek}}{f} \left( \tau^y + \tau^y_b \right) \right],
+\end{align*}
+\end{CRdeleted}
+\begin{align}
 0 & = J \left( p_b, \frac{H}{f} \right) +  J \left( \chi, \frac{1}{f} \right) + \mathrm{Ek} \, {\hat{\mathbf z}} \cdot \left( \nabla \times \frac{\boldsymbol{\tau} + \boldsymbol{\tau}_b}{f} \right) .
 \label{eqn:TDVB}
 \end{align}
@@ -594,17 +620,17 @@ b(z) = - \frac{\Gamma}{\mathrm{Ek}}  \int_{-H}^{0} G_b(z; \xi) B(\xi) \; d \xi  
 \label{eqn:b_solution}
 \end{align}
 \added[id=CL]{The factor $\kappa(0)$, the diffusivity at the surface, }\added[id=CL]{follows from Green's identity, whose boundary term at the surface is $\kappa(0) \, \partial_\xi G_b(z;\xi)|_{\xi=0} \, b_s$; it equals one for the uniform $\kappa = 1$ used throughout, and Appendix~B sets $\kappa(0) = 1$.}\added[id=CL]{
-}\added[id=CL]{Here, for uniform vertical diffusivity} ($\kappa = 1$),  
+}\added[id=CL]{Here, for uniform vertical diffusivity}\replaced[id=CR]{ $\kappa$,}{ ($\kappa = 1$),}
 \begin{align}
 G_b (z; \xi) & = \frac{\mathrm{e}^{\psi \left(z + \xi\right)}}
-{2  \psi \left(1 + \mathrm{e}^{2 \psi H } \right)}
+{2 \CRnew{\kappa} \psi \left(1 + \mathrm{e}^{2 \psi H } \right)}
 \begin{cases} 
 \displaystyle \left(1 - \mathrm{e}^{- 2 \psi \xi} \right) \left(\mathrm{e}^{2 \psi H} + \mathrm{e}^{- 2 \psi z  }\right) & \text{for}\: z \leq \xi , \\
 \displaystyle \left(1 - \mathrm{e}^{- 2 \psi   z} \right) \left(\mathrm{e}^{2 \psi H} + \mathrm{e}^{- 2 \psi \xi}\right) & \text{for}\: z \geq \xi ,
 \end{cases}
 \label{eqn:b_Greens_fn}
 \end{align}
-with $\psi = \sqrt{\Gamma / \mathrm{Ek} } $.\added[id=CL]{ (The decay rate $\psi$ is unrelated to the streamfunction $\Psi$.)} 
+\replaced[id=CR]{with $\psi = \sqrt{\Gamma / (\kappa \, \mathrm{Ek})}$.}{with $\psi = \sqrt{\Gamma / \mathrm{Ek} } $.}\added[id=CL]{ (The decay rate $\psi$ is unrelated to the streamfunction $\Psi$.)} 
 See \appbEqnSoln\ for the derivation of these results and Eq.~(\ref{eqn:dG_b_d_xi}) for the explicit form of $\partial_\xi G_b(z;\xi) |_{\xi = 0}$.
 
 This formula (\ref{eqn:b_solution}) for $b$ is a linear combination of contributions from the relaxation field $B$ and the surface buoyancy $b_s$.
@@ -655,10 +681,10 @@ This problem is solved exactly by (see \appFGEqnSoln\ for details)
  -   G_{\mathfrak{u}} (z; 0)  \left( \tau^x + i \tau^y \right) .
  \label{eqn:final_uv}
 \end{align}
-For uniform vertical viscosity ($\nu = 1$), 
+For uniform vertical viscosity\replaced[id=CR]{ $\nu$,}{ ($\nu = 1$),}
 \begin{align}
  G_{ \mathfrak{u}}(z;\xi) & = 
-\frac{ \mathrm{e}^{- \varphi (z + \xi)} }{2 \varphi  \left(1 + \mathrm{e}^{2 \varphi H } \right)}
+\frac{ \mathrm{e}^{- \varphi (z + \xi)} }{2 \CRnew{\nu \,} \varphi  \left(1 + \mathrm{e}^{2 \varphi H } \right)}
 \begin{cases} 
 \displaystyle \mathrm{e}^{2 \varphi \xi} - \mathrm{e}^{2 \varphi \left( z + H\right)} - \mathrm{e}^{2 \varphi \left( z + \xi + H\right)} + 1
  & \text{for}\: z \leq \xi , \\
@@ -684,13 +710,15 @@ Apart from the surface pressure, everything in (\ref{eqn:expanded_form_of_u}) is
 
 \subsection{Bottom Stress}
 
-From (\ref{eqn:expanded_form_of_u}), \added[id=CL]{the bottom stress, in the complex form $\tau_b = \tau^x_b + i \tau^y_b$ of the vector $\boldsymbol{\tau}_b$, can be computed as follows:} $\tau_b \equiv  - \nu \, \partial_z \mathfrak{u}|_{z = -H}$, where
+From (\ref{eqn:expanded_form_of_u}), \added[id=CL]{the bottom stress, in the complex form $\tau_b = \tau^x_b + i \tau^y_b$ of the vector $\boldsymbol{\tau}_b$, can be computed as follows:} $\tau_b \equiv  - \nu \, \partial_z \mathfrak{u}|_{z = -H}$\replaced[id=CR]{.}{, where}
+\begin{CRdeleted}
 \begin{align}
 \partial_z \mathfrak{u}|_{z = -H} 
 & = \frac{1}{\mathrm{Ek}} \left(\partial_x  + i \partial_y \right) p_s \int_{-H}^{0} \partial_z G_{ \mathfrak{u}} (z; \xi)|_{z = -H} \; d \xi \nonumber \\
 &- \frac{1}{\mathrm{Ek}} \int_{-H}^{0} \partial_z G_{ \mathfrak{u}} (z; \xi)|_{z = -H} \left[ \left(\partial_x  + i \partial_y \right)  \int_{\xi}^{0} b(z') \; dz' \right] \; d \xi  \nonumber \\
 & -   \partial_z G_{\mathfrak{u}} (z; 0)|_{z = -H}  \left( \tau^x + i \tau^y \right)  .
 \end{align}
+\end{CRdeleted}
 The bottom stress sums contributions from the surface pressure gradient, the buoyancy field, and the surface stress.
 Write this expression using two functions of horizontal position, $S(x,y)$ and $T(x,y)$:
 \begin{align}
@@ -714,7 +742,8 @@ Notice that the direction of the bottom stress depends on position in a non-triv
 
 \subsection{Depth-Integrated Flow}
 
-The depth-integrated flow $\mathfrak{U} (x,y) \equiv U + i V$ is computed from (\ref{eqn:UV_defs}), (\ref{eqn:hydrostatic_p}), and (\ref{eqn:final_uv}),
+The depth-integrated flow $\mathfrak{U} (x,y) \equiv U + i V$ is computed from (\ref{eqn:UV_defs}), (\ref{eqn:hydrostatic_p}), and (\ref{eqn:final_uv})\added[id=CR]{ by integrating over the column}\replaced[id=CR]{.}{,}
+\begin{CRdeleted}
 \begin{align}
 \mathfrak{U} & = \int_{-H}^0 \left\{ \frac{1}{\mathrm{Ek}} \int_{-H}^{0} G_{ \mathfrak{u}} (z; \xi) \left(\partial_x + i \partial_y \right) 
 \left[ 
@@ -723,7 +752,8 @@ p_s - \int_{\xi}^{0} b(z') \; dz'
 \; d \xi 
 -  G_{\mathfrak{u}} (z; 0)  \left( \tau^x + i \tau^y \right)  \right\} \; dz .
 \end{align}
-As for the bottom stress, this formula expresses the depth-integrated flow as a sum of contributions from the surface pressure field, the buoyancy field, and the surface stress.
+\end{CRdeleted}
+\replaced[id=CR]{As for the bottom stress, it is a sum}{As for the bottom stress, this formula expresses the depth-integrated flow as a sum} of contributions from the surface pressure field, the buoyancy field, and the surface stress.
 Like the bottom stress (\ref{eqn:bottom_stress_ST_def}), write this expression using two (complex) functions of horizontal position, $\mathfrak{A} (x,y)$ and $\mathfrak{B} (x,y)$:
 \begin{align}
 \mathfrak{U} & = \left[ \left( \partial_x + i \partial_y \right) p_s \right] \mathfrak{A}  + \mathfrak{B} .
@@ -771,7 +801,8 @@ In the expressions for the horizontal velocity (\ref{eqn:expanded_form_of_u}), t
 How is the surface pressure found?
 To find the pressure and close the problem, utilize the constraint (\ref{eqn:non-divergent}) that the vertically-integrated flow is non-divergent \citep{salmon98}.
 % Salmon98 p. 173
-This requirement amounts to (from (\ref{eqn:divUiszero})):
+\replaced[id=CR]{From (\ref{eqn:divUiszero}), this requirement is $\Re \{ (\partial_x - i \partial_y) \mathfrak{U} \} = 0$ ($\Re$ is the real part), and with (\ref{eqn:UV_AB_def}) the equation for the surface pressure is the real part of:}{This requirement amounts to (from (\ref{eqn:divUiszero})):}
+\begin{CRdeleted}
 \begin{align}
 \Re \left\{ \left( \partial_x - i \partial_y \right) \mathfrak{U}  \right\} & = 0 
 \end{align}
@@ -805,6 +836,7 @@ i \partial_y
 \right) \mathfrak{B} \big\} .
 \end{align}
 In more compact form, \added[id=CL]{this is the real part of:}
+\end{CRdeleted}
 \begin{align}
 \left[ \mathfrak{A} \nabla^2 + 
 \partial_x \mathfrak{A} \, \partial_x +  \partial_y \mathfrak{A} \, \partial_y  +
@@ -954,7 +986,7 @@ The solution is verified at four levels: (i) agreement between independent evalu
 The horizontal velocity has three independent implementations.
 The first is the direct double-quadrature form (\ref{eqn:final_velocity_formula1}).
 The second is the symbolic-kernel form (\ref{eqn:final_velocity_formula2}).
-The third, used in production, evaluates (\ref{eqn:appendix_fraku}), (\ref{eqn:T_fn}), and (\ref{eqn:B_fn}) as single vertical integrals of the closed-form kernels, with $\Pi(\xi)$ from (\ref{eqn:term1})--(\ref{eqn:term2}).
+The third, used in production, evaluates (\ref{eqn:expanded_form_of_u}), (\ref{eqn:T_fn}), and (\ref{eqn:B_fn}) as single vertical integrals of the closed-form kernels, with $\Pi(\xi)$ from (\ref{eqn:term1})--(\ref{eqn:term2}).
 At a manufactured state with sloping bathymetry and a $\beta$-plane, the first two agree to a relative difference of $4 \times 10^{-11}$.
 In a sloping, $\beta$-plane basin with a seamount and baroclinic forcing, \added[id=CL]{the third agrees with the second to about $10^{-9}$ in $p_s$, $\mathbf{U}$, $\boldsymbol{\tau}_b$, $\Psi$, and $\mathbf{u}(z)$ at the test points, and to $10^{-16}$ in $b$; over whole sampled columns of the test basin, where the third form interpolates $(\partial_x + i \partial_y) \Pi$ in $z$, $\mathbf{u}$ agrees to about $10^{-7}$.}
 The remaining differences are set by the finite-difference step used for horizontal derivatives of $\Pi$.
@@ -1301,7 +1333,8 @@ The Green's function satisfies:
 \end{align}
 where $\delta(z - \xi)$ is the Dirac delta function\added[id=CL]{ (not the aspect ratio $\delta$)}.
 This is a second order linear ordinary differential equation with two boundary conditions, which can be solved exactly, at least for certain diffusivity profiles.
-The solution for uniform non-dimensional diffusivity is
+\replaced[id=CR]{The solution for uniform non-dimensional diffusivity is (\ref{eqn:b_Greens_fn}).}{The solution for uniform non-dimensional diffusivity is}
+\begin{CRdeleted}
 % Notebook cell reference, now summarized in the code-availability statement: (see \texttt{BuoyancyEquationSolution.ipynb} \#1.1, \#1.11)
 \begin{align}
 G_b (z; \xi) & = \frac{\mathrm{e}^{\psi \left(z + \xi\right)}}
@@ -1323,6 +1356,7 @@ G_b (z; \xi) & = \frac{\mathrm{e}^{\psi \left(z + \xi\right)}}
 % \end{cases}
 \end{align}
 with $\psi = \sqrt{\Gamma / (\kappa \, \mathrm{Ek}) } $. 
+\end{CRdeleted}
 To compute the contribution from the surface buoyancy field $b_s$ to $b$ we need the $\xi$ derivative of the buoyancy Green's function at the surface, which is
 \begin{align}
 \partial_\xi G_b(z;\xi)|_{\xi = 0} &=  \frac{\mathrm{e}^{\psi z} \left( \mathrm{e}^{2 \psi H} + \mathrm{e}^{-2 \psi z}\right)}{\kappa \left(1 + \mathrm{e}^{2 \psi H} \right)} .
@@ -1378,7 +1412,8 @@ The Green's function corresponding to (\ref{eqn:PG_mom_frak})--(\ref{eqn:bot_bcs
 G_\mathfrak{u} |_{z = - H} & = 0 .
 \label{eqn:G_u_bot_bc}
 \end{align}
-We find that the solution for uniform non-dimensional viscosity $\nu$ is:  
+\replaced[id=CR]{The solution for uniform non-dimensional viscosity $\nu$ is (\ref{eqn:FG_Gsfn}).}{We find that the solution for uniform non-dimensional viscosity $\nu$ is:}
+\begin{CRdeleted}
 \begin{align}
  G_{ \mathfrak{u}}(z;\xi) & = 
 \frac{ \mathrm{e}^{- \varphi (z + \xi)} }{2 \nu \, \varphi  \left(1 + \mathrm{e}^{2 \varphi H } \right)}
@@ -1392,11 +1427,13 @@ We find that the solution for uniform non-dimensional viscosity $\nu$ is:
 \end{align}
 which is (\ref{eqn:FG_Gsfn}) for $\nu = 1$.
 \added[id=CL]{}\added[id=CL]{In this formula $\varphi = \sqrt{i f / (\nu \, \mathrm{Ek}) }$, the principal square root (for $f > 0$, $\varphi = \sqrt{i} \phi$ with $\phi = \sqrt{f/(\nu \, \mathrm{Ek})}$).}\added[id=CL]{}
+\end{CRdeleted}
 % Notebook cell reference, now summarized in the code-availability statement: (see \texttt{FrictionalGeostrophicEquationSolution.ipynb} \#1.1)
 As for the buoyancy equation in \appbEqnSoln , the Green's function for exponential viscosity profiles can be found using hypergeometric functions.
 
 \subsection*{Solution for velocity field}
-From (\ref{eqn:expanded_form_of_u}), the velocity field is:
+\replaced[id=CR]{The velocity field is (\ref{eqn:expanded_form_of_u}), in which $\Pi(\xi) \equiv \int_{\xi}^{0} b(z') \; dz'$.}{From (\ref{eqn:expanded_form_of_u}), the velocity field is:}
+\begin{CRdeleted}
 \begin{align}
 \mathfrak{u}
 & = \frac{1}{\mathrm{Ek}} \left(\partial_x  + i \partial_y \right) p_s \int_{-H}^{0} G_{ \mathfrak{u}} (z; \xi) \; d \xi 
@@ -1404,17 +1441,18 @@ From (\ref{eqn:expanded_form_of_u}), the velocity field is:
 &- \frac{1}{\mathrm{Ek}} \int_{-H}^{0} G_{ \mathfrak{u}} (z; \xi) \bigg[ \left(\partial_x  + i \partial_y \right)  \underbrace{\int_{\xi}^{0} b(z') \; dz'}_{\Pi (\xi)} \bigg] \; d \xi  .
 \label{eqn:appendix_fraku}
 \end{align}
+\end{CRdeleted}
 In what follows, remember that $p_s, \tau^x, \tau^y, b$ (from $B$ and $b_s$), $H$ (and hence $G_{\mathfrak{u}}$ and $G_b$) are all functions of horizontal position $(x,y)$.
 This explicit dependence is suppressed for notational clarity.
 
-The first term on the right hand side of (\ref{eqn:appendix_fraku}) is a product of the surface pressure gradient and the known function
+The first term on the right hand side of (\ref{eqn:expanded_form_of_u}) is a product of the surface pressure gradient and the known function
 \begin{align}
  \int_{-H}^0 G_{ \mathfrak{u}}(z;\xi) \; d \xi & = 
  \frac{ \mathrm{e}^{\varphi \left(  z + H \right)} +  \mathrm{e}^{\varphi \left( H - z \right)} - \mathrm{e}^{2 \varphi  H} - 1}{ \nu \, \varphi^{2} \left( 1 + \mathrm{e}^{2 \varphi H} \right)} \equiv G_{\mathfrak{u},1}(z)
 \label{eqn:Guv_int_wrt_xi}
 \end{align}
 % Notebook cell reference, now summarized in the code-availability statement: (see \texttt{FrictionalGeostrophicEquationSolution.ipynb} \#1.2).
-The second term is a product of the surface stress and another known function:
+\replaced[id=CR]{The third term is}{The second term is} a product of the surface stress and another known function:
 \begin{align}
   G_{ \mathfrak{u}}(z;0) & = 
 \frac{ \mathrm{e}^{- \varphi z } }{ \nu \,\varphi  \left(1 + \mathrm{e}^{2 \varphi H } \right)}
@@ -1422,7 +1460,7 @@ The second term is a product of the surface stress and another known function:
 \label{eqn:Guv0}
 \end{align}
 % Notebook cell reference, now summarized in the code-availability statement: (see \texttt{FrictionalGeostrophicEquationSolution.ipynb} \#1.3).
-The last term, which is the baroclinic pressure gradient, is more complicated.
+\replaced[id=CR]{The second term, the baroclinic pressure gradient, is more complicated.}{The last term, which is the baroclinic pressure gradient, is more complicated.}
 We rewrite it in a more convenient form, as follows.
 \added[id=CL]{Substitute using (\ref{eqn:b_solution}), with $\kappa(0) = 1$,}
 \begin{align}
@@ -1435,7 +1473,7 @@ We rewrite it in a more convenient form, as follows.
 \label{eqn:Pi_def}
 \end{align}
 where $G_{b,1}$ and $G_{b,2}$ are given by (\ref{eqn:term1}) and (\ref{eqn:term2}).\added[id=CL]{ Here and below, the horizontal arguments of $\Pi$ and $B$ are written only where they matter, as in $\Pi(y, \xi)$ when it is differentiated in $y$.}
-Hence, (\ref{eqn:appendix_fraku}) becomes:
+Hence, (\ref{eqn:expanded_form_of_u}) becomes:
 \begin{align}
 \mathrm{Ek} \, \mathfrak{u}
 & = G_{\mathfrak{u},1}(z) \left(\partial_x  + i \partial_y \right) p_s  - \mathrm{Ek} \, G_{\mathfrak{u},2} (z)  \left( \tau^x + i \tau^y \right) \nonumber \\
@@ -1445,7 +1483,7 @@ Hence, (\ref{eqn:appendix_fraku}) becomes:
 This formula can be used to compute $\mathfrak{u}$, but it involves a double integral in the vertical direction (over $\xi$ and $\xi'$) for every $(x,y,z)$ point.
 An alternative formula is derived as follows.
 
-Consider the terms in (\ref{eqn:appendix_fraku}) involving the $x$ and $y$ derivatives of $\Pi$.
+Consider the terms in (\ref{eqn:expanded_form_of_u}) involving the $x$ and $y$ derivatives of $\Pi$.
 The $y$ derivative term is
 \begin{align}
     \int_{-H}^{0} G_{ \mathfrak{u}} ( z; \xi) \, \partial_y \Pi (y, \xi) \; d \xi  & = 
@@ -1453,18 +1491,20 @@ The $y$ derivative term is
     \int_{-H}^{0} \left[ \partial_y G_{ \mathfrak{u}} ( z; \xi) \right] \Pi (y, \xi) \; d \xi  \nonumber \\
 & =   
     \partial_y \bigg[ \int_{-H}^{0} G_{ \mathfrak{u}} ( z; \xi) \, \Pi (y, \xi) \; d \xi \bigg]
-    - \left[ \partial_y H \right]  G_{ \mathfrak{u}} ( z; -H) \, \Pi (y, -H) \nonumber \\
+    \CRold{- \left[ \partial_y H \right]  G_{ \mathfrak{u}} ( z; -H) \, \Pi (y, -H)} \nonumber \\
     & - \int_{-H}^{0} \left[ \partial_y G_{ \mathfrak{u}} ( z; \xi) \right] \Pi (y, \xi) \; d \xi
     \label{eqn:Pi_y_derivative}
 \end{align}
-using Leibniz' integration formula (footnote \ref{fn:Leibniz}) and \added[id=CL]{recalling that $G_{ \mathfrak{u}}$ depends on position through the non-dimensional Coriolis parameter in $\varphi$ and the depth $H(x,y)$.}
+\replaced[id=CR]{using the Leibniz integration formula and}{using Leibniz' integration formula (footnote) and} \added[id=CL]{recalling that $G_{ \mathfrak{u}}$ depends on position through the non-dimensional Coriolis parameter in $\varphi$ and the depth $H(x,y)$.}\added[id=CR]{ The boundary term vanishes, because $G_{\mathfrak{u}}$ is symmetric in its two arguments and satisfies the bottom boundary condition (\ref{eqn:G_u_bot_bc}), so that $G_{\mathfrak{u}}(z; -H) = G_{\mathfrak{u}}(-H; z) = 0$.}
 
+\begin{CRdeleted}
 The middle term on the right hand side of (\ref{eqn:Pi_y_derivative}) \added[id=CL]{vanishes, because $G_{\mathfrak{u}}$ is symmetric in its two arguments and satisfies the bottom boundary condition (\ref{eqn:G_u_bot_bc}):}
 \begin{align}
 G_{ \mathfrak{u}} ( z; -H) & =
 {\color{blue}G_{ \mathfrak{u}} ( -H; z) = 0} .
 \label{eqn:Guv_at_bottom}
 \end{align}
+\end{CRdeleted}
 
 The first term on the right hand side of (\ref{eqn:Pi_y_derivative}) is a sum of two terms,
 \begin{align}
@@ -1511,6 +1551,8 @@ Hence, the first term on the right hand side of (\ref{eqn:Pi_y_derivative}) is
 \label{eqn:G_uvb_and_Guvb_xi_term}
 \end{align}
 
+\added[id=CR]{Finally, substituting (\ref{eqn:Pi_expanded}) in the same way, the second term on the right hand side of (\ref{eqn:Pi_y_derivative}) consists of two pieces:}
+\begin{CRdeleted}
 Finally, we need the third term on the right hand side of (\ref{eqn:Pi_y_derivative}):
 \begin{align}
 \int_{-H}^{0} \left[ \partial_y G_{ \mathfrak{u}} ( z; \xi) \right] \Pi (x,y, \xi) \; d \xi = 
@@ -1520,6 +1562,7 @@ Finally, we need the third term on the right hand side of (\ref{eqn:Pi_y_derivat
 \label{eqn:Pi_y_term}
 \end{align}
 Like (\ref{eqn:Gu_Pi_integral}) this consists of two pieces:
+\end{CRdeleted}
 \begin{align}
 \int_{-H}^{0} \left[ \partial_y G_{ \mathfrak{u}} ( z; \xi) \right] \, \Pi (x,y, \xi) \; d \xi 
 & = 
@@ -1538,7 +1581,7 @@ G_{ \mathfrak{u}_y, {b_\xi}} ( z)  & = \int_{-H}^{0}  \partial_y G_{ \mathfrak{u
 These terms are also computed using \texttt{SymPy.jl} (see \texttt{ComputeQuadratures.ipynb}) and tested in \texttt{SymbolicsTesting.jl}.
 The corresponding $x$ derivative kernels, $G_{ \mathfrak{u}_x, b} ( z; \xi')$ and $G_{ \mathfrak{u}_x, {b_\xi}} (z)$ are defined analogously.
 
-Thus, (\ref{eqn:appendix_fraku}) leads to
+Thus, (\ref{eqn:expanded_form_of_u}) leads to
 \begin{align}
 \mathrm{Ek} \, \mathfrak{u}
 & = \left[ \left(\partial_x  + i \partial_y \right) p_s  \right] \underbrace{G_{\mathfrak{u},1} (z)}_{\text{(\ref{eqn:Guv_int_wrt_xi})}} 
@@ -1600,26 +1643,31 @@ The solvability condition, obtained by setting $v = 1$ in (\ref{eqn:ps_weak_form
 }
 
 \added[id=CL]{Similarly, the weak form to find the streamfunction for the depth-integrated flow $\Psi$ is the real part of (\ref{eqn:streamfunction_pde}), multiplied by $v$ and integrated:}
- \begin{align}
+\begin{CRdeleted}
+\begin{align*}
  \int_\Omega v
 \nabla^2 \Psi \; dy\; dx 
  & = \Re \Big\{ \int_\Omega v \left(
 - \left( i \partial_x + \partial_y \right) \left[ \mathfrak{A}\,\left( \partial_x + i \partial_y \right) p_s  + \mathfrak{B} \right] 
-\right) \; dy\; dx \Big\} , \nonumber \\
- \implies 
+\right) \; dy\; dx \Big\} ,
+\end{align*}
+\end{CRdeleted}
+\begin{align}
  \int_\Omega \nabla \Psi  \cdot \nabla v \; dy \; dx
  & = - \Re \Big\{ \int_\Omega \mathfrak{U} \, (i\partial_x + \partial_y)v \; d y \; dx \Big\} , \nonumber
 \end{align}
-where\added[id=CL]{, from (\ref{eqn:UV_AB_def}),}
+\replaced[id=CR]{with $\mathfrak{U}$ from (\ref{eqn:UV_AB_def}),}{where, from (\ref{eqn:UV_AB_def}),}
+\begin{CRdeleted}
 \begin{align}
 \mathfrak{U} = \mathfrak{A} (\partial_x + i\partial_y)p_s + \mathfrak{B} ,
 \end{align}
+\end{CRdeleted}
 assuming that $\Psi$ and $v$ vanish on the boundaries.
 These weak form equations are used to construct solutions using the \added[id=CL]{\texttt{Gridap.jl}} Julia package \citep{badia&verdugo20}.\added[id=CL]{ Both use continuous second-order Lagrange elements on a triangular mesh of the basin generated by \texttt{Gmsh}, with a uniform target element size $h$ along the coast and in the interior. The gradient $\nabla p_s$ is that of the finite-element solution, and the streamfunction solve uses nodal interpolants of $\mathfrak{A}$, $\mathfrak{B}$, and $\nabla p_s$.}
 
 
 \subsection{Vertical quadrature and evaluation of the coefficients}
-\Claude{The transport forcing $\mathfrak{B}$ (\ref{eqn:B_fn}), the bottom-stress forcing $T$ (\ref{eqn:T_fn}), and the velocity (\ref{eqn:appendix_fraku}) are evaluated as single vertical integrals.
+\Claude{The transport forcing $\mathfrak{B}$ (\ref{eqn:B_fn}), the bottom-stress forcing $T$ (\ref{eqn:T_fn}), and the velocity (\ref{eqn:expanded_form_of_u}) are evaluated as single vertical integrals.
 Each integrand is a closed-form kernel times $(\partial_x + i \partial_y) \Pi(\xi)$.
 Here $\Pi(\xi) = \int_\xi^0 b \, dz$ comes from the kernels (\ref{eqn:term1})--(\ref{eqn:term2}) with one further quadrature over $\xi'$, and its horizontal gradient is taken with centered differences at fixed $\xi$.
 All vertical integrals use a fixed composite Gauss--Legendre rule, with eight nodes per panel and panels no thicker than four times the smaller of the Ekman depth and the buoyancy diffusion depth $\sqrt{\kappa \mathrm{Ek}/\Gamma}$.

@@ -1,7 +1,7 @@
 # Cost of the three implementations of the column solution (manuscript
 # Section 6b, "Column solution"):
-#   (1) the direct double-quadrature form (B10 in VelocityFieldPrototype),
-#   (2) the symbolic-kernel form (B23; solve_pg method=:b23),
+#   (1) the direct double-quadrature form (B8 in VelocityFieldPrototype),
+#   (2) the symbolic-kernel form (B19; solve_pg method=:b23),
 #   (3) the single-integral production form (solve_pg method=:fast).
 # (1) and (2) are timed per velocity sample at the manufactured state of
 # VelocityFieldPrototype.run_manufactured_test. (2) and (3) are timed for the

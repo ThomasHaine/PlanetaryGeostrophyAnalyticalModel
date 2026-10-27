@@ -1,6 +1,6 @@
 """
 Prototype implementation and comparison of the complex horizontal velocity
-field in equations (B10) and (B23).
+field in equations (B8) and (B19).
 
 `velocity_b10` is a direct, nested-quadrature reference implementation.
 `velocity_b23` uses the symbolic vertical kernels produced by
@@ -109,7 +109,7 @@ function dGb_dξ_at_surface(z, H, κ, ψ)
            (κ * (1 + exp(-2 * ψ * H)))
 end
 
-# The surface-buoyancy kernel κ(0) ∂_ξ G_b(z; ξ)|_{ξ=0} of (52). The κ(0) is the
+# The surface-buoyancy kernel κ(0) ∂_ξ G_b(z; ξ)|_{ξ=0} of (45). The κ(0) is the
 # Green's-identity boundary term, so b(0) = b_s for any uniform κ.
 surface_buoyancy_kernel(z, H, κ, ψ) = κ * dGb_dξ_at_surface(z, H, κ, ψ)
 
@@ -146,7 +146,7 @@ end
 
 Evaluate `(d/dx + i*d/dy)` of a scalar field with centered differences.
 The manufactured test state has `H = H(y)`, matching the derivation of
-the `G_u,y` terms in (B23).
+the `G_u,y` terms in (B19).
 """
 function finite_complex_gradient(field, x, y; step=1e-5)
     dx = (field(x + step, y) - field(x - step, y)) / (2 * step)
@@ -167,7 +167,7 @@ end
 """
     velocity_b10(p, H, f, ps, τ, B, bs, x, y, z; gradient_step=1e-5)
 
-Direct reference evaluation of (B10). `ps`, `τ`, and `bs` are horizontal
+Direct reference evaluation of (B8). `ps`, `τ`, and `bs` are horizontal
 fields; `B(x, y, z)` is the interior buoyancy-restoring field. Its nested
 quadratures intentionally make it unsuitable for production use.
 """
@@ -209,7 +209,7 @@ Load the analytical kernels exported by `ComputeQuadratures.ipynb`. Run that
 notebook first if the generated kernel source needs to be regenerated.
 
 The generated `_xi` kernels integrate `∂_ξ G_b|_{ξ=0}`, which carries `1/κ`;
-they are multiplied here by κ(0) = κ, the surface factor in (52).
+they are multiplied here by κ(0) = κ, the surface factor in (45).
 """
 function load_symbolic_kernels()
     return SymbolicKernels(
@@ -251,7 +251,7 @@ end
 """
     buoyancy_transport_b23(kernels, p, H, f, f_x, f_y, B, bs, H_x, H_y, x, y)
 
-Evaluate the buoyancy-driven depth-integrated transport in equation (70).
+Evaluate the buoyancy-driven depth-integrated transport in equation (61).
 This is a general numerical B23 implementation that is suitable for checking
 new forcing fields before specialized vertically integrated kernels are added.
 """
@@ -411,7 +411,7 @@ end
     buoyancy_bottom_stress_b23(kernels, p, H, f, f_x, f_y, B, bs, H_x, H_y, x, y;
                                 vertical_step=1e-4)
 
-Evaluate the buoyancy-driven bottom stress in equation (66), using the
+Evaluate the buoyancy-driven bottom stress in equation (58), using the
 one-sided second-order approximation `-ν ∂u/∂z` at `z = -H`. It intentionally
 uses B23 velocity evaluations so variable bathymetry and general `f(x,y)` are
 treated consistently with the production velocity calculation.
@@ -438,7 +438,7 @@ end
     velocity_b23(kernels, p, H, f, ps, τ, B, bs, H_x, H_y, x, y, z;
                  gradient_step=1e-5)
 
-Production-oriented evaluation of (B23): three single vertical quadratures
+Production-oriented evaluation of (B19): three single vertical quadratures
 plus closed-form symbolic kernels. `H_x` and `H_y` are analytic bathymetric
 slopes. The x-derivative kernel is obtained from the H_y component of the
 generated G_u,y kernel by setting beta=0 and H_y=1.
@@ -458,7 +458,7 @@ end
     velocity_b23_from_gradps(kernels, p, H, f, f_x, f_y, gradps, τ, B, bs,
                              H_x, H_y, x, y, z; gradient_step=1e-5)
 
-Evaluate (B23) when `gradps(x,y)` already provides `(d/dx + i*d/dy) p_s`.
+Evaluate (B19) when `gradps(x,y)` already provides `(d/dx + i*d/dy) p_s`.
 Use this form with a finite-element pressure solve to avoid finite
 differences of the pressure interpolant. `f_x` and `f_y` are derivatives of
 the generalized Coriolis parameter.
@@ -546,7 +546,7 @@ end
 """
     run_manufactured_test(; samples=5, rtol=2e-5)
 
-Compare (B10) and (B23) at one smooth manufactured state and print timing
+Compare (B8) and (B19) at one smooth manufactured state and print timing
 and agreement. It returns the values and timing information for use from a
 notebook or a production-driver test.
 """
@@ -568,7 +568,7 @@ function run_manufactured_test(; samples=5, rtol=2e-5)
     u_b10, u_b23 = b10(), b23()
     relative_error = abs(u_b10 - u_b23) / max(abs(u_b10), eps())
     relative_error <= rtol || throw(ErrorException(
-        "(B10) and (B23) differ by $(relative_error), exceeding rtol=$rtol. " *
+        "(B8) and (B19) differ by $(relative_error), exceeding rtol=$rtol. " *
         "Check the manufactured state and kernel export."
     ))
 

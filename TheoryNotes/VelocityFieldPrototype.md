@@ -1,7 +1,7 @@
 # Velocity-field prototype
 
 `VelocityFieldPrototype.jl` compares the complex velocity \(u + iv\) from
-equations (B10) and (B23) in the supplied model notes.
+equations (B8) and (B19) of the manuscript (the function names keep the older numbers B10 and B23).
 
 The implementation uses conventional oceanographic buoyancy,
 \(\partial_z p=b\), so the internal pressure is
@@ -22,7 +22,7 @@ include("RunVelocityFieldPrototype.jl")
 ```
 
 The runner activates `TheoryNotes/Project.toml` before loading the quadrature
-dependencies. The B23 kernels are checked in as generated plain Julia source,
+dependencies. The (B19) kernels are checked in as generated plain Julia source,
 so the runner does not deserialize version-sensitive `Symbolics` objects from
 `symexpr.jld2`.
 
@@ -43,6 +43,6 @@ kernel derivation changes.
 
 The implementation uses the \((\partial_x+i\partial_y)\) convention. Supply
 analytic `H_x`, `H_y`, `f_x`, and `f_y` functions for production calculations.
-The directional B23 kernel receives the corresponding derivatives of both
+The directional (B19) kernel receives the corresponding derivatives of both
 depth and Coriolis parameter, so it supports a sign-definite, nonzero
 generalized `f(x, y)` as well as the beta-plane `f(y)` case.
