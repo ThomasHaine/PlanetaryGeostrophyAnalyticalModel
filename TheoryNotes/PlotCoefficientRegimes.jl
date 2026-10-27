@@ -1,4 +1,4 @@
-# Regime figure for the column coefficients 𝔄 (60) and S (57) (labelled A and S in the plot).
+# Regime figure for the column coefficients 𝔄 (56) and S (53) (labelled A and S in the plot).
 #
 # With uniform viscosity, f𝔄/δ_E, Ek S/δ_E, and the surface-stress weight in T
 # depend only on s = H/δ_E, where δ_E = sqrt(2νEk/|f|) is the Ekman depth. The
@@ -25,7 +25,7 @@ function scaled_coefficients(Ek, s_values; f=1.0, ν=1.0)
     q = sqrt(im * f / (ν * Ek))
     A = [PG.pressure_coefficient(p, s * δ, f) for s in s_values]
     S = [PG.bottom_stress_coefficient(p, s * δ, f) for s in s_values]
-    # Weight of the surface stress in the bottom-stress forcing T (58):
+    # Weight of the surface stress in the bottom-stress forcing T (54):
     # -2e^{qH}/(1 + e^{2qH}) = -sech(qH).
     wind = [abs(2exp(q * s * δ) / (1 + exp(2q * s * δ))) for s in s_values]
     return (;
