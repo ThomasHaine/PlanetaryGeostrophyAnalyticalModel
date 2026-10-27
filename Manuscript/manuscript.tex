@@ -53,6 +53,11 @@
 \definechangesauthor[name={Claude}, color=blue]{CL}
 % Review corrections of 2026-10-26, for checking.
 \definechangesauthor[name={Claude review}, color=magenta]{CR}
+% Review markup for CR changes; remove with them.
+\newcounter{CRsavedeq}
+\newenvironment{CRdeleted}{\setcounter{CRsavedeq}{\value{equation}}\renewcommand{\theequation}{del}%
+  \renewcommand{\myfootnote}[1]{\textsf{\small (footnote)}}\renewcommand{\added}[2][]{##2}\color{magenta!55}\textsf{\small [deleted:} }%
+  {\textsf{\small ]}\setcounter{equation}{\value{CRsavedeq}}}
 
 %% May use \\ to break lines in title:
 
@@ -763,6 +768,8 @@ A simpler Dirichlet condition such as $p_s = 0$ removes only the geostrophic par
 \caption{\label{fig:buoyancy_solutions} (a) and (c) Example solutions for buoyancy profiles $b(z)$ for various surface values $b_s$, forcing profiles $B(z)$ \added[id=CL]{(faint colors)}, and Ekman numbers $\mathrm{Ek}$ (see (\ref{eqn:b_solution})). (b) and (d) show the corresponding \added[id=CL]{Green's functions $G_b(z;\xi)$ for various source points $\xi$ (see (\ref{eqn:b_Greens_fn})), and $\mathrm{Ek} \, \partial_\xi G_b(z;\xi)|_{\xi=0}$ (purple; see (\ref{eqn:dG_b_d_xi})).} $H = \Gamma = \kappa = 1$ in this figure.}
 \end{figure}
 
+\added[id=CR]{Figure~\ref{fig:buoyancy_solutions} shows buoyancy profiles and Green's functions for $\mathrm{Ek} = 0.25$ and 0.025 (rows), with $H = \Gamma = \kappa = 1$. The profiles match $b_s$ at the surface and the no-flux condition (\ref{eqn:simple_bot_b_bc}) at the bed, and are drawn more strongly towards $B(z)$ at small $\mathrm{Ek}$. The Green's functions $G_b(z;\xi)$, which weight $B$ in (\ref{eqn:b_solution}), peak with a kink at $z = \xi$ and narrow as $\mathrm{Ek}$ decreases. The surface kernel $\partial_\xi G_b|_{\xi=0}$, which multiplies $b_s$, equals one at the surface (the plotted curves are scaled by $\mathrm{Ek}$) and decays with depth over $\psi^{-1} = (\kappa \mathrm{Ek}/\Gamma)^{1/2}$.}
+\begin{CRdeleted}
 Examples of buoyancy solutions $b$ and buoyancy Green's functions $G_b$ are plotted in Figure \ref{fig:buoyancy_solutions}.
 Two Ekman numbers are shown ($\mathrm{Ek} =$ 0.25 and 0.025), according to the row of the subplot, and $H = \Gamma = \kappa = 1$ (so $\psi = \mathrm{Ek}^{-1/2}$ here).
 Four example $b$ profiles are shown for combinations of $b_s = 0$ and $b_s = 0.1$, and $B(z) = z$ and $B(z) = \mathrm{e}^{ 4 z/H} - 1$ (the $B(z)$ relaxation profiles are also plotted in Figure \ref{fig:buoyancy_solutions}a, c).
@@ -775,6 +782,7 @@ These functions weight the contribution from the relaxation profile $B$ in (\ref
 Figure \ref{fig:buoyancy_solutions} \added[id=CL]{also shows the $\partial_\xi G_b(z;\xi) |_{\xi=0}$ functions from (\ref{eqn:dG_b_d_xi}), multiplied by $\mathrm{Ek}$.}
 \added[id=CL]{Unscaled, they equal one at the surface (so the plotted curves reach $\mathrm{Ek}$ there), and they decay with depth,} more rapidly for smaller Ekman number.
 These functions multiply the surface boundary condition $b_s$ in (\ref{eqn:b_solution}). 
+\end{CRdeleted}
 
 
 
@@ -787,6 +795,8 @@ See text for explanation of the phase convention.
 }
 \end{figure}
 
+\added[id=CR]{Figure~\ref{fig:velocity_Gsfn} shows $G_\mathfrak{u}$ for the same two Ekman numbers, with $H = f = \nu = 1$, and recovers the classical Ekman results; phases are measured anticlockwise from the $x$ direction. For an eastward surface stress alone, the surface velocity $-G_{\mathfrak{u}}(0;0)\,\tau^x$ from (\ref{eqn:expanded_form_of_u}) has a phase of $-45^\circ$ at $\mathrm{Ek} = 0.025$, a current $45^\circ$ to the right of the stress in the Northern Hemisphere \citep{salmon98,vallis06}. For an eastward surface pressure gradient alone, the depth-integrated kernel (Gu\_int) has a phase of $90^\circ$, the northward geostrophic current, and the bottom stress, proportional to $S \propto \tanh(\varphi H)/\varphi \rightarrow (1 - i)/\sqrt{2}$ as $\mathrm{Ek} \rightarrow 0$, lies at $135^\circ$ to that current \citep{vallis06}. Each $G_\mathfrak{u}(z;\xi)$ satisfies the boundary conditions (\ref{eqn:G_u_sfc_bc})--(\ref{eqn:G_u_bot_bc}) and has a kinked peak at $z = \xi$, where the response is $45^\circ$ to the right of the pressure-gradient force; it decays above and below in internal Ekman spirals over the Ekman depth, which is proportional to $\mathrm{Ek}^{1/2}$, and the influence of the surface pressure gradient reaches down to the bottom Ekman layer.}
+\begin{CRdeleted}
 The horizontal velocity Green's function $G_\mathfrak{u}$ is plotted in Figure \ref{fig:velocity_Gsfn}.
 Two Ekman numbers are shown ($\mathrm{Ek} =$ 0.25 and 0.025), according to the row of the subplot, and $H = f = \nu = 1$ (so $\phi = \mathrm{Ek}^{-1/2}$ here).
 The $G_\mathfrak{u}$ magnitude is shown in the left column, and the phase in the right column.
@@ -814,6 +824,7 @@ Therefore, the water moves at \added[id=CL]{$45^\circ$} to the right of the pres
 This response decays with height above and below $z=\xi$ in clockwise spirals that represent internal Ekman layers.
 \added[id=CL]{The decay length scale is the Ekman depth, which is proportional to the square root of the Ekman number, as expected.}
 The influence of the surface pressure gradient extends throughout the water column until it decays to zero in the bottom Ekman layer (Figure \ref{fig:velocity_Gsfn} Gu\_int curves).
+\end{CRdeleted}
 
 \begin{figure}
 \centering
@@ -921,6 +932,8 @@ The area-integrated GCVB over the northern and southern halves of the basin, eit
 
 \paragraph{Comparison with a primitive-equation model.}
 Appendix~C compares the solution with \texttt{Oceananigans.jl} \citep{wagner_etal25}, whose hydrostatic free-surface model is integrated from rest to a steady state with momentum and buoyancy advection switched off.
+\added[id=CR]{In a flat-bottomed elliptical basin with $\mathrm{Ek} = 0.02$, the two models solve the same linear equations, and on the finest \texttt{Oceananigans.jl} grid the relative $L_2$ differences away from the coast and the bottom are 1.5\% in $\mathbf{U}$ and 1.1\% in $\mathbf{u}$, converging with the horizontal grid spacing (Fig.~\ref{fig:oceananigans_comparison}). Since buoyancy is column-local, these test the surface-pressure solve and the coastal condition. The PG solution takes about a second to compute, 25 to 150 times faster than the \texttt{Oceananigans.jl} run (Appendix~C).}
+\begin{CRdeleted}
 The test uses an elliptical basin on a $\beta$-plane with $\mathrm{Ek} = 0.02$, a flat bottom of depth 0.65 bounded by a vertical coastal wall, weak zonal surface stress, and spatially varying surface and restoring buoyancy.
 The two models then solve the same linear equations and differ only in their discretizations.
 Away from the coast and the bottom, the relative $L_2$ difference in the depth-integrated transport $\mathbf{U}$ is 11\%, 4.3\%, and 1.5\% on $40 \times 30 \times 20$, $80 \times 60 \times 40$, and $160 \times 120 \times 40$ \texttt{Oceananigans.jl} grids, and in the horizontal velocity $\mathbf{u}$ it is 8.0\%, 3.4\%, and 1.1\% (Fig.~\ref{fig:oceananigans_comparison}).
@@ -928,6 +941,7 @@ Away from the coast and the bottom, the relative $L_2$ difference in the depth-i
 The buoyancy differences are $1.5 \times 10^{-3}$, $3.5 \times 10^{-4}$, and $3.5 \times 10^{-4}$, limited by the vertical resolution.
 Unlike buoyancy, which is column-local, $\mathbf{u}$ and $\mathbf{U}$ test the surface-pressure solve and the coastal condition.
 The PG solution takes about a second to compute, 25 to 150 times faster than the \texttt{Oceananigans.jl} run (Appendix~C).
+\end{CRdeleted}
 
 \begin{figure}
 \centering
@@ -951,7 +965,7 @@ The PG solution takes about a second to compute, 25 to 150 times faster than the
 The classical model is that of \citet{stommel48}, $r \nabla^2 \Psi + \beta \partial_x \Psi = \mathrm{Ek}\, \hat{\mathbf{z}} \cdot \nabla \times \boldsymbol{\tau}$ with $\Psi = 0$ on the coast, whose solution separates as }\added[id=CL]{$\Psi = X(x) \sin (\pi \hat{y})$}\added[id=CL]{.
 Its drag coefficient is not fitted: $r = f_0 \delta_E/(2H)$ is the deep limit of the PG bottom stress (Section~\ref{sect:results}\ref{sect:kernels}).
 The PG streamfunction is integrated from the PG transport, $\Psi = -\int_x^{x_E} V \, dx'$, independently of the streamfunction solve (\ref{eqn:streamfunction_pde}).
-For $s = H/\delta_E = 28$, 14, 7, and 3.5 ($\mathrm{Ek}$ from $6.25 \times 10^{-4}$ to 0.04), the relative $L_2$ difference in $\Psi$ is 2.6\%, 3.3\%, 5.3\%, and 8.0\%.
+}\replaced[id=CR]{For $s = H/\delta_E$ from 28 to 3.5 ($\mathrm{Ek}$ from $6.25 \times 10^{-4}$ to 0.04), the relative $L_2$ difference in $\Psi$ rises from 2.6\% to 8.0\% (Fig.~\ref{fig:stommel_comparison}d).}{For $s = H/\delta_E = 28$, 14, 7, and 3.5 ($\mathrm{Ek}$ from $6.25 \times 10^{-4}$ to 0.04), the relative $L_2$ difference in $\Psi$ is 2.6\%, 3.3\%, 5.3\%, and 8.0\%.}\added[id=CL]{
 PG reproduces both the Sverdrup interior and the western boundary layer of width $r/\beta$ (Fig.~\ref{fig:stommel_comparison}).
 Two corrections, both implied by the PG bottom stress, account for most of the remaining difference.
 First, the Ekman drag varies with latitude, $r(y) = f \delta_E/(2H) \propto f^{1/2}$; with this local drag the difference falls to 1.0\% and 1.2\% for $s = 28$ and 14.
@@ -971,8 +985,8 @@ The remaining 1\% is comparable to the error of evaluating the corrected model r
 \paragraph{\added[id=CL]{$\beta$ plumes.}}
 \added[id=CL]{An isolated Gaussian patch of positive wind-stress curl, of radius 0.2, in a flat $4 \times 2$ basin with $f = 1 + 0.3\,y$ drives the westward $\beta$ plume of \citet{stommel82}.
 The classical model is the frictional vorticity equation $\nabla \cdot (r \nabla \Psi) + \beta \partial_x \Psi = \mathrm{Ek}\, \hat{\mathbf{z}} \cdot \nabla \times \boldsymbol{\tau}$ with $\Psi = 0$ on the coast, solved by second-order finite differences in the same basin, }\added[id=CL]{so that the walls and a variable drag are treated consistently.}\added[id=CL]{
-With the constant derived drag $r = f_0 \delta_E/(2H)$, the relative $L_2$ difference in $\Psi$ is 1.5\%, 2.7\%, 6.5\%, and 8.8\% for $s = 26$, 13, 6.5, and 3.2.
-With the local Ekman drag acting over the displacement thickness, $r(y) = f \delta_E/[2(H - \delta_E/2)]$, it is 0.8\%, 1.3\%, 1.9\%, and 9.1\% (Fig.~\ref{fig:beta_plume_comparison}).
+}\replaced[id=CR]{With the constant derived drag $r = f_0 \delta_E/(2H)$, the relative $L_2$ difference in $\Psi$ rises from 1.5\% at $s = 26$ to 8.8\% at $s = 3.2$, and with the local Ekman drag acting over the displacement thickness, $r(y) = f \delta_E/[2(H - \delta_E/2)]$, from 0.8\% to 9.1\% (Fig.~\ref{fig:beta_plume_comparison}d).}{With the constant derived drag $r = f_0 \delta_E/(2H)$, the relative $L_2$ difference in $\Psi$ is 1.5\%, 2.7\%, 6.5\%, and 8.8\% for $s = 26$, 13, 6.5, and 3.2.
+With the local Ekman drag acting over the displacement thickness, $r(y) = f \delta_E/[2(H - \delta_E/2)]$, it is 0.8\%, 1.3\%, 1.9\%, and 9.1\% (Fig.~\ref{fig:beta_plume_comparison}).}\added[id=CL]{
 As for the gyre, these two corrections, both implied by the PG bottom stress, }\added[id=CL]{reduce the difference by a factor of 1.9 to 3.4 wherever $s \gtrsim 6$,}\added[id=CL]{ and the layer model fails near $s \approx 3$.}
 
 \added[id=CL]{\citet{haine&fuller16} give the exact solution for a $\beta$ plume beside a straight coast inclined at angle $\theta$ to east--west, with Rayleigh drag $\lambda$: the free-space plume of the source minus a weighted image source reflected in the coast.
@@ -1007,7 +1021,7 @@ Eliminating $p_s$ gives an elliptic equation for $\Psi$ that, for $\delta_E \ll 
 With classical $f/H$ steering ($H_g = H$), the relative $L_2$ difference in $\Psi$ over the deep basin ($H > 0.6$) is 15\%, 4.3\%, and 2.0\% for $\mathrm{Ek} = 5 \times 10^{-3}$, $1.25 \times 10^{-3}$, and $2 \times 10^{-4}$, where the deep basin has $s = 10$, 20, and 50.
 Steering along $f/(H - \delta_E/2)$ ($H_g = H - \delta_E/2$), with the bottom Ekman layer as a displacement thickness, reduces it to 6.2\%, 2.0\%, and 0.2\% (Fig.~\ref{fig:topographic_steering_comparison}).
 On the shelf ($H < 0.2$), where $s = 1$, 2, and 5, the differences are 52\%, 13\%, and 4.4\% with $f/H$ steering, and 40\%, 13\%, and 0.6\% with $f/(H - \delta_E/2)$.
-}\added[id=CL]{Where the shelf is less than one to two Ekman depths deep,}\added[id=CL]{ the Ekman layers overlap, the transport becomes the lubrication flow down the pressure gradient of Section~\ref{sect:results}\ref{sect:kernels}, and neither steering depth recovers the PG solution.}
+}\added[id=CL]{Where the shelf is less than one to two Ekman depths deep,}\added[id=CL]{}\replaced[id=CR]{ neither steering depth recovers the PG solution, because the Ekman layers overlap (Section~\ref{sect:results}\ref{sect:kernels}).}{ the Ekman layers overlap, the transport becomes the lubrication flow down the pressure gradient of Section~\ref{sect:results}\ref{sect:kernels}, and neither steering depth recovers the PG solution.}\added[id=CL]{}
 
 \begin{figure}
 \centering
@@ -1024,13 +1038,16 @@ On the shelf ($H < 0.2$), where $s = 1$, 2, and 5, the differences are 52\%, 13\
 
 \added[id=CL]{To show the method on a less idealized geometry, Fig.~\ref{fig:double_basin_showcase} shows a double basin on an $f$-plane with $\mathrm{Ek} = 0.002$, so that $\delta_E = 0.063$.
 Two deep bowls are separated by a shallow ridge running west from the eastern shelf and joined by a deeper western strait, loosely modeled on the Nordic Seas and Fram Strait.
-The outer shelf is 0.26 deep, only 4.1 Ekman depths}\added[id=CL]{}\added[id=CL]{, so that the Ekman layers fill much of the shelf water column, although they overlap only below one to two Ekman depths (Section~\ref{sect:results}\ref{sect:kernels}),}\added[id=CL]{}\added[id=CL]{ and the deepest water is about 19 Ekman depths.
+The outer shelf is 0.26 deep, only 4.1 Ekman depths}\added[id=CL]{}\added[id=CL]{}\replaced[id=CR]{,}{, so that the Ekman layers fill much of the shelf water column, although they overlap only below one to two Ekman depths (Section~\ref{sect:results}\ref{sect:kernels}),}\added[id=CL]{}\added[id=CL]{}\added[id=CL]{ and the deepest water is about 19 Ekman depths.
 Cyclonic wind-stress cells over each bowl, a meridional surface-buoyancy gradient, and uniform restoring stratification drive the circulation.
 The steady circulation consists of two cyclonic gyres steered by the closed isobaths of each bowl, joined through the strait, where the meridional velocity is nearly uniform with depth down to the bed (Fig.~\ref{fig:double_basin_showcase}a, b).}
 
+\added[id=CR]{Table~\ref{tab:double_basin} lists the cost of each stage and the closure of each balance: the solve on a mesh of size 0.02 takes 7~s on 18 threads, and the balances close as in Section~\ref{sect:results}\ref{sect:verification}.}
+\begin{CRdeleted}
 \added[id=CL]{Table~\ref{tab:double_basin} lists the cost of each stage on 18 threads.
 The solve on a mesh of size 0.02 takes }\added[id=CL]{7~s}\added[id=CL]{, }\added[id=CL]{and the depth-integrated momentum balance and the three independent vorticity balances (BV, GCVB, and TDVB) }\added[id=CL]{take a further 16~s on a $69 \times 69$ diagnostic grid that spans the basin.}\added[id=CL]{}\added[id=CL]{
 }\added[id=CL]{The depth-integrated momentum balance closes to $4 \times 10^{-6}$,}\added[id=CL]{ and the cell-averaged vorticity balances to 3\%, the residual being set by the diagnostic grid (Section~\ref{sect:results}\ref{sect:verification}).}
+\end{CRdeleted}
 
 \added[id=CL]{The solution also tests the integral constraint of \citet{nost&isachsen03}.
 On closed $f/H$ contours, the bottom geostrophic velocity follows from the forcing integrated over the enclosed area once a drag law is assumed.
@@ -1039,7 +1056,7 @@ With the drag derived from the PG bottom stress, }\added[id=CL]{$\tau_b^x + i \t
 }\added[id=CL]{Because the derived stress is taken from the PG solution itself, this is a consistency check, but it suggests that the drag closure, not the integral constraint, limits the classical method.}\added[id=CL]{}
 
 \added[id=CL]{Finally, one adjoint solve of the surface-pressure equation gives the sensitivity of the northward transport through the strait }\added[id=CL]{to the wind stress and the restoring buoyancy everywhere (Fig.~\ref{fig:double_basin_showcase}d--f).}\added[id=CL]{
-The adjoint identity holds to $10^{-14}$, }\added[id=CL]{and the adjoint solve and kernel sampling take 21~s.}\added[id=CL]{
+}\replaced[id=CR]{The adjoint identity holds to $10^{-14}$.}{The adjoint identity holds to $10^{-14}$, }\added[id=CL]{}\added[id=CL]{}\replaced[id=CR]{}{and the adjoint solve and kernel sampling take 21~s.}\added[id=CL]{}\added[id=CL]{
 The kernels extend from the strait along the isobaths of the western slope and around the southern bowl, mapping the region whose forcing sets the strait transport.}
 
 \begin{table}
@@ -1078,13 +1095,13 @@ Adjoint sensitivity of the strait transport & \added[id=CL]{21.5} & \\
 
 \added[id=CL]{Table~\ref{tab:cost_scaling} shows how }\added[id=CL]{the wall-clock time of the solve scales}\added[id=CL]{, in the test basin of Section~\ref{sect:results}\ref{sect:verification} on 18 threads.
 The evaluation of the column integrals for $\mathfrak{A}$, $\mathfrak{B}$, $S$, and $T$ at the quadrature points of the }\added[id=CL]{surface-pressure mesh dominates the time cost}\added[id=CL]{; the finite-element assembly and linear solve take at most a fifth.
-At fixed $\mathrm{Ek}$, the cost is proportional to the number of quadrature points, from 0.22~s at $h = 0.08$ to 11.7~s at $h = 0.01$.
-At fixed mesh, it grows with $s = H/\delta_E$, }\added[id=CL]{because each column is split into $\lceil H/(4\delta_E) \rceil$ Gauss--Legendre panels (Appendix~C; the buoyancy diffusion depth $(\kappa \mathrm{Ek}/\Gamma)^{1/2}$ exceeds $\delta_E$ here):}\added[id=CL]{}\added[id=CL]{ from 0.76~s at $\mathrm{Ek} = 10^{-2}$}\added[id=CL]{ to 202~s at $\mathrm{Ek} = 10^{-5}$, faster than $s$.
-The column integrals are independent, and the solve at $h = 0.02$ takes 16.9~s on one thread and 2.0~s on 18, a speed-up of 8.5 on a processor with 6 performance and 12 efficiency cores.}
+}\replaced[id=CR]{At fixed $\mathrm{Ek}$, the cost is proportional to the number of quadrature points.}{At fixed $\mathrm{Ek}$, the cost is proportional to the number of quadrature points, from 0.22~s at $h = 0.08$ to 11.7~s at $h = 0.01$.}\added[id=CL]{
+At fixed mesh, it grows with $s = H/\delta_E$, }\added[id=CL]{because each column is split into $\lceil H/(4\delta_E) \rceil$ Gauss--Legendre panels (Appendix~C; the buoyancy diffusion depth $(\kappa \mathrm{Ek}/\Gamma)^{1/2}$ }\replaced[id=CR]{exceeds $\delta_E$ here),}{exceeds $\delta_E$ here):}\added[id=CL]{}\added[id=CL]{}\added[id=CL]{}\replaced[id=CR]{}{ from 0.76~s at $\mathrm{Ek} = 10^{-2}$}\added[id=CL]{}\added[id=CL]{}\replaced[id=CR]{ and in practice somewhat faster than $s$.}{ to 202~s at $\mathrm{Ek} = 10^{-5}$, faster than $s$.}\added[id=CL]{
+}\replaced[id=CR]{The column integrals are independent, and 18 threads speed the solve up by a factor of 8.5 on a processor with 6 performance and 12 efficiency cores.}{The column integrals are independent, and the solve at $h = 0.02$ takes 16.9~s on one thread and 2.0~s on 18, a speed-up of 8.5 on a processor with 6 performance and 12 efficiency cores.}\added[id=CL]{}
 
 \added[id=CL]{Table~\ref{tab:dimensional} gives dimensional values for a basin of width $L = 1000$~km and depth $H_0 = 4000$~m with $f_0 = 10^{-4}$~s$^{-1}$.
-The Ekman numbers of the examples, $0.02$ to $1.3 \times 10^{-4}$, correspond to vertical viscosities of 32 to 0.2~m$^2$\,s$^{-1}$ and Ekman depths of 800 to 64~m.
-A realistic $\nu_0 \approx 10^{-2}$~m$^2$\,s$^{-1}$ gives $\mathrm{Ek} \approx 6 \times 10^{-6}$ and $\delta_E \approx 14$~m.
+}\replaced[id=CR]{The examples have Ekman depths of 64 to 800~m, against about 14~m for a realistic $\nu_0 \approx 10^{-2}$~m$^2$\,s$^{-1}$ ($\mathrm{Ek} \approx 6 \times 10^{-6}$).}{The Ekman numbers of the examples, $0.02$ to $1.3 \times 10^{-4}$, correspond to vertical viscosities of 32 to 0.2~m$^2$\,s$^{-1}$ and Ekman depths of 800 to 64~m.
+A realistic $\nu_0 \approx 10^{-2}$~m$^2$\,s$^{-1}$ gives $\mathrm{Ek} \approx 6 \times 10^{-6}$ and $\delta_E \approx 14$~m.}\added[id=CL]{
 Two costs limit such small Ekman numbers.
 The column integrals grow with $s$, which reaches about 300, and the mesh must resolve the frictional layers of width $\ell \approx \delta_E/(2|\nabla H|)$ }\added[id=CL]{over slopes (Section~\ref{sect:discussion})}\added[id=CL]{}\added[id=CL]{, about 0.1--1~km for continental slopes with $|\nabla H| \approx 0.01$--0.05 and a few kilometers only for gentle slopes of $10^{-3}$.}\added[id=CL]{
 Extrapolating linearly from $\mathrm{Ek} = 10^{-5}$ at $h = 0.04$, }\added[id=CL]{a uniform mesh of size $h = 0.005$ (5~km), fine enough only for gentle slopes, would take about 4~hours on 18 threads, and resolving continental slopes with a uniform mesh }\added[id=CL]{would cost $10^2$ to $10^3$ times more (for $h \approx \ell$),}\added[id=CL]{ which is impractical, so realistic Ekman numbers call for meshes refined over steep slopes.}\added[id=CL]{}
