@@ -336,29 +336,9 @@ function solve_pg(
 end
 
 function horizontal_velocity_column(solution::PGSolution, x, y)
-    problem = solution.problem
     require_water(solution, x, y)
-    if solution.pressure.method === :fast
-        return horizontal_velocity_column(
-            solution, x, y, solution.pressure.gradps(x, y),
-        )
-    end
-    return VelocityFieldPrototype.velocity_b23_column_from_gradps(
-        solution.kernels,
-        internal_parameters(problem.parameters),
-        problem.depth,
-        problem.coriolis,
-        problem.coriolis_x,
-        problem.coriolis_y,
-        solution.pressure.gradps,
-        problem.wind_stress,
-        problem.restoring_buoyancy,
-        problem.surface_buoyancy,
-        problem.depth_x,
-        problem.depth_y,
-        x,
-        y;
-        gradient_step=problem.derivative_step,
+    return horizontal_velocity_column(
+        solution, x, y, solution.pressure.gradps(x, y),
     )
 end
 
@@ -842,21 +822,11 @@ function forcing_kernel_from_local_operator(
     x,
     y
 )
-    kernel = fill(NaN, size(local_values))
-    for k in axes(local_values, 3), j in eachindex(y), i in eachindex(x)
-        wet2 = @view wet[:, :, k]
-        centered_stencil_is_wet(wet2, i, j) || continue
-        local2 = @view local_values[:, :, k]
-        gradient_x2 = @view gradient_x[:, :, k]
-        gradient_y2 = @view gradient_y[:, :, k]
-        kernel[i, j, k] = (
-            local2[i, j] -
-            centered_horizontal_derivative(
-                gradient_x2, wet2, x, i, j, 1,
-            ) -
-            centered_horizontal_derivative(
-                gradient_y2, wet2, y, i, j, 2,
-            )
+    kernel = similar(local_values, Float64)
+    for k in axes(local_values, 3)
+        kernel[:, :, k] = forcing_kernel_from_local_operator(
+            view(local_values, :, :, k), view(gradient_x, :, :, k),
+            view(gradient_y, :, :, k), view(wet, :, :, k), x, y,
         )
     end
     return kernel
@@ -1258,14 +1228,8 @@ function depth_integrated_vorticity_terms(solution::PGSolution, x, y)
         stress.x + im * stress.y
     end
 
-    bottom_stress_x = (
-        bottom_stress_complex(x + step, y) -
-        bottom_stress_complex(x - step, y)
-    ) / (2step)
-    bottom_stress_y = (
-        bottom_stress_complex(x, y + step) -
-        bottom_stress_complex(x, y - step)
-    ) / (2step)
+    bottom_stress_x, bottom_stress_y =
+        centered_field_derivatives(bottom_stress_complex, x, y, step)
     bottom_pressure_gradient = VelocityFieldPrototype.finite_complex_gradient(
         (xx, yy) -> bottom_pressure(solution, xx, yy),
         x, y; step,
@@ -1687,25 +1651,10 @@ struct PGSurfacePressureEquationDiagnostics{
     timings::T
 end
 
-function horizontal_derivative(values, wet, coordinates, i, j, k, axis)
-    n = axis == 1 ? size(values, 1) : size(values, 2)
-    q = axis == 1 ? i : j
-    left = q > 1 && (axis == 1 ? wet[i - 1, j, k] : wet[i, j - 1, k])
-    right = q < n && (axis == 1 ? wet[i + 1, j, k] : wet[i, j + 1, k])
-    center = values[i, j, k]
-    if left && right
-        lo = axis == 1 ? values[i - 1, j, k] : values[i, j - 1, k]
-        hi = axis == 1 ? values[i + 1, j, k] : values[i, j + 1, k]
-        return (hi - lo) / (coordinates[q + 1] - coordinates[q - 1])
-    elseif right
-        hi = axis == 1 ? values[i + 1, j, k] : values[i, j + 1, k]
-        return (hi - center) / (coordinates[q + 1] - coordinates[q])
-    elseif left
-        lo = axis == 1 ? values[i - 1, j, k] : values[i, j - 1, k]
-        return (center - lo) / (coordinates[q] - coordinates[q - 1])
-    end
-    return 0.0
-end
+horizontal_derivative(values, wet, coordinates, i, j, k, axis) =
+    horizontal_derivative(
+        view(values, :, :, k), view(wet, :, :, k), coordinates, i, j, axis,
+    )
 
 function horizontal_derivative(values::AbstractMatrix, wet, coordinates, i, j, axis)
     n = axis == 1 ? size(values, 1) : size(values, 2)
@@ -3866,81 +3815,15 @@ function plot_dim_balance(
 end
 
 """
-    plot_barotropic_vorticity_balance(diagnostics; output=nothing)
+    plot_vorticity_balance_row(diagnostics, fields, name; output=nothing)
 
-Plot the nonzero signed terms and closure residual in the barotropic vorticity
-equation (27). The exact fixed-lid transport divergence is retained in the
-diagnostic data and residual but omitted from the figure. All plotted physical
-terms and the residual share symmetric color limits.
+Plot the five `(title, values)` panels of one vorticity balance in a row, with
+a shared symmetric color scale set by the four physical terms.
 """
-function plot_barotropic_vorticity_balance(
-    diagnostics::PGBarotropicVorticityDiagnostics;
-    output=nothing,
-)
-    fields = (
-        ("U ∂x f + V ∂y f", diagnostics.planetary_vorticity_advection),
-        ("J(p_b, H)", diagnostics.bottom_pressure_torque),
-        ("Ek curl τ_b", diagnostics.bottom_stress_curl),
-        ("Ek curl τ", diagnostics.surface_stress_curl),
-        ("residual", diagnostics.residual),
-    )
+function plot_vorticity_balance_row(diagnostics, fields, name; output=nothing)
     scale = maximum(finite_absmax(values) for (_, values) in fields[1:4])
-    @info "Plotting barotropic vorticity balance" output
-    figure, _ = timed_stage("rendering barotropic vorticity balance plot") do
-        panels = [
-            heatmap(
-                diagnostics.x, diagnostics.y, values';
-                xlabel="x",
-                ylabel=index == 1 ? "y" : "",
-                title,
-                clims=(-scale, scale),
-                color=:balance,
-                colorbar=false,
-                aspect_ratio=:equal,
-                yticks=index == 1 ? :auto : false,
-                titlefontsize=11,
-                guidefontsize=10,
-                tickfontsize=8,
-                margin=1.5Plots.mm,
-            )
-            for (index, (title, values)) in enumerate(fields)
-        ]
-        layout = @layout [grid(1, 5) colorbar{0.07w}]
-        plot(
-            panels..., dim_balance_colorbar(scale);
-            layout,
-            size=(1650, 390),
-            plot_title="barotropic vorticity balance",
-            plot_titlefontsize=17,
-            margin=2Plots.mm,
-        )
-    end
-    return save_diagnostic_plot(
-        figure, output, "barotropic vorticity balance plot",
-    )
-end
-
-"""
-    plot_vorticity_balance(diagnostics; output=nothing)
-
-Plot every signed term and the closure residual in the depth-integrated
-vorticity equation (32). All physical terms and the residual share symmetric
-color limits.
-"""
-function plot_vorticity_balance(
-    diagnostics::PGVorticityDiagnostics;
-    output=nothing,
-)
-    fields = (
-        ("U ∂x f + V ∂y f", diagnostics.planetary_vorticity_advection),
-        ("f w_b", diagnostics.bottom_vortex_stretching),
-        ("Ek curl τ_b", diagnostics.bottom_stress_curl),
-        ("Ek curl τ", diagnostics.surface_stress_curl),
-        ("residual", diagnostics.residual),
-    )
-    scale = maximum(finite_absmax(values) for (_, values) in fields[1:4])
-    @info "Plotting depth-integrated vorticity balance" output
-    figure, _ = timed_stage("rendering vorticity balance plot") do
+    @info "Plotting $name" output
+    figure, _ = timed_stage("rendering $name plot") do
         panels = [
             heatmap(
                 diagnostics.x, diagnostics.y, values';
@@ -3964,14 +3847,55 @@ function plot_vorticity_balance(
             panels..., dim_balance_colorbar(scale);
             layout,
             size=(1650, 390),
-            plot_title="depth-integrated vorticity balance",
+            plot_title=name,
             plot_titlefontsize=17,
             margin=2Plots.mm,
         )
     end
-    return save_diagnostic_plot(
-        figure, output, "depth-integrated vorticity balance plot",
+    return save_diagnostic_plot(figure, output, "$name plot")
+end
+
+"""
+    plot_barotropic_vorticity_balance(diagnostics; output=nothing)
+
+Plot the nonzero signed terms and closure residual in the barotropic vorticity
+equation (27). The exact fixed-lid transport divergence is retained in the
+diagnostic data and residual but omitted from the figure. All plotted physical
+terms and the residual share symmetric color limits.
+"""
+function plot_barotropic_vorticity_balance(
+    diagnostics::PGBarotropicVorticityDiagnostics;
+    output=nothing,
+)
+    fields = (
+        ("U ∂x f + V ∂y f", diagnostics.planetary_vorticity_advection),
+        ("J(p_b, H)", diagnostics.bottom_pressure_torque),
+        ("Ek curl τ_b", diagnostics.bottom_stress_curl),
+        ("Ek curl τ", diagnostics.surface_stress_curl),
+        ("residual", diagnostics.residual),
     )
+    return plot_vorticity_balance_row(diagnostics, fields, "barotropic vorticity balance"; output)
+end
+
+"""
+    plot_vorticity_balance(diagnostics; output=nothing)
+
+Plot every signed term and the closure residual in the depth-integrated
+vorticity equation (32). All physical terms and the residual share symmetric
+color limits.
+"""
+function plot_vorticity_balance(
+    diagnostics::PGVorticityDiagnostics;
+    output=nothing,
+)
+    fields = (
+        ("U ∂x f + V ∂y f", diagnostics.planetary_vorticity_advection),
+        ("f w_b", diagnostics.bottom_vortex_stretching),
+        ("Ek curl τ_b", diagnostics.bottom_stress_curl),
+        ("Ek curl τ", diagnostics.surface_stress_curl),
+        ("residual", diagnostics.residual),
+    )
+    return plot_vorticity_balance_row(diagnostics, fields, "depth-integrated vorticity balance"; output)
 end
 
 """
@@ -3995,42 +3919,7 @@ function plot_geostrophic_contour_vorticity_balance(
         ("-Ek curl(τ/H)", .-diagnostics.surface_stress_curl),
         ("residual", diagnostics.residual),
     )
-    scale = maximum(finite_absmax(values) for (_, values) in fields[1:4])
-    @info "Plotting geostrophic-contour vorticity balance" output
-    figure, _ = timed_stage(
-        "rendering geostrophic-contour vorticity balance plot",
-    ) do
-        panels = [
-            heatmap(
-                diagnostics.x, diagnostics.y, values';
-                xlabel="x",
-                ylabel=index == 1 ? "y" : "",
-                title,
-                clims=(-scale, scale),
-                color=:balance,
-                colorbar=false,
-                aspect_ratio=:equal,
-                yticks=index == 1 ? :auto : false,
-                titlefontsize=11,
-                guidefontsize=10,
-                tickfontsize=8,
-                margin=1.5Plots.mm,
-            )
-            for (index, (title, values)) in enumerate(fields)
-        ]
-        layout = @layout [grid(1, 5) colorbar{0.08w}]
-        plot(
-            panels..., dim_balance_colorbar(scale);
-            layout,
-            size=(1650, 390),
-            plot_title="geostrophic-contour vorticity balance",
-            plot_titlefontsize=17,
-            margin=2Plots.mm,
-        )
-    end
-    return save_diagnostic_plot(
-        figure, output, "geostrophic-contour vorticity balance plot",
-    )
+    return plot_vorticity_balance_row(diagnostics, fields, "geostrophic-contour vorticity balance"; output)
 end
 
 """
@@ -4054,42 +3943,7 @@ function plot_transport_divergence_vorticity_balance(
         ("Ek curl(τ/f)", diagnostics.surface_stress_curl),
         ("residual", diagnostics.residual),
     )
-    scale = maximum(finite_absmax(values) for (_, values) in fields[1:4])
-    @info "Plotting transport-divergence vorticity balance" output
-    figure, _ = timed_stage(
-        "rendering transport-divergence vorticity balance plot",
-    ) do
-        panels = [
-            heatmap(
-                diagnostics.x, diagnostics.y, values';
-                xlabel="x",
-                ylabel=index == 1 ? "y" : "",
-                title,
-                clims=(-scale, scale),
-                color=:balance,
-                colorbar=false,
-                aspect_ratio=:equal,
-                yticks=index == 1 ? :auto : false,
-                titlefontsize=11,
-                guidefontsize=10,
-                tickfontsize=8,
-                margin=1.5Plots.mm,
-            )
-            for (index, (title, values)) in enumerate(fields)
-        ]
-        layout = @layout [grid(1, 5) colorbar{0.08w}]
-        plot(
-            panels..., dim_balance_colorbar(scale);
-            layout,
-            size=(1650, 390),
-            plot_title="transport-divergence vorticity balance",
-            plot_titlefontsize=17,
-            margin=2Plots.mm,
-        )
-    end
-    return save_diagnostic_plot(
-        figure, output, "transport-divergence vorticity balance plot",
-    )
+    return plot_vorticity_balance_row(diagnostics, fields, "transport-divergence vorticity balance"; output)
 end
 
 forcing_sensitivity_labels() = ("B", "bₛ", "τˣ", "τʸ")
@@ -4346,30 +4200,24 @@ function plot_transport_adjoint_sensitivity(
     )
 end
 
-performance_summary(solution::PGSolution) = solution.timings
-performance_summary(fields::PGFields) = fields.timings
-performance_summary(field::PGLagrangianVelocityField) = field.timings
-performance_summary(trajectories::PGLagrangianTrajectories) =
-    trajectories.timings
-performance_summary(solution::PGStreamfunction) = solution.timings
-performance_summary(diagnostics::PGDiagnostics) = diagnostics.timings
-performance_summary(diagnostics::PGDIMDiagnostics) = diagnostics.timings
-performance_summary(diagnostics::PGBarotropicVorticityDiagnostics) =
-    diagnostics.timings
-performance_summary(diagnostics::PGVorticityDiagnostics) = diagnostics.timings
 performance_summary(
-    diagnostics::PGGeostrophicContourVorticityDiagnostics,
-) = diagnostics.timings
-performance_summary(
-    diagnostics::PGTransportDivergenceVorticityDiagnostics,
-) = diagnostics.timings
-performance_summary(
-    diagnostics::PGSurfacePressureEquationDiagnostics,
-) = diagnostics.timings
-performance_summary(sensitivity::PGForcingSensitivities) =
-    sensitivity.timings
-performance_summary(sensitivity::PGTransportAdjointSensitivity) =
-    sensitivity.timings
+    result::Union{
+        PGSolution,
+        PGFields,
+        PGLagrangianVelocityField,
+        PGLagrangianTrajectories,
+        PGStreamfunction,
+        PGDiagnostics,
+        PGDIMDiagnostics,
+        PGBarotropicVorticityDiagnostics,
+        PGVorticityDiagnostics,
+        PGGeostrophicContourVorticityDiagnostics,
+        PGTransportDivergenceVorticityDiagnostics,
+        PGSurfacePressureEquationDiagnostics,
+        PGForcingSensitivities,
+        PGTransportAdjointSensitivity,
+    },
+) = result.timings
 
 
 include(joinpath(@__DIR__, "CellBudgets.jl"))

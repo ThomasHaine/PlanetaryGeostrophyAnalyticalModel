@@ -33,6 +33,7 @@ using PlanetaryGeostrophy
 using Plots
 using Printf
 using SpecialFunctions
+include("ComparisonTools.jl")
 
 global_logger(ConsoleLogger(stderr, Logging.Warn))
 
@@ -49,14 +50,8 @@ const d_s = 5δ_S                     # source distance from the coast
 const box = (-3.5, 1.0, -2.0, 1.5)   # xmin, xmax, ymin, ymax
 const pg_mesh_resolution = 0.02
 
-# Azimuthal stress whose curl is exactly the Gaussian below.
-function stress_factor(x, y)
-    r2 = x^2 + y^2
-    r2 < 1e-14 && return curl_amplitude / 2
-    return curl_amplitude * σ^2 * (-expm1(-r2 / (2σ^2))) / r2
-end
-tau(x, y) = complex(-stress_factor(x, y) * y, stress_factor(x, y) * x)
-wind_curl(x, y) = curl_amplitude * exp(-(x^2 + y^2) / (2σ^2))
+# Azimuthal stress whose curl is a Gaussian.
+const tau, wind_curl = gaussian_curl_stress((0.0, 0.0), σ, curl_amplitude)
 
 # The box clipped to the half plane n·x ≤ d_s, n = (-sinθ, cosθ), counterclockwise.
 function basin(θ)
@@ -118,23 +113,6 @@ function classical_streamfunction(θ, x, y; spacing=σ / 6)
     return Ψ
 end
 
-function pg_streamfunction(solution, inside, x, y)
-    Ψ = fill(NaN, length(x), length(y))
-    Threads.@threads for j in eachindex(y)
-        inside(x[end], y[j]) || continue
-        Ψ[end, j] = 0.0
-        V_east = depth_integrated_current(solution, x[end], y[j]).V
-        for i in length(x)-1:-1:1
-            inside(x[i], y[j]) || break
-            V = depth_integrated_current(solution, x[i], y[j]).V
-            Ψ[i, j] = Ψ[i+1, j] - 0.5 * (V + V_east) * (x[i+1] - x[i])
-            V_east = V
-        end
-    end
-    return Ψ
-end
-
-relative_l2(a, b) = sqrt(sum(abs2, a .- b) / sum(abs2, b))
 
 function compare(θ)
     seconds = @elapsed solution = solve_pg(problem(θ);
@@ -144,7 +122,7 @@ function compare(θ)
     xmin, xmax, ymin, ymax = box
     x = collect(range(xmin + 1e-6, xmax - 1e-6; length=451))
     y = collect(range(ymin + 1e-6, ymax - 1e-6; length=351))
-    Ψ_pg = pg_streamfunction(solution, inside, x, y)
+    Ψ_pg = pg_streamfunction(solution, x, y; inside)
     Ψ_classical = classical_streamfunction(θ, x, y)
     wet = isfinite.(Ψ_pg)
     Ψ_classical[.!wet] .= NaN
@@ -164,14 +142,6 @@ function compare(θ)
         error=relative_l2(Ψ_pg[wet], Ψ_classical[wet]),
         efold_pg=efold(Ψ_line_pg), efold_classical=efold(Ψ_line_classical),
         efold_theory=2δ_S / (1 - cos(θ)))
-end
-
-function interpolate_grid(x, y, F, px, py)
-    i = clamp(searchsortedlast(x, px), 1, length(x) - 1)
-    j = clamp(searchsortedlast(y, py), 1, length(y) - 1)
-    a, b = (px - x[i]) / (x[i+1] - x[i]), (py - y[j]) / (y[j+1] - y[j])
-    return (1 - a) * (1 - b) * F[i, j] + a * (1 - b) * F[i+1, j] +
-        (1 - a) * b * F[i, j+1] + a * b * F[i+1, j+1]
 end
 
 function linear_slope(s, v)

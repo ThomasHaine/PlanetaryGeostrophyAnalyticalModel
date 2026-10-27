@@ -2,20 +2,6 @@ using Gmsh
 using Gridap
 using GridapGmsh
 
-pressure_stage_metrics(measurement) = (
-    seconds=measurement.time,
-    allocated_mib=measurement.bytes / 2.0^20,
-    gc_seconds=measurement.gctime,
-)
-
-function pressure_timed_stage(f, label)
-    @info "Starting $label"
-    measurement = @timed f()
-    metrics = pressure_stage_metrics(measurement)
-    @info "Completed $label" seconds=round(metrics.seconds; digits=3) allocated_mib=round(metrics.allocated_mib; digits=2) gc_seconds=round(metrics.gc_seconds; digits=3)
-    return measurement.value, metrics
-end
-
 # Version 2 sizes elements by `resolution` everywhere instead of extending the
 # coastline point spacing into the interior.
 const PRESSURE_MESH_GENERATOR_VERSION = 2
@@ -256,7 +242,7 @@ constraint for `:no_normal_flow`. Returns the operator assembly and the
 single-field solution, each with timing metrics.
 """
 function solve_pressure_problem(a, l, spaces, dΩ, coastal_condition, label)
-    operator, assembly_timing = pressure_timed_stage("assembling $label operator") do
+    operator, assembly_timing = timed_stage("assembling $label operator") do
         if coastal_condition === :dirichlet
             AffineFEOperator(a, l, spaces.trial, spaces.test)
         else
@@ -265,7 +251,7 @@ function solve_pressure_problem(a, l, spaces, dΩ, coastal_condition, label)
             AffineFEOperator(constrained_a, constrained_l, spaces.trial, spaces.test)
         end
     end
-    solution, solve_timing = pressure_timed_stage("solving $label linear system") do
+    solution, solve_timing = timed_stage("solving $label linear system") do
         result = Gridap.solve(operator)
         coastal_condition === :dirichlet ? result : first(result)
     end
@@ -311,12 +297,12 @@ function solve_surface_pressure(
         throw(ArgumentError("method must be :fast or :b23; got $method"))
     solve_started = time()
     @info "Surface-pressure solve started" mesh_file=string(mesh_file) finite_element_order=order method coastal_condition threads=Threads.nthreads()
-    model, mesh_timing = pressure_timed_stage("loading Gridap surface mesh") do
+    model, mesh_timing = timed_stage("loading Gridap surface mesh") do
         GmshDiscreteModel(mesh_file)
     end
     mesh_size = mean_edge_length(model)
     @info "Surface mesh" cells=num_cells(model) mean_edge_length=round(mesh_size; sigdigits=3)
-    spaces, space_timing = pressure_timed_stage("constructing pressure finite-element spaces") do
+    spaces, space_timing = timed_stage("constructing pressure finite-element spaces") do
         Ω = Triangulation(model)
         dΩ = Measure(Ω, 2 * order)
         (; Ω, dΩ, pressure_spaces(model, order, coastal_condition)...)
@@ -381,7 +367,7 @@ function solve_surface_pressure(
         end
         return nodal_table[](x)
     end
-    forcing, forcing_timing = pressure_timed_stage(
+    forcing, forcing_timing = timed_stage(
         method === :b23 ? "deferring transport forcing to quadrature points" :
         "evaluating transport forcing at $(forcing_assembly) points",
     ) do
@@ -479,7 +465,7 @@ function solve_surface_pressure_adjoint(
         throw(ArgumentError("target_radius must be positive"))
     solve_started = time()
     order = pressure.order
-    spaces, space_timing = pressure_timed_stage(
+    spaces, space_timing = timed_stage(
         "constructing adjoint pressure finite-element spaces",
     ) do
         Ω = Triangulation(pressure.model)
@@ -633,7 +619,7 @@ boundary.
 function solve_transport_streamfunction(pressure; order=2)
     solve_started = time()
     @info "Transport streamfunction solve started" finite_element_order=order
-    spaces, space_timing = pressure_timed_stage(
+    spaces, space_timing = timed_stage(
         "constructing streamfunction finite-element spaces",
     ) do
         Ω = Triangulation(pressure.model)
@@ -654,7 +640,7 @@ function solve_transport_streamfunction(pressure; order=2)
     end
     Ω, dΩ, V, U = spaces.Ω, spaces.dΩ, spaces.V, spaces.U
 
-    current, projection_timing = pressure_timed_stage(
+    current, projection_timing = timed_stage(
         "projecting depth-integrated current",
     ) do
         gradp = interpolate(∇(pressure.psurf), spaces.V_vector)
@@ -677,12 +663,12 @@ function solve_transport_streamfunction(pressure; order=2)
 
     a(ψ, v) = ∫(∇(v) ⋅ ∇(ψ))dΩ
     l(v) = ∫(-real((∇(v) ⋅ VectorValue(im, 1.0)) * current))dΩ
-    operator, assembly_timing = pressure_timed_stage(
+    operator, assembly_timing = timed_stage(
         "assembling transport-streamfunction operator",
     ) do
         AffineFEOperator(a, l, U, V)
     end
-    ψ, linear_solve_timing = pressure_timed_stage(
+    ψ, linear_solve_timing = timed_stage(
         "solving transport-streamfunction linear system",
     ) do
         Gridap.solve(operator)

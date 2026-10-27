@@ -59,11 +59,6 @@ function checked_depth(H, z)
     -H <= z <= 0 || throw(ArgumentError("z=$z lies outside [-H, 0]=[-$H, 0]"))
 end
 
-function checked_state(p::VelocityParameters, H, y, z)
-    checked_depth(H, z)
-    fcor(p, y) != 0 || throw(ArgumentError("f(y) must be nonzero; got $(fcor(p, y))"))
-end
-
 function split_quadgk(f, a, b, breaks=(); rtol=RTOL, atol=ATOL)
     points = sort!(unique!(vcat(a, [q for q in breaks if a < q < b], b)))
     value = zero(f((a + b) / 2))
@@ -188,11 +183,6 @@ function velocity_b10(p, Hfun, ffun, ps, τ, B, bs, x, y, z; gradient_step=1e-5)
             split_quadgk(baroclinic, -H, 0.0, (z,))) / p.Ek
 end
 
-function velocity_b10(p, Hfun, ps, τ, B, bs, x, y, z; gradient_step=1e-5)
-    ffun(xx, yy) = fcor(p, yy)
-    return velocity_b10(p, Hfun, ffun, ps, τ, B, bs, x, y, z; gradient_step)
-end
-
 struct SymbolicKernels{F1,F2,F3,F4,F5,F6}
     Guvb::F1
     Guvb_xi::F2
@@ -248,6 +238,9 @@ function buoyancy_column_integral(kernels, p, Hfun, B, bs, x, y)
     ) + kernels.inner_Gb_xi(-H, H, ψvalue, p.κ) * bs(x, y)
 end
 
+# Zero pressure gradient and surface stress, for the buoyancy-only forcing.
+zero_complex(_, _) = 0.0 + 0.0im
+
 """
     buoyancy_transport_b23(kernels, p, H, f, f_x, f_y, B, bs, H_x, H_y, x, y)
 
@@ -258,11 +251,9 @@ new forcing fields before specialized vertically integrated kernels are added.
 function buoyancy_transport_b23(kernels, p, Hfun, ffun, f_x, f_y, B, bs, H_x, H_y, x, y)
     H = Hfun(x, y)
     checked_depth(H, -H)
-    zero_gradient(_, _) = 0.0 + 0.0im
-    zero_stress(_, _) = 0.0 + 0.0im
     return split_quadgk(
         z -> velocity_b23_from_gradps(
-            kernels, p, Hfun, ffun, f_x, f_y, zero_gradient, zero_stress,
+            kernels, p, Hfun, ffun, f_x, f_y, zero_complex, zero_complex,
             B, bs, H_x, H_y, x, y, z,
         ),
         -H, 0.0,
@@ -424,10 +415,8 @@ function buoyancy_bottom_stress_b23(
     checked_depth(H, -H)
     h = min(vertical_step, H / 4)
     h > 0 || throw(ArgumentError("vertical_step must be positive; got $vertical_step"))
-    zero_gradient(_, _) = 0.0 + 0.0im
-    zero_stress(_, _) = 0.0 + 0.0im
     velocity(z) = velocity_b23_from_gradps(
-        kernels, p, Hfun, ffun, f_x, f_y, zero_gradient, zero_stress,
+        kernels, p, Hfun, ffun, f_x, f_y, zero_complex, zero_complex,
         B, bs, H_x, H_y, x, y, z,
     )
     return -p.ν * (-3 * velocity(-H) + 4 * velocity(-H + h) -

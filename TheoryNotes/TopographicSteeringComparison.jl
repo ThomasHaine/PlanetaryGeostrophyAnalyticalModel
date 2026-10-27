@@ -31,6 +31,7 @@ using PlanetaryGeostrophy
 using Plots
 using Printf
 using SparseArrays
+include("ComparisonTools.jl")
 
 global_logger(ConsoleLogger(stderr, Logging.Warn))
 
@@ -45,15 +46,8 @@ const curl_amplitude = 8e-4
 
 depth(x, y) = H_shelf + (H_deep - H_shelf) * (1 - tanh((y - y_break) / w_slope)) / 2
 
-radius_squared(x, y) = (x - centre[1])^2 + (y - centre[2])^2
-# Azimuthal stress whose curl is exactly the Gaussian below.
-function stress_factor(x, y)
-    r2 = radius_squared(x, y)
-    r2 < 1e-14 && return curl_amplitude / 2
-    return curl_amplitude * radius^2 * (-expm1(-r2 / (2radius^2))) / r2
-end
-tau(x, y) = complex(-stress_factor(x, y) * (y - centre[2]), stress_factor(x, y) * (x - centre[1]))
-wind_curl(x, y) = curl_amplitude * exp(-radius_squared(x, y) / (2radius^2))
+# Azimuthal stress whose curl is a Gaussian.
+const tau, wind_curl = gaussian_curl_stress(centre, radius, curl_amplitude)
 
 problem(Ek) = PGProblem(
     parameters=PGParameters(Ek, Γ),
@@ -111,31 +105,6 @@ end
 classical_depth(H, δ) = H
 corrected_depth(H, δ) = H - δ / 2
 
-function interpolate(xg, yg, F, x, y)
-    Δx, Δy = step(xg), step(yg)
-    i = clamp(floor(Int, (x - first(xg)) / Δx) + 1, 1, length(xg) - 1)
-    j = clamp(floor(Int, (y - first(yg)) / Δy) + 1, 1, length(yg) - 1)
-    a, b = (x - xg[i]) / Δx, (y - yg[j]) / Δy
-    return (1 - a) * (1 - b) * F[i, j] + a * (1 - b) * F[i+1, j] +
-        (1 - a) * b * F[i, j+1] + a * b * F[i+1, j+1]
-end
-
-function pg_streamfunction(solution, x, y)
-    V = zeros(length(x), length(y))
-    Threads.@threads for j in eachindex(y)
-        for i in eachindex(x)
-            V[i, j] = depth_integrated_current(solution, x[i], y[j]).V
-        end
-    end
-    Ψ = zeros(length(x), length(y))
-    for j in eachindex(y), i in length(x)-1:-1:1
-        Ψ[i, j] = Ψ[i+1, j] - 0.5 * (V[i, j] + V[i+1, j]) * (x[i+1] - x[i])
-    end
-    return Ψ
-end
-
-relative_l2(a, b) = sqrt(sum(abs2, a .- b) / sum(abs2, b))
-
 function compare(Ek; mesh_resolution=0.015)
     δ = sqrt(2Ek / f0)
     seconds = @elapsed solution = solve_pg(problem(Ek);
@@ -143,7 +112,7 @@ function compare(Ek; mesh_resolution=0.015)
     x = clamp.(collect(range(-Lx / 2, Lx / 2; length=801)), -Lx / 2 + 1e-6, Lx / 2 - 1e-6)
     y = clamp.(collect(range(-Ly / 2, Ly / 2; length=401)), -Ly / 2 + 1e-6, Ly / 2 - 1e-6)
     Ψ_pg = pg_streamfunction(solution, x, y)
-    on_grid(model) = [interpolate(model..., xx, yy) for xx in x, yy in y]
+    on_grid(model) = [interpolate_grid(model..., xx, yy) for xx in x, yy in y]
     Ψ_classical = on_grid(layer_model(Ek, classical_depth))
     Ψ_corrected = on_grid(layer_model(Ek, corrected_depth))
     H = [depth(xx, yy) for xx in x, yy in y]

@@ -267,12 +267,6 @@ end
 check_budget_method(method) = method in (:cell_average, :centered) ||
     throw(ArgumentError("method must be :cell_average or :centered; got $method"))
 
-function masked_term(samples, values)
-    out = fill(NaN, size(samples.wet))
-    out[samples.wet] .= values[samples.wet]
-    return out
-end
-
 function budget_timings(started, samples, residual, scale_terms)
     finite_l2(values) = sqrt(sum(abs2, values[samples.wet]))
     points = count(samples.wet)
@@ -312,7 +306,7 @@ function compute_barotropic_vorticity_diagnostics(
     samples = cell_budget_samples(solution, diagnostics; quadrature)
     c, a = samples.circulation, samples.area
     Ek = solution.problem.parameters.Ek
-    divergence = masked_term(samples, zeros(size(samples.wet)))
+    divergence = ifelse.(samples.wet, 0.0, NaN)
     planetary = a[:, :, 1]
     pressure_torque = c[:, :, 1]
     bottom_curl = Ek .* c[:, :, 5]
