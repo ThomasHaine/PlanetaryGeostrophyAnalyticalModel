@@ -1,6 +1,6 @@
 # Cell-averaged (control-volume) vorticity budgets.
 #
-# The curls and Jacobians in the BV (31), DIV (36), GCVB (38), and TDVB (41)
+# The curls and Jacobians in the BV (27), DIV (32), GCVB (34), and TDVB (37)
 # balances act on fields that contain the finite-element surface-pressure
 # gradient. That gradient is discontinuous across element edges, so pointwise
 # or grid finite differences of the bottom stress or transport are not
@@ -115,7 +115,7 @@ end
     bottom_stretching(solution, x, y)
 
 `f w_b` with `w_b = -(u_b H_x + v_b H_y)` from the bottom kinematic condition.
-It vanishes under the no-slip condition (18); the tests use it to check that
+It vanishes under the no-slip condition (14); the tests use it to check that
 the velocity at the sea floor is zero.
 """
 function bottom_stretching(solution::PGSolution, x, y)
@@ -288,12 +288,12 @@ end
     compute_barotropic_vorticity_diagnostics(solution, diagnostics;
         method=:cell_average, quadrature=CellBudgetQuadrature())
 
-Maps of the signed terms in the barotropic vorticity equation (31) and its
+Maps of the signed terms in the barotropic vorticity equation (27) and its
 closure residual. With `method=:cell_average` (the default), each term is its
 average over the diagnostic cell around each grid point:
 `J(p_b,H)` is `∮ p_b ∇H·t ds`, the stress curls are `Ek ∮ τ·t ds`, and
 `U f_x + V f_y` uses area quadrature. The transport-divergence term takes its
-exact fixed-lid value of zero (33). The residual therefore equals the
+exact fixed-lid value of zero (29). The residual therefore equals the
 cell-averaged `-f ∇·U`, which is the finite-element mass-conservation error,
 up to quadrature error. `method=:centered` gives the earlier centered
 diagnostic-grid differences of sampled fields, which do not converge because
@@ -334,10 +334,10 @@ end
     compute_vorticity_diagnostics(solution, diagnostics;
         method=:cell_average, quadrature=CellBudgetQuadrature())
 
-The depth-integrated vorticity (DIV) balance (36). With the resolved no-slip
+The depth-integrated vorticity (DIV) balance (32). With the resolved no-slip
 bottom boundary layer, `w_b = -(u_b H_x + v_b H_y) = 0`, and the viscous
-vorticity flux through the sea floor equals `Ek ∇×τ_b + J(p_b,H)` (37), so the
-DIV balance is identical to the barotropic vorticity balance (33). This is
+vorticity flux through the sea floor equals `Ek ∇×τ_b + J(p_b,H)` (33), so the
+DIV balance is identical to the barotropic vorticity balance (29). This is
 therefore a thin alias for `compute_barotropic_vorticity_diagnostics`: the
 planetary term, surface-stress curl, and residual are those of the BV balance,
 the bottom term is `J(p_b,H) + Ek ∇×τ_b`, and the bottom stretching is zero.
@@ -362,7 +362,7 @@ end
     compute_geostrophic_contour_vorticity_diagnostics(solution, diagnostics;
         method=:cell_average, quadrature=CellBudgetQuadrature())
 
-Maps of the signed terms in the geostrophic-contour vorticity balance (38) and
+Maps of the signed terms in the geostrophic-contour vorticity balance (34) and
 its closure residual, as cell averages by default. `J(f/H,Ψ) = -U·∇(f/H)` uses
 area quadrature with the analytical transport. JEBAR is
 `J(1/H,χ) = ∮ χ ∇H·t / H² ds`, and the stress terms are `Ek ∮ (τ/H)·t ds`.
@@ -403,7 +403,7 @@ end
     compute_transport_divergence_vorticity_diagnostics(solution, diagnostics;
         method=:cell_average, quadrature=CellBudgetQuadrature())
 
-Maps of the signed terms in the transport-divergence vorticity balance (41)
+Maps of the signed terms in the transport-divergence vorticity balance (37)
 and its closure residual, as cell averages by default:
 `J(p_b,H/f) = ∮ p_b ∇(H/f)·t ds`, `J(χ,1/f) = ∮ χ ∇(1/f)·t ds`, and the stress
 terms are `Ek ∮ (τ/f)·t ds`. The residual equals the cell-averaged `-∇·U`.

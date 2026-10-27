@@ -2,8 +2,8 @@
 #
 # The B23 path nests an adaptive z-quadrature around several adaptive
 # ξ-quadratures of the large symbolic G_u,b kernels. The functions here use
-# the single-integral forms instead: transport forcing (61), bottom-stress
-# forcing (58), and horizontal velocity (55). Each needs only the baroclinic
+# the single-integral forms instead: transport forcing (57), bottom-stress
+# forcing (54), and horizontal velocity (51). Each needs only the baroclinic
 # pressure Π(ξ) = ∫_ξ^0 b dz, which comes from the closed-form kernels
 # (A5)--(A6). All vertical integrals use a fixed composite Gauss--Legendre
 # rule, so finite differences of Π between neighboring columns are smooth.
@@ -131,7 +131,7 @@ end
     column_buoyancy_integral_gradient(kernels, p, H, B, bs, x, y, ξ, q, panels, step)
 
 Centered-difference `(∂x + i∂y)Π(ξ)` at fixed level `ξ`, the baroclinic
-pressure-gradient forcing in (50). The same quadrature rule is used in all four
+pressure-gradient forcing in (46). The same quadrature rule is used in all four
 neighboring columns.
 """
 function column_buoyancy_integral_gradient(
@@ -150,7 +150,7 @@ end
 """
     fast_baroclinic_transport(kernels, p, H, f, B, bs, x, y, q; step)
 
-Baroclinic part of the transport forcing `𝔅` in (61), as one vertical
+Baroclinic part of the transport forcing `𝔅` in (57), as one vertical
 integral of the closed-form kernel times `(∂x + i∂y)Π(ξ)`.
 """
 function fast_baroclinic_transport(
@@ -174,7 +174,7 @@ end
 """
     fast_bottom_stress_forcing(kernels, p, H, f, τ, B, bs, x, y, q; step)
 
-Bottom-stress forcing `T` in (58), with baroclinic and surface-stress parts.
+Bottom-stress forcing `T` in (54), with baroclinic and surface-stress parts.
 """
 function fast_bottom_stress_forcing(
     kernels, p, Hfun, ffun, τ, B, bs, x, y, q::ColumnQuadrature; step=1e-5,
@@ -198,7 +198,7 @@ end
 """
     fast_buoyancy(p, H, B, bs_value, x, y, z, q, panels)
 
-Buoyancy (45) at one level from the closed-form `G_b`, with the ξ quadrature
+Buoyancy (41) at one level from the closed-form `G_b`, with the ξ quadrature
 split at `z`.
 """
 function fast_buoyancy(p, H, B, bs_value, x, y, z, q::ColumnQuadrature, panels)
@@ -231,11 +231,11 @@ chebyshev_count(q::ColumnQuadrature, p, f, H) = clamp(
 """
     fast_velocity_column(kernels, p, H, f, gradps_value, τ_value, B, bs, x, y, q; step)
 
-Return `z -> u + iv` for one water column from (55),
+Return `z -> u + iv` for one water column from (51),
 
 `Ek 𝔲 = G_𝔲,1(z)(∂x+i∂y)p_s - Ek G_𝔲(z;0)τ - ∫ G_𝔲(z;ξ)(∂x+i∂y)Π(ξ) dξ`,
 
-using the closed-form `G_𝔲` (54). `(∂x+i∂y)Π` is tabulated once per column at
+using the closed-form `G_𝔲` (50). `(∂x+i∂y)Π` is tabulated once per column at
 Chebyshev--Lobatto levels and evaluated by barycentric interpolation.
 """
 function fast_velocity_column(

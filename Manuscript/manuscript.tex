@@ -53,6 +53,12 @@
 \definechangesauthor[name={Claude}, color=blue]{CL}
 % Review corrections of 2026-10-26, for checking.
 \definechangesauthor[name={Claude review}, color=magenta]{CR}
+% Review markup for CR changes; remove with them.
+\newcommand{\CRnew}[1]{{\color{magenta}#1}}
+\newcounter{CRsavedeq}
+\newenvironment{CRdeleted}{\setcounter{CRsavedeq}{\value{equation}}\renewcommand{\theequation}{del}%
+  \renewcommand{\myfootnote}[1]{\textsf{\small (footnote)}}\renewcommand{\added}[2][]{##2}\color{magenta!55}\textsf{\small [deleted:} }%
+  {\textsf{\small ]}\setcounter{equation}{\value{CRsavedeq}}}
 
 %% May use \\ to break lines in title:
 
@@ -170,6 +176,8 @@ The central question tackled in this paper is therefore: Given a three-dimension
 Equivalently: How does the PG flow at a particular point depend on the buoyancy field and the surface stress at other points?
 We answer this question for an arbitrary basin shape, a variable Coriolis parameter, and resolved surface and bottom boundary layers.
 The deep tropics, where the Coriolis parameter vanishes and PG breaks down, are excluded.
+\added[id=CR]{The solution is analytical in the vertical: closed-form Green's functions give the buoyancy and velocity in each water column, and only a two-dimensional elliptic equation for the surface pressure (and thus the surface height) must be solved numerically. Software to derive and compute the solutions is provided. The benefits are conceptual transparency, access to parameter regimes that are expensive or impossible to reach numerically, and speed; the cost is a restriction on the forms of viscous and diabatic dissipation. Specifying the density field, rather than computing it by advection, is called the \emph{robust diagnostic} assumption (\citealt{sarmiento&bryan82}; see also \citealt{bogden_etal93,park&guernier01,nost&isachsen03,nilsson_etal05}); considering buoyancy alone is no restriction if temperature and salinity are wanted individually.}
+\begin{CRdeleted}
 An analytic solution is provided, not a numerical model, although, in general, a two-dimensional elliptic differential equation for the surface pressure (and thus the surface height) field must be solved numerically.
 Software to derive and compute solutions is provided too.
 There are several benefits, including: conceptual transparency, access to parameter regimes that are expensive (or impossible) to reach numerically, and speed of calculation.
@@ -182,7 +190,10 @@ Avoiding density advection amounts to, essentially, specifying the density field
 % There are some straightforward details associated with satisfying the bottom boundary condition on buoyancy.
 This density specification has been called a \emph{robust diagnostic} assumption (\citealt{sarmiento&bryan82}; see also \citealt{bogden_etal93,park&guernier01,nost&isachsen03,nilsson_etal05}).
 Note that considering density (or buoyancy) alone is not a restriction if one wants to compute temperature and salinity individually.
+\end{CRdeleted}
 
+\added[id=CR]{Section~\ref{sect:equations} sets out the robust-diagnostic PG equations and their nondimensionalization, and Section~\ref{sect:dynamical_balances} the diagnostic balances for the depth-integrated flow and its vorticity. Section~\ref{sect:b_solution} solves the linear buoyancy equation, a prototype for Section~\ref{sect:PG_soln}, which solves the PG equations and derives the elliptic equation for the surface pressure. Section~\ref{sect:results} verifies the method and applies it to classical problems and a double basin, and Section~\ref{sect:discussion} discusses its uses, limitations, and extensions. The appendices contain mathematical and numerical details.}
+\begin{CRdeleted}
 The layout of the rest of the paper is as follows: 
 Section \ref{sect:equations} explains the robust diagnostic PG equations and their nondimensionalization.
 Section \ref{sect:dynamical_balances} lays out several diagnostic dynamical balances that apply to the depth-integrated horizontal current and its vorticity.
@@ -192,6 +203,7 @@ Section \ref{sect:PG_soln} includes the definition of the elliptic equation for 
 Section \ref{sect:results} exemplifies the method with case studies.
 Finally, Section \ref{sect:discussion} is a discussion of the utility of the PG solution with comments on future applications and research opportunities.
 The Appendices contain supporting material that is mathematical or numerical.
+\end{CRdeleted}
 
 
 \section{Governing Equations}
@@ -210,6 +222,8 @@ These equations presume Boussinesq, time-independent, and linear (small Rossby n
 They apply to the ocean general circulation on horizontal scales larger than the first baroclinic deformation radius (hundreds of kilometers and larger).
 Dissipation is included with the vertical friction terms, but there is no horizontal friction (see Section \ref{sect:discussion}).
 As vertical friction is included, the solutions to (\ref{eqn:u_mom_dim}) and (\ref{eqn:v_mom_dim}) resolve the surface and bottom Ekman layers.
+\added[id=CR]{The boundary conditions are a known surface stress, $\nu \rho_0 \, \partial_z (u, v) = (\tau^x, \tau^y)$ at the sea surface $z = \eta$, and no flow, $(u, v) = 0$, at the sea floor $z = -H(x,y)$; $H$ is positive, so that $z$ measures height upwards from the mean sea level at $z = 0$.}
+\begin{CRdeleted}
 The boundary conditions therefore specify a known stress (from the wind) at the surface and no flow at the bottom:
 \begin{align}
 \text{Surface~}z = \eta &:
@@ -220,6 +234,7 @@ The boundary conditions therefore specify a known stress (from the wind) at the 
 \end{align}
 % See 
 where $H(x,y)$ is the variable bottom depth (and $H$ is positive so that $z$ measures height upwards from the average sea level at $z = 0$), and $\eta$ is the height of the sea surface.
+\end{CRdeleted}
 
 The fluid is incompressible so that the three-dimensional flow ${\mathbf u} = (u,v,w)$ is non-divergent:
 \begin{align}
@@ -231,16 +246,22 @@ The absolute buoyancy is defined as a scaled density
 b_{\mathrm{abs}}  & = -\frac{g}{\rho_0} \rho \equiv -g - \frac{g (\rho - \rho_0)}{\rho_0} \equiv b - g,
 \end{align}
 where $g$ is the uniform gravitational acceleration.
-The buoyancy anomaly $b$ is the main variable of interest (hereafter just called the buoyancy).
+\replaced[id=CR]{The buoyancy anomaly $b$ is hereafter called the buoyancy.}{The buoyancy anomaly $b$ is the main variable of interest (hereafter just called the buoyancy).}
+\added[id=CR]{The absolute pressure satisfies hydrostatic balance, $\partial_z p_{\mathrm{abs}} = \rho_0 b_{\mathrm{abs}}$. Removing the static pressure $p_0$, with $\partial_z p_0 = -\rho_0 g$ and $p_0(0) = 0$, leaves the dynamic pressure anomaly $p$, hereafter the pressure, with}
+\begin{align}
+\CRnew{\partial_z p = \rho_0 b .}
+\label{eqn:dimensional_hydrostatic}
+\end{align}
+\begin{CRdeleted}
 The absolute pressure field satisfies hydrostatic balance, which is:
 \begin{align}
 \partial_z p_{\mathrm{abs}} & = \rho_0 b_{\mathrm{abs}} ,\nonumber \\
 \implies \partial_z \left(p_0 + p \right) & = \rho_0 \left( b - g \right) , \nonumber \\
 \text{with~} \partial_z p_0 & \equiv - \rho_0 g \text{~(and~} p_0(z=0) = 0 \text{)}, \nonumber \\
 \implies \partial_z p & = \rho_0 b .
-\label{eqn:dimensional_hydrostatic}
 \end{align}
 The dynamic pressure anomaly $p$ is the main variable of interest (hereafter just called the pressure).
+\end{CRdeleted}
 Finally, the buoyancy field satisfies the time-independent advection-diffusion-relaxation equation
 \begin{align}
 {\mathbf u} \cdot \nabla b  =  \partial_{z} \left( \kappa \partial_z b \right) + \gamma \left( B - b \right).
@@ -250,6 +271,8 @@ Finally, the buoyancy field satisfies the time-independent advection-diffusion-r
 The vertical mixing of buoyancy depends on the diffusivity coefficient $\kappa$ (and there is no horizontal buoyancy mixing, consistent with the momentum equations).
 The final term in (\ref{eqn:b_dim}) is relaxation to a known background buoyancy field $B(x,y,z)$ at a rate $\gamma$. 
 This is the robust diagnostic assumption.
+\added[id=CR]{The boundary conditions on buoyancy are a known surface buoyancy $b = b_s(x,y)$ at $z = \eta$ and no flux through the sea floor, $\nabla b \cdot \hat{\mathbf{n}} = 0$ at $z = -H$, where $\hat{\mathbf{n}} = -(\partial_x H, \partial_y H, 1)/\sqrt{1 + (\partial_x H)^2 + (\partial_y H)^2}$.}
+\begin{CRdeleted}
 The boundary conditions on buoyancy are:
 \begin{align}
 \text{Surface~}z = \eta &:
@@ -261,6 +284,7 @@ b = b_s
 \end{align}
 where $b_s(x,y)$ is a known surface buoyancy field and at the sea floor ${\mathbf{\hat n}} = -(\partial_x H, \partial_y H, 1)/\sqrt{1 + (\partial_x H)^2 + (\partial_y H)^2 }$.
 Notice that the bottom boundary condition is no normal flux of buoyancy through the sea floor.
+\end{CRdeleted}
 At a sloping bottom boundary, this condition will lead to non-zero horizontal buoyancy gradients, and therefore a non-zero thermal wind (\citealt{peterson&callies26}; see, for example, \citealt{klinger&haine19} Sections 2.1.2 and 2.2.2 for the thermal wind, which is derived from the geostrophic and hydrostatic balances).
 \added[id=CL]{The same holds for the small-aspect-ratio form $\partial_z b = 0$ used below and by \citet{peterson&callies26}, }\added[id=CL]{because the no-flux condition makes the buoyancy profile in each column depend on the local depth, so that buoyancy varies horizontally along the sloping sea floor.}\added[id=CL]{}
 We retain both inhomogeneous sources of buoyancy, $b_s$ and $B$, for generality, although both of them are not always needed.
@@ -283,7 +307,7 @@ The characteristic horizontal current speed based on the thermal wind relation i
 % Take the maximum of the two U_0 estimates?
 The value of the stress scale $\tau_0$ is specified below.
 
-With these scalings, the system of governing equations (\ref{eqn:u_mom_dim})--(\ref{eqn:bot_b_bc_dim}) in non-dimensional form becomes:
+With these scalings, \replaced[id=CR]{the governing equations (\ref{eqn:u_mom_dim})--(\ref{eqn:b_dim}) and their boundary conditions become, in non-dimensional form,}{the system of governing equations (\ref{eqn:u_mom_dim})--(\ref{eqn:bot_b_bc_dim}) in non-dimensional form becomes:}
 \begin{align}
 - f v & = - \partial_x p + \mathrm{Ek} \; \partial_{z} \left( \nu \partial_z u \right), \label{eqn:u_mom} \\
 f  u & = - \partial_y p + \mathrm{Ek}  \; \partial_{z} \left( \nu \partial_z v \right) ,  \label{eqn:v_mom} \\
@@ -508,25 +532,28 @@ For this reason, the dynamical balances in Table \ref{tab:dynamical_balances} ha
 Ambiguity remains, however, as it is unclear how accurately OGCMs respect the continuous equations they aim to represent.
 This issue is especially acute in the vicinity of bottom topography that is coarsely resolved \citep{styles_etal22}.
 
+\added[id=CR]{With the solution of Sections~\ref{sect:b_solution} and \ref{sect:PG_soln} in hand, all the balances in Table~\ref{tab:dynamical_balances}, including the Sverdrup balance and the $\beta$ plume as special cases, can be evaluated without additional dynamical or geometrical assumptions.}
+\begin{CRdeleted}
 The main point of this paper is to show how the original robust diagnostic PG equations can be solved exactly.
 In this context, solving the equations ``exactly'' means finding an analytical solution that is coupled to the solution of a two-dimensional elliptic linear partial differential equation for the surface pressure field.
 In general, that surface pressure field equation is solved numerically.
 With the solution to the robust diagnostic PG equations in hand, all the diagnostic dynamical balances in Table \ref{tab:dynamical_balances} can be computed exactly, without additional dynamical or geometrical assumptions.
 This process thereby quantifies the relationship between the three-dimensional velocity and the forcing stress and buoyancy field exactly.
 It includes the Sverdrup balance and the $\beta$-plume as special cases.
+\end{CRdeleted}
 
 
 \section{Solution to Time-Independent Linear Buoyancy Equation}
 \label{sect:b_solution}
 
-% More observations of global ocean temperature, and to a lesser extent salinity, exist than of any other variable, especially observations of currents \citep{klinger&haine19}.
-% It is natural, therefore, to exploit these observations to construct a velocity field, which is a well-trodden path in physical oceanography \citep{wunsch96}.
-% In the present context, it amounts to the robust diagnostic assumption defined in Sections \ref{sect:introduction} and \ref{sect:equations}\ref{sect:dim_eqns}.
 
 
+\added[id=CR]{This section computes the full buoyancy field $b$ from the relaxation field $B$ and the surface buoyancy $b_s$ with an analytical formula, a prototype for the solution of the PG equations in Section~\ref{sect:PG_soln}.}
+\begin{CRdeleted}
 The robust diagnostic approach defined in Sections \ref{sect:introduction} and \ref{sect:equations}\ref{sect:dim_eqns} requires the relaxation field $B$ and the surface field $b_s$ from which the full buoyancy field $b$ is computed.
 That computation requires solving the differential equation for $b$, which is achieved in this section with an analytical formula.
 \added[id=CL]{The method is a prototype for the solution of the PG equations} in Section \ref{sect:PG_soln}.
+\end{CRdeleted}
 
 \added[id=CL]{For time-independent flow, negligible buoyancy advection ($\mathrm{Pr}\,\mathrm{Bu} \ll 1$ in (\ref{eqn:b})), and small aspect ratio,} the buoyancy equation (\ref{eqn:b}), (\ref{eqn:top_b_bc}), (\ref{eqn:bot_b_bc}) reads:
 \begin{align}
@@ -795,8 +822,6 @@ Dotted vertical lines mark $s = 1$ and $s = 3$\added[id=CL]{; the dotted line in
 \Claude{
 With uniform viscosity the column coefficients depend on depth only through $s = H/\delta_E$, \added[id=CL]{the depth measured in Ekman depths }\added[id=CL]{(}\added[id=CL]{Fig.~\ref{fig:coefficient_regimes},} $\delta_E = \sqrt{2 \nu \mathrm{Ek}/|f|}$).
 For deep water ($s \gg 1$), $\mathfrak{A} \rightarrow [-\delta_E/2 + i(H - \delta_E/2)]/f$.
-%\added[id=CL]{This limit and those below follow from (\ref{eqn:A_fn}) and (\ref{eqn:S_fn}) with $\varphi = (1 + i)/\delta_E$ (for $f > 0$ and $\nu = 1$, so that $\varphi^2 \mathrm{Ek} = i f$): $\tanh \varphi H \rightarrow 1$ for $s \gg 1$, and $\tanh(\varphi H)/(\varphi H) - 1 \approx -(\varphi H)^2/3 + 2 (\varphi H)^4/15$ for $s \ll 1$.
-%The deep limits are the classical results for Ekman layers in water of finite depth \citep{ekman05, vallis06}.}
 % Added by Claude (CL): TheoryNotes/PlotCoefficientRegimes.jl evaluates the exact
 % coefficients (PlanetaryGeostrophy.pressure_coefficient and bottom_stress_coefficient),
 % overlays these deep and shallow asymptotes in Fig. coefficient_regimes, and prints the
@@ -859,10 +884,6 @@ $h$ & $p_s$ & $\mathbf{U}$ & $\boldsymbol{\tau}_b$ & $\mathbf{u}(-H/2)$ & $\Psi$
 \end{tabular}
 \end{table}
 
-%\paragraph{Coastal boundary condition.}
-%Imposing $p_s = 0$ on a vertical coastal wall, instead of (\ref{eqn:ps_bc}), lets frictional and buoyancy-forced transport cross the coast.
-%In the double-basin example of Section~\ref{sect:results} (coast depth 0.26, $\mathrm{Ek} = 0.002$), the root-mean-square ratio of normal to tangential transport at 0.995 of the coastal radius is 0.37 with $p_s = 0$ and 0.02 with (\ref{eqn:ps_bc}).
-%The relative difference between the transport $\mathbf{U}$ from (\ref{eqn:UV_AB_def}) and the transport $(-\partial_y \Psi, \partial_x \Psi)$ from the separately solved streamfunction (\ref{eqn:streamfunction_pde}) falls from 5\% to 0.05\% (mesh 0.02).
 
 \paragraph{Dynamical balances.}
 The depth-integrated momentum balance (\ref{eqn:U_mom})--(\ref{eqn:V_mom}) holds pointwise, because the column solution satisfies the momentum equations exactly.
@@ -1174,13 +1195,6 @@ The form of the solution (\ref{eqn:b_solution}) is the same, just the Green's fu
 
 In solving the momentum equations, one needs horizontal derivatives of the vertically-integrated buoyancy field to compute the pressure gradient (\ref{eqn:hydrostatic_p_pgf}).
 We need these two terms:
-% \begin{align}
-%  \int_{z}^{0} \partial_x b(z') \; dz' & = - \Gamma  \int_{z}^{0} \partial_x  \int_{-H }^{0} G_b(z'; \xi) B(\xi) \; d \xi\; dz' , \nonumber \\
-%  & = - \Gamma   \partial_x  \int_{-H }^{0} \left[ \int_{z}^{0} G_b(z'; \xi) \; dz' \right] B(\xi) \; d \xi \nonumber ,
-% \end{align}
-% and the corresponding $\partial_y$ term.
-% The integral in square brackets can be computed analytically for uniform diffusivity.
-% One finds that:
 \begin{align}
 & \int_{\xi}^{0} G_b(z'; \xi') \; dz'   =  \frac{1}{ 2 \kappa \psi^{2} \, \left(1 + \mathrm{e}^{2 \psi H} \right) }\bigg[ \nonumber \\
 & \mathrm{e}^{\psi \left( \xi  - \xi' + 2  H \right)} -
@@ -1425,8 +1439,11 @@ $\mathfrak{B}$ is evaluated at every quadrature point of the finite-element mesh
 
 \subsection{Solution validation}
 
+\added[id=CR]{The solution is compared with the hydrostatic free-surface model of \texttt{Oceananigans.jl}, which solves the hydrostatic Boussinesq equations \citep{wagner_etal25}.}
+\begin{CRdeleted}
 In order to test and validate the derivation of the solution method, the results for a test case are compared to an independently-derived solution.
 We use the \texttt{Oceananigans.jl} Julia package, and its hydrostatic free-surface model, which solves the hydrostatic Boussinesq equations \citep{wagner_etal25}.
+\end{CRdeleted}
 The test involves an elliptical basin on a $\beta$-plane, \added[id=CL]{with either a flat bottom or smoothly varying topography, bounded by a vertical sidewall at the coast.} 
 The forcing consists of a zonal windstress that varies in the meridional direction, and varying surface buoyancy and relaxation buoyancy fields.
 The forcing amplitude is small so that buoyancy and momentum advection are weak and the linear PG equations are an accurate asymptotic approximation.
@@ -1442,8 +1459,10 @@ With the Gaussian bowl $H = 0.3 + 0.7\, e^{-2\rho^2}$ (with $\rho$ the elliptica
 With a stair-stepped bottom, the transport difference is 29\% at $80 \times 60 \times 40$ \added[id=CL]{and rises to 58\% at $160 \times 120 \times 40$}, as grid-scale noise at the steps, undamped without horizontal viscosity, grows.
 \added[id=CL]{Partial bottom cells reduce the difference to 18\% at $80 \times 60 \times 40$, and a weak horizontal viscosity of $10^{-4}$ reduces it to 7.6\% at $160 \times 120 \times 40$.}
 The buoyancy differences are about 1\% in all these cases.
+\begin{CRdeleted}
 On this basis, we presume that the PG solution is derived and coded accurately. 
 The test is important as parts of the PG solution are produced automatically using \added[id=CL]{\texttt{SymPy.jl}} and \texttt{Symbolics.jl}, and some of the software development employs artificial intelligence assistance.
+\end{CRdeleted}
 Table~\ref{tab:oceananigans_timing} compares the wall-clock times on an Apple M5 Max (18 threads) after compilation.
 The PG solve, including meshing the coastline at $h = 0.02$ and solving for $p_s$, takes 0.7~s for the flat bottom and 1.0~s for the bowl, and sampling the solution at the \texttt{Oceananigans.jl} cell \added[id=CL]{centers} takes a further 0.05--0.7~s.
 The \texttt{Oceananigans.jl} spin-up takes 18~s to 180~s on the CPU with the same threads, so computing the PG solution is 25 to 150 times faster, and the ratio grows with resolution.

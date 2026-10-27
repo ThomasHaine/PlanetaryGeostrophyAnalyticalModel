@@ -109,7 +109,7 @@ function dGb_dξ_at_surface(z, H, κ, ψ)
            (κ * (1 + exp(-2 * ψ * H)))
 end
 
-# The surface-buoyancy kernel κ(0) ∂_ξ G_b(z; ξ)|_{ξ=0} of (45). The κ(0) is the
+# The surface-buoyancy kernel κ(0) ∂_ξ G_b(z; ξ)|_{ξ=0} of (41). The κ(0) is the
 # Green's-identity boundary term, so b(0) = b_s for any uniform κ.
 surface_buoyancy_kernel(z, H, κ, ψ) = κ * dGb_dξ_at_surface(z, H, κ, ψ)
 
@@ -209,7 +209,7 @@ Load the analytical kernels exported by `ComputeQuadratures.ipynb`. Run that
 notebook first if the generated kernel source needs to be regenerated.
 
 The generated `_xi` kernels integrate `∂_ξ G_b|_{ξ=0}`, which carries `1/κ`;
-they are multiplied here by κ(0) = κ, the surface factor in (45).
+they are multiplied here by κ(0) = κ, the surface factor in (41).
 """
 function load_symbolic_kernels()
     return SymbolicKernels(
@@ -251,7 +251,7 @@ end
 """
     buoyancy_transport_b23(kernels, p, H, f, f_x, f_y, B, bs, H_x, H_y, x, y)
 
-Evaluate the buoyancy-driven depth-integrated transport in equation (61).
+Evaluate the buoyancy-driven depth-integrated transport in equation (57).
 This is a general numerical B23 implementation that is suitable for checking
 new forcing fields before specialized vertically integrated kernels are added.
 """
@@ -411,7 +411,7 @@ end
     buoyancy_bottom_stress_b23(kernels, p, H, f, f_x, f_y, B, bs, H_x, H_y, x, y;
                                 vertical_step=1e-4)
 
-Evaluate the buoyancy-driven bottom stress in equation (58), using the
+Evaluate the buoyancy-driven bottom stress in equation (54), using the
 one-sided second-order approximation `-ν ∂u/∂z` at `z = -H`. It intentionally
 uses B23 velocity evaluations so variable bathymetry and general `f(x,y)` are
 treated consistently with the production velocity calculation.
