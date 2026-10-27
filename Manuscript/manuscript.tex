@@ -1083,9 +1083,9 @@ This study was supported with funding from the National Science Foundation grant
 \datastatement
 \added[id=CL]{All code to reproduce} the analytical and numerical \added[id=CL]{results in this paper is available at} \texttt{github.com/ThomasHaine/PlanetaryGeostrophyAnalyticalModel}.
 \added[id=CL]{The repository contains the \texttt{PlanetaryGeostrophy} Julia package, which implements the solution, the diagnostics, and the adjoint, with its test suite.
-The Jupyter notebooks in \texttt{TheoryNotes/} }\added[id=CL]{derive the column solutions with \texttt{SymPy.jl}:}\added[id=CL]{ \texttt{BuoyancyEquationSolution.ipynb} derives the buoyancy Green's function and its integrals (Section~\ref{sect:b_solution} and Appendix~A; cells 1.1--1.31), and \texttt{FrictionalGeostrophicEquationSolution.ipynb} derives the velocity Green's function, its integrals, the bottom stress, and the coefficients $\mathfrak{A}$, $\mathfrak{B}$, $S$, and $T$ (Section~\ref{sect:PG_soln} and Appendix~B; cells 1.1--1.3 and 2.1--2.7).
+The Jupyter notebooks in \texttt{TheoryNotes/} }\added[id=CL]{derive the column solutions with \texttt{SymPy.jl}:}\added[id=CL]{ \texttt{BuoyancyEquationSolution.ipynb} derives the buoyancy Green's function and its integrals (Section~\ref{sect:b_solution} and Appendix~A; cells \replaced[id=CR]{1.1--1.5}{1.1--1.31}), and \texttt{FrictionalGeostrophicEquationSolution.ipynb} derives the velocity Green's function, its integrals, the bottom stress, and the coefficients $\mathfrak{A}$, $\mathfrak{B}$, $S$, and $T$ (Section~\ref{sect:PG_soln} and Appendix~B; cells \replaced[id=CR]{1.1--1.5, 2.1--2.8, and 3.0}{1.1--1.3 and 2.1--2.7}).
 \texttt{ComputeQuadratures.ipynb} and \texttt{SymbolicsTesting.jl} build and test the symbolic kernels of Appendix~B.
-The figures and tables of Sections~\ref{sect:results}b--e and Appendix~C }\added[id=CL]{are made by the scripts in \texttt{TheoryNotes} and by \texttt{AnalyticalModel/OceananigansComparison.jl}.}
+The figures and tables of \replaced[id=CR]{Section~\ref{sect:results}}{Sections~\ref{sect:results}b--e} and Appendix~C }\added[id=CL]{are made by the \added[id=CR]{notebooks and }scripts in \texttt{TheoryNotes} and by \texttt{AnalyticalModel/OceananigansComparison.jl}.}
 
 
 \section{Appendices}

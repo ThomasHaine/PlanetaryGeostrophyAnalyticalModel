@@ -2,7 +2,7 @@
     IsobathCirculationDiagnostics
 
 A third, independent, closure-free consistency test built from the
-barotropic vorticity balance (BV, equation (36)),
+barotropic vorticity balance (BV, equation (27)),
 
     J(f, Ψ) = J(H, p_b) - Ek·curl(τ + τ_b),
 

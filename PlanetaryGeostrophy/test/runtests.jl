@@ -149,7 +149,7 @@ end
     )
     @test coefficient_transport ≈ direct_transport rtol=2e-7
 
-    # κ(0) in (52): b(0) = b_s, and the generated b_s kernels agree with
+    # κ(0) in (41): b(0) = b_s, and the generated b_s kernels agree with
     # the closed form, for non-uniform-unit κ and ν.
     pκ = prototype.VelocityParameters(0.02, 0.2, 1.3, 1.7, 1.0, 0.1)
     zero_B(xx, yy, z) = 0.0
@@ -1342,7 +1342,7 @@ end
 
 @testset "Fast single-integral path agrees with B23" begin
     # Sloping bottom, a seamount, beta, and depth-dependent horizontal
-    # buoyancy forcing exercise every term in (65), (69), and (B5).
+    # buoyancy forcing exercise every term in (51), (54), and (57).
     problem = PGProblem(
         parameters=PGParameters(0.02, 0.2),
         depth=(x, y) -> 0.8 + 0.25x + 0.1y +
