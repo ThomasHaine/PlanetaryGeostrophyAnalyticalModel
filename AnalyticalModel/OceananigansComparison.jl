@@ -317,7 +317,7 @@ linestyle = style
 panel_d = plot(dx, [r.errors.U for r in flat_results]; marker=:circle, lw=1.5, xscale=:log10,
     yscale=:log10, label="\$\\mathbf{U}\$", xlabel="Oceananigans \$\\Delta x\$",
     ylabel="relative \$L_2\$ difference", title="(d) flat bottom: convergence",
-    xticks=(dx, [@sprintf("%.4f", d) for d in dx]), yticks=10.0 .^ (-4:0), legend=:topleft,
+    xticks=(dx, [@sprintf("%.4f", d) for d in dx]), yticks=10.0 .^ (-4:0), legend=:right,
     linestyle...)
 plot!(panel_d, dx, [r.errors.u for r in flat_results]; marker=:square, lw=1.5, label="\$\\mathbf{u}\$")
 plot!(panel_d, dx, [r.errors.b for r in flat_results]; marker=:diamond, lw=1.5, label="\$b\$")
