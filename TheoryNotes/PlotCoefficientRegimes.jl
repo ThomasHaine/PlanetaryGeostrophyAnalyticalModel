@@ -82,7 +82,7 @@ regime_lines(ratio)
 
 stress = plot(s, reference.stress_magnitude; yscale=:log10, lw=2, color=:black,
     label="exact", title="(d) bottom stress \$\\mathrm{Ek}\\,|S|/\\delta_E\$",
-    ylabel="\$\\mathrm{Ek}\\,|S|/\\delta_E\$", common...)
+    ylabel="\$\\mathrm{Ek}\\,|S|/\\delta_E\$", common..., legend=:bottomright)
 scatter!(stress, s_markers, check.stress_magnitude; color=:black, ms=3, label="exact, Ek/10")
 hline!(stress, [1 / sqrt(2)]; color=:steelblue, ls=:dash, lw=1.5, label="deep: \$1/\\sqrt{2}\$")
 plot!(stress, s[shallow], s[shallow]; color=:firebrick, ls=:dashdot, lw=1.5,
@@ -91,7 +91,7 @@ regime_lines(stress)
 
 angle_panel = plot(s, reference.stress_angle; lw=2, color=:black, label="exact",
     title="(e) bottom-stress angle \$\\arg S\$", ylabel="degrees",
-    ylims=(-60, 10), common..., legend=:bottomleft)
+    ylims=(-60, 10), common..., legend=:right)
 scatter!(angle_panel, s_markers, check.stress_angle; color=:black, ms=3, label="exact, Ek/10")
 hline!(angle_panel, [-45.0]; color=:steelblue, ls=:dash, lw=1.5, label="deep: \$-45^\\circ\$")
 hline!(angle_panel, [0.0]; color=:firebrick, ls=:dashdot, lw=1.5, label="shallow: \$0^\\circ\$")

@@ -173,21 +173,23 @@ panel_b = map_panel(reference.Ψ_classical, "(b) layer model, steering along \$f
 
 section_x = -0.5
 panel_c = plot(; xlabel="\$y\$", ylabel="\$\\Psi / \\max|\\Psi_{\\mathrm{PG}}|\$",
-    title="(c) section across the plume, \$x = $(section_x)\$", legend=:bottomleft, style...)
+    title="(c) section across the plume, \$x = $(section_x)\$", legend=:top,
+    ylims=(-1.25, 0.6), style...)
 for (k, c) in enumerate(cases)
     i = argmin(abs.(c.x .- section_x))
     scale = maximum(abs, c.Ψ_pg[i, :])
     plot!(panel_c, c.y, c.Ψ_pg[i, :] ./ scale; color=k, lw=1.5,
-        label=@sprintf("PG, shelf \$s = %.0f\$", c.s_shelf))
+        label=@sprintf("shelf \$s = %.0f\$", c.s_shelf))
     plot!(panel_c, c.y, c.Ψ_classical[i, :] ./ scale; color=k, ls=:dash, lw=1, label="")
 end
-plot!(panel_c, [NaN], [NaN]; color=:black, ls=:dash, label="layer model, \$f/H\$")
+plot!(panel_c, [NaN], [NaN]; color=:black, ls=:dash, label="layer model")
 vspan!(panel_c, [y_break + 2w_slope, Ly / 2]; color=:gray, alpha=0.15, label="shelf")
 
 s_values = [c.s_shelf for c in cases]
 panel_d = plot(; xscale=:log10, yscale=:log10, xlabel="shelf \$s = H_{\\mathrm{shelf}}/\\delta_E\$",
     ylabel="relative \$L_2\$ difference in \$\\Psi\$", title="(d) PG against the layer model",
-    xticks=(s_values, [@sprintf("%.0f", v) for v in s_values]), legend=:bottomleft, style...)
+    xticks=(s_values, [@sprintf("%.0f", v) for v in s_values]), ylims=(3e-4, 1), legend=:bottomleft,
+    style...)
 for (label, field, marker) in (("deep, \$f/H\$", c -> c.classical.deep, :circle),
                                ("deep, \$f/(H - \\delta_E/2)\$", c -> c.corrected.deep, :square),
                                ("shelf, \$f/H\$", c -> c.classical.shelf, :utriangle),
