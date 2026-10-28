@@ -202,12 +202,12 @@ vspan!(panel_b, collect(section_x); color=:gold, alpha=0.2, label="")
 r = nost_isachsen
 speed_max = maximum(filter(isfinite, r.pg_speed[r.theory_wet]))
 panel_c = scatter(r.pg_speed[r.theory_wet], r.linear_speed[r.theory_wet]; ms=1.5, msw=0, alpha=0.4,
-    color=:gray, label=@sprintf("linear drag (%.0f%%)", 100m.linear_relative_l2_velocity_error),
+    color=:gray, label="linear drag",
     xlabel="PG bottom speed", ylabel="Nøst–Isachsen bottom speed",
     title="(c) closed-contour bottom velocity", legend=:topleft, xticks=0:0.01:0.02,
     yticks=0:0.01:0.02, style...)
 scatter!(panel_c, r.pg_speed[r.theory_wet], r.exact_speed[r.theory_wet]; ms=1.5, msw=0, alpha=0.5,
-    color=:steelblue, label=@sprintf("PG drag (%.1f%%)", 100m.exact_relative_l2_velocity_error))
+    color=:steelblue, label="PG drag")
 plot!(panel_c, [0, speed_max], [0, speed_max]; color=:black, ls=:dash, label="")
 
 function kernel_panel(field, title)
