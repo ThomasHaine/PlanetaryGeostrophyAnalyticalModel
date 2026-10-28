@@ -1,4 +1,4 @@
-# Regime figure for the column coefficients 𝔄 (56) and S (53) (labelled A and S in the plot).
+# Regime figure for the column coefficients 𝔄 (56) and S (53).
 #
 # With uniform viscosity, f𝔄/δ_E, Ek S/δ_E, and the surface-stress weight in T
 # depend only on s = H/δ_E, where δ_E = sqrt(2νEk/|f|) is the Ekman depth. The
@@ -14,6 +14,7 @@
 ENV["GKSwstype"] = "100"
 using PlanetaryGeostrophy
 using Plots
+include(joinpath(@__DIR__, "FigureStyle.jl"))
 
 const PG = PlanetaryGeostrophy
 
@@ -45,11 +46,12 @@ check = scaled_coefficients(1e-3, s_markers)
 deep = s .> 0.7
 shallow = s .< 1.5
 regime_lines(panel) = vline!(panel, [1.0, 3.0]; color=:gray, linestyle=:dot, label=false)
-common = (; xscale=:log10, xlabel="\$s = H/\\delta_E\$", legend=:topleft, framestyle=:box,
-    minorgrid=false, titlefontsize=10, guidefontsize=9, legendfontsize=7)
+const figure_size = (1150, 680)
+common = (; xscale=:log10, xlabel="\$s = H/\\delta_E\$", legend=:topleft, minorgrid=false,
+    manuscript_style(figure_size[1], 16)...)
 
 steering = plot(s, reference.steering; yscale=:log10, lw=2, color=:black,
-    label="exact", title="(a) steering \$f\\,A_i/\\delta_E\$", ylabel="\$f\\,A_i/\\delta_E\$", common..., legend=:bottomright)
+    label="exact", title="(a) steering \$f\\,\\mathfrak{A}^i/\\delta_E\$", ylabel="\$f\\,\\mathfrak{A}^i/\\delta_E\$", common..., legend=:bottomright)
 scatter!(steering, s_markers, check.steering; color=:black, ms=3, label="exact, Ek/10")
 plot!(steering, s, s; color=:gray, ls=:dot, label="inviscid \$H/f\$")
 plot!(steering, s[deep], s[deep] .- 0.5; color=:steelblue, ls=:dash, lw=1.5,
@@ -59,7 +61,7 @@ plot!(steering, s[shallow], 8 / 15 .* s[shallow] .^ 5; color=:firebrick, ls=:das
 regime_lines(steering)
 
 diffusivity = plot(s, reference.diffusivity; yscale=:log10, lw=2, color=:black,
-    label="exact", title="(b) friction \$-f\\,A_r/\\delta_E\$", ylabel="\$-f\\,A_r/\\delta_E\$", common..., legend=:bottomright)
+    label="exact", title="(b) friction \$-f\\,\\mathfrak{A}^r/\\delta_E\$", ylabel="\$-f\\,\\mathfrak{A}^r/\\delta_E\$", common..., legend=:bottomright)
 scatter!(diffusivity, s_markers, check.diffusivity; color=:black, ms=3, label="exact, Ek/10")
 hline!(diffusivity, [0.5]; color=:steelblue, ls=:dash, lw=1.5, label="deep: \$\\delta_E/(2f)\$")
 plot!(diffusivity, s[shallow], 2 / 3 .* s[shallow] .^ 3; color=:firebrick, ls=:dashdot,
@@ -67,8 +69,8 @@ plot!(diffusivity, s[shallow], 2 / 3 .* s[shallow] .^ 3; color=:firebrick, ls=:d
 regime_lines(diffusivity)
 
 ratio = plot(s, reference.steering ./ reference.diffusivity; yscale=:log10, lw=2,
-    color=:black, label="exact", title="(c) steering/friction \$A_i/(-A_r)\$",
-    ylabel="\$A_i/(-A_r)\$", common..., legend=:bottomright)
+    color=:black, label="exact", title="(c) steering/friction \$\\mathfrak{A}^i/(-\\mathfrak{A}^r)\$",
+    ylabel="\$\\mathfrak{A}^i/(-\\mathfrak{A}^r)\$", common..., legend=:bottomright)
 scatter!(ratio, s_markers, check.steering ./ check.diffusivity; color=:black, ms=3,
     label="exact, Ek/10")
 plot!(ratio, s[deep], 2 .* s[deep] .- 1; color=:steelblue, ls=:dash, lw=1.5,
@@ -96,15 +98,15 @@ hline!(angle_panel, [0.0]; color=:firebrick, ls=:dashdot, lw=1.5, label="shallow
 regime_lines(angle_panel)
 
 wind = plot(s, reference.wind; yscale=:log10, lw=2, color=:black, label="exact",
-    title="(f) wind stress at the bed \$|\\mathrm{sech}\\,\\varphi H|\$",
-    ylabel="fraction of surface stress", ylims=(1e-8, 2), common..., legend=:bottomleft)
+    title="(f) surface stress at the bed",
+    ylabel="\$|\\mathrm{sech}\\,\\varphi H|\$", ylims=(1e-8, 2), common..., legend=:bottomleft)
 scatter!(wind, s_markers, check.wind; color=:black, ms=3, label="exact, Ek/10")
 plot!(wind, s[deep], 2 .* exp.(-s[deep]); color=:steelblue, ls=:dash, lw=1.5,
     label="deep: \$2e^{-s}\$")
 regime_lines(wind)
 
 figure = plot(steering, diffusivity, ratio, stress, angle_panel, wind;
-    layout=(2, 3), size=(1150, 680), left_margin=4Plots.mm, bottom_margin=4Plots.mm)
+    layout=(2, 3), size=figure_size, left_margin=4Plots.mm, bottom_margin=4Plots.mm)
 for extension in ("pdf", "png")
     savefig(figure, joinpath(@__DIR__, "coefficient_regimes.$extension"))
 end

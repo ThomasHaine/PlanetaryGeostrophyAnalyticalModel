@@ -169,7 +169,9 @@ println("Nøst–Isachsen bottom velocity on closed f/H contours ($(m.comparison
 # ---------------------------------------------------------------------------
 # Figure
 # ---------------------------------------------------------------------------
-style = (; titlefontsize=10, guidefontsize=9, framestyle=:box, legendfontsize=7)
+include(joinpath(@__DIR__, "FigureStyle.jl"))
+const figure_size = (1300, 900)
+style = manuscript_style(figure_size[1], 16)
 masked(field, wet) = [wet[i, j] ? field[i, j] : NaN for i in axes(field, 1), j in axes(field, 2)]
 H = [problem.inside(xx, yy) ? depth(xx, yy) : NaN for xx in dx, yy in dy]
 mapstyle = (; aspect_ratio=:equal, xlabel="\$x\$", ylabel="\$y\$", xlims=(-ax, ax), ylims=(-ay, ay))
@@ -184,7 +186,7 @@ end
 Ψ = masked(diagnostics.streamfunction, diagnostics.wet)
 Ψmax = maximum(abs, filter(isfinite, Ψ))
 panel_a = contourf(dx, dy, Ψ'; levels=range(-Ψmax, Ψmax; length=17), color=:balance,
-    title="(a) \$\\Psi\$, isobaths 0.4, 0.8, 1.2, strait", colorbar=false, mapstyle..., style...)
+    title="(a) \$\\Psi\$ and isobaths", colorbar=false, mapstyle..., style...)
 decorate!(panel_a)
 
 j0 = 2
@@ -200,11 +202,12 @@ vspan!(panel_b, collect(section_x); color=:gold, alpha=0.2, label="")
 r = nost_isachsen
 speed_max = maximum(filter(isfinite, r.pg_speed[r.theory_wet]))
 panel_c = scatter(r.pg_speed[r.theory_wet], r.linear_speed[r.theory_wet]; ms=1.5, msw=0, alpha=0.4,
-    color=:gray, label=@sprintf("assumed linear drag (%.0f%%)", 100m.linear_relative_l2_velocity_error),
+    color=:gray, label=@sprintf("linear drag (%.0f%%)", 100m.linear_relative_l2_velocity_error),
     xlabel="PG bottom speed", ylabel="Nøst–Isachsen bottom speed",
-    title="(c) closed-contour bottom velocity", legend=:topleft, style...)
+    title="(c) closed-contour bottom velocity", legend=:topleft, xticks=0:0.01:0.02,
+    yticks=0:0.01:0.02, style...)
 scatter!(panel_c, r.pg_speed[r.theory_wet], r.exact_speed[r.theory_wet]; ms=1.5, msw=0, alpha=0.5,
-    color=:steelblue, label=@sprintf("derived PG drag (%.1f%%)", 100m.exact_relative_l2_velocity_error))
+    color=:steelblue, label=@sprintf("PG drag (%.1f%%)", 100m.exact_relative_l2_velocity_error))
 plot!(panel_c, [0, speed_max], [0, speed_max]; color=:black, ls=:dash, label="")
 
 function kernel_panel(field, title)
@@ -214,13 +217,17 @@ function kernel_panel(field, title)
     scale = quantile(abs.(filter(isfinite, values)), 0.97)
     p = heatmap(dx, dy, values'; color=:balance, clims=(-scale, scale), title, colorbar=false,
         mapstyle..., style...)
-    return decorate!(p)
+    return decorate!(p), slim_colorbar((-scale, scale), style; color=:balance)
 end
-panel_d = kernel_panel(adjoint.wind_stress_x, "(d) strait transport: sensitivity to \$\\tau^x\$")
-panel_e = kernel_panel(adjoint.wind_stress_y, "(e) sensitivity to \$\\tau^y\$")
-panel_f = kernel_panel(adjoint.restoring_buoyancy[:, :, 1], "(f) sensitivity to \$B\$ at \$z = -0.5\$")
+panel_d, colorbar_d = kernel_panel(adjoint.wind_stress_x, "(d) strait transport: sensitivity to \$\\tau^x\$")
+panel_e, colorbar_e = kernel_panel(adjoint.wind_stress_y, "(e) sensitivity to \$\\tau^y\$")
+panel_f, colorbar_f = kernel_panel(adjoint.restoring_buoyancy[:, :, 1], "(f) sensitivity to \$B\$ at \$z = -0.5\$")
+colorbar_a = slim_colorbar((-Ψmax, Ψmax), style; color=:balance)
+colorbar_b = slim_colorbar((-vmax, vmax), style; color=:balance)
 
-figure = plot(panel_a, panel_b, panel_c, panel_d, panel_e, panel_f; layout=(2, 3), size=(1300, 900),
+figure = plot(panel_a, colorbar_a, panel_b, colorbar_b, panel_c, blank_panel(),
+    panel_d, colorbar_d, panel_e, colorbar_e, panel_f, colorbar_f;
+    layout=grid(2, 6; widths=[0.28, 0.05, 0.28, 0.05, 0.28, 0.06]), size=figure_size,
     left_margin=4Plots.mm, bottom_margin=4Plots.mm)
 for extension in ("pdf", "png")
     savefig(figure, joinpath(@__DIR__, "double_basin_showcase.$extension"))

@@ -209,7 +209,8 @@ report(label, o, e) = @printf(
     e.sampling_seconds, e.b, e.u, e.U)
 
 # OCEANANIGANS_COMPARISON_REPLOT=1 redraws the figure from the saved results.
-const results_file = joinpath(tempdir(), "oceananigans_comparison.jls")
+# The results are kept next to this script (not under version control).
+const results_file = joinpath(@__DIR__, quick ? "oceananigans_comparison_quick.jls" : "oceananigans_comparison.jls")
 if get(ENV, "OCEANANIGANS_COMPARISON_REPLOT", "0") == "1"
     (; flat_results, bowl_results, flat_pg_seconds, bowl_pg_seconds) = deserialize(results_file)
 else
@@ -293,8 +294,11 @@ o, e = fine.ocean, fine.errors
 plotable(field) = map(value -> isfinite(value) ? value : NaN, field)
 speed_ocean, speed_pg = plotable(abs.(e.U_ocean)), plotable(abs.(e.pg.U))
 limits = (0.0, maximum(filter(isfinite, vcat(vec(speed_ocean), vec(speed_pg)))))
-mapstyle = (; aspect_ratio=:equal, xlabel="\$x\$", ylabel="\$y\$", titlefontsize=10,
-    guidefontsize=9, framestyle=:box, xlims=(-0.9, 0.9), ylims=(-0.65, 0.65))
+include(joinpath(@__DIR__, "..", "TheoryNotes", "FigureStyle.jl"))
+const figure_size = (1250, 760)
+style = manuscript_style(figure_size[1], 16)
+mapstyle = (; aspect_ratio=:equal, xlabel="\$x\$", ylabel="\$y\$", colorbar=false,
+    xlims=(-0.9, 0.9), ylims=(-0.65, 0.65), xticks=-0.8:0.4:0.8, yticks=-0.5:0.5:0.5, style...)
 panel_a = heatmap(o.x, o.y, speed_ocean'; clims=limits, color=:viridis,
     title="(a) Oceananigans \$|\\mathbf{U}|\$, flat, $(o.Nx)×$(o.Ny)×$(o.Nz)", mapstyle...)
 panel_b = heatmap(o.x, o.y, speed_pg'; clims=limits, color=:viridis,
@@ -302,11 +306,14 @@ panel_b = heatmap(o.x, o.y, speed_pg'; clims=limits, color=:viridis,
 # The difference is shown over the bulk columns used in the L2 metric.
 _, bulk_columns = bulk_masks(flat_depth, o, inside_ellipse)
 difference = [bulk_columns[i, j] ? abs(e.U_ocean[i, j] - e.pg.U[i, j]) : NaN for i in axes(e.pg.U, 1), j in axes(e.pg.U, 2)]
-panel_c = heatmap(o.x, o.y, difference'; color=:magma,
+difference_limits = (0.0, maximum(filter(isfinite, difference)))
+panel_c = heatmap(o.x, o.y, difference'; color=:magma, clims=difference_limits,
     title="(c) \$|\\mathbf{U}_{\\mathrm{Oc}} - \\mathbf{U}_{\\mathrm{PG}}|\$ (bulk), flat", mapstyle...)
+colorbar_ab = slim_colorbar(limits, style; color=:viridis)
+colorbar_c = slim_colorbar(difference_limits, style; color=:magma)
 
 dx = [Lx / r.ocean.Nx for r in flat_results]
-linestyle = (; titlefontsize=10, guidefontsize=9, framestyle=:box, legendfontsize=7)
+linestyle = style
 panel_d = plot(dx, [r.errors.U for r in flat_results]; marker=:circle, lw=1.5, xscale=:log10,
     yscale=:log10, label="\$\\mathbf{U}\$", xlabel="Oceananigans \$\\Delta x\$",
     ylabel="relative \$L_2\$ difference", title="(d) flat bottom: convergence",
@@ -316,7 +323,8 @@ plot!(panel_d, dx, [r.errors.u for r in flat_results]; marker=:square, lw=1.5, l
 plot!(panel_d, dx, [r.errors.b for r in flat_results]; marker=:diamond, lw=1.5, label="\$b\$")
 plot!(panel_d, dx, flat_results[end].errors.U .* dx ./ dx[end]; color=:gray, ls=:dash, label="\$\\propto \\Delta x\$")
 
-labels = ["stair\n80×60×40", "partial\n80×60×40", "stair\n160×120×40", "stair, ν_h\n160×120×40"]
+# All bowl grids have 40 levels.
+labels = ["stair\n80×60", "partial\n80×60", "stair\n160×120", "stair, ν_h\n160×120"]
 positions = 1:length(bowl_results)
 panel_e = bar(positions .- 0.2, [r.errors.u for r in bowl_results]; bar_width=0.4,
     label="\$\\mathbf{u}\$")
@@ -324,7 +332,7 @@ bar!(panel_e, positions .+ 0.2, [r.errors.U for r in bowl_results]; bar_width=0.
     xticks=(positions, labels), label="\$\\mathbf{U}\$",
     ylabel="relative \$L_2\$ difference", title="(e) bowl bottom: Oceananigans sensitivity",
     ylims=(0, 1.15 * maximum(max(r.errors.u, r.errors.U) for r in bowl_results)),
-    legend=:topright, linestyle..., xtickfontsize=7)
+    legend=:topright, linestyle..., xtickfontsize=round(Int, 0.85style.tickfontsize))
 
 grid_labels = [@sprintf("%d×%d×%d", r.ocean.Nx, r.ocean.Ny, r.ocean.Nz) for r in flat_results]
 panel_f = plot(1:length(flat_results), [r.ocean.seconds for r in flat_results]; yscale=:log10,
@@ -337,8 +345,10 @@ plot!(panel_f, 1:length(flat_results), [flat_pg_seconds + r.errors.sampling_seco
 hline!(panel_f, [flat_pg_seconds]; color=:black, ls=:dash,
     label=@sprintf("PG solve (mesh %.2f)", pg_mesh_resolution))
 
-figure = plot(panel_a, panel_b, panel_c, panel_d, panel_e, panel_f; layout=(2, 3),
-    size=(1250, 760), left_margin=4Plots.mm, bottom_margin=6Plots.mm)
+layout = @layout [a b c{0.03w} d e{0.03w}; f g h]
+figure = plot(panel_a, panel_b, colorbar_ab, panel_c, colorbar_c, panel_d, panel_e, panel_f;
+    layout, size=figure_size, left_margin=4Plots.mm, bottom_margin=6Plots.mm)
 for extension in ("pdf", "png")
-    savefig(figure, joinpath(@__DIR__, "..", "TheoryNotes", "oceananigans_comparison.$extension"))
+    savefig(figure, joinpath(@__DIR__, "..", "TheoryNotes",
+        quick ? "oceananigans_comparison_quick.$extension" : "oceananigans_comparison.$extension"))
 end

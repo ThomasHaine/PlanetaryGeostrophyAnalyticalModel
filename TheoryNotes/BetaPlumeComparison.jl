@@ -27,6 +27,7 @@ using Plots
 using Printf
 using SparseArrays
 include("ComparisonTools.jl")
+include("FigureStyle.jl")
 
 global_logger(ConsoleLogger(stderr, Logging.Warn))
 
@@ -125,7 +126,8 @@ end
 # Figure
 # ---------------------------------------------------------------------------
 reference = cases[2]
-style = (; titlefontsize=10, guidefontsize=9, framestyle=:box, legendfontsize=7)
+const figure_size = (1100, 720)
+style = manuscript_style(figure_size[1], 14)
 levels = range(minimum(reference.Ψ_pg), 0; length=13)
 mapstyle = (; aspect_ratio=:equal, xlabel="\$x\$", ylabel="\$y\$", colorbar=false,
     levels, color=:viridis, xlims=(-Lx / 2, Lx / 2), ylims=(-Ly / 2, Ly / 2))
@@ -159,7 +161,9 @@ panel_d = plot(s_values, [c.classical for c in cases]; marker=:circle, lw=1.5, x
 plot!(panel_d, s_values, [c.corrected for c in cases]; marker=:square, lw=1.5,
     label="corrected \$r(y)\$")
 
-figure = plot(panel_a, panel_b, panel_c, panel_d; layout=(2, 2), size=(1100, 720),
+colorbar_ab = slim_colorbar((first(levels), last(levels)), style; color=:viridis)
+figure = plot(panel_a, panel_b, colorbar_ab, panel_c, panel_d, blank_panel();
+    layout=grid(2, 3; widths=[0.48, 0.48, 0.04]), size=figure_size,
     left_margin=4Plots.mm, bottom_margin=4Plots.mm)
 for extension in ("pdf", "png")
     savefig(figure, joinpath(@__DIR__, "beta_plume_comparison.$extension"))

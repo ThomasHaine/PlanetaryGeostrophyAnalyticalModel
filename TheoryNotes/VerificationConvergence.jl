@@ -21,6 +21,7 @@ global_logger(ConsoleLogger(stderr, Logging.Warn))
 
 include("VerificationBasin.jl")
 include("ComparisonTools.jl")
+include("FigureStyle.jl")
 problem = verification_problem()
 
 resolutions = [0.16, 0.08, 0.04, 0.02]
@@ -128,9 +129,9 @@ for h in all_h
         residual(h, :cell_average, :gcvb), residual(h, :centered, :gcvb))
 end
 
+const figure_size = (1000, 420)
 common = (; xscale=:log10, yscale=:log10, xlabel="mean triangle edge length \$h\$",
-    legend=:bottomright, framestyle=:box, minorgrid=false,
-    titlefontsize=10, guidefontsize=9, legendfontsize=7, xflip=false)
+    legend=:bottomright, minorgrid=false, xflip=false, manuscript_style(figure_size[1], 16)...)
 labels = Dict(:p_s => "\$p_s\$", :U => "\$\\mathbf{U}\$", :τ_b => "\$\\tau_b\$",
     :u_mid => "\$\\mathbf{u}(-H/2)\$", :Ψ => "\$\\Psi\$")
 tick_labels(values) = (values, [@sprintf("%.3f", v) for v in values])
@@ -156,7 +157,7 @@ plot!(budgets, all_edge, [residual(h, :centered, :bv) for h in all_h];
 plot!(budgets, all_edge, [residual(h, :centered, :gcvb) for h in all_h];
     marker=:square, lw=1.5, ls=:dash, color=:steelblue, label="GCVB, centered")
 
-figure = plot(convergence, budgets; layout=(1, 2), size=(1000, 420),
+figure = plot(convergence, budgets; layout=(1, 2), size=figure_size,
     left_margin=4Plots.mm, bottom_margin=4Plots.mm)
 for extension in ("pdf", "png")
     savefig(figure, joinpath(@__DIR__, "verification_convergence.$extension"))
