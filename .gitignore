@@ -17,3 +17,5 @@ AnalyticalModel/Old*
 .vscode*
 .DS_Store
 *.msh.meta
+AnalyticalModel/oceananigans_comparison*.jls
+TheoryNotes/*_quick.pdf

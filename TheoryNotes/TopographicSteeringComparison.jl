@@ -32,6 +32,7 @@ using Plots
 using Printf
 using SparseArrays
 include("ComparisonTools.jl")
+include("FigureStyle.jl")
 
 global_logger(ConsoleLogger(stderr, Logging.Warn))
 
@@ -146,7 +147,8 @@ end
 # Figure
 # ---------------------------------------------------------------------------
 reference = cases[2]
-style = (; titlefontsize=10, guidefontsize=9, framestyle=:box, legendfontsize=7)
+const figure_size = (1100, 720)
+style = manuscript_style(figure_size[1], 14)
 extremum = max(maximum(abs, reference.Ψ_pg), maximum(abs, reference.Ψ_classical))
 levels = range(-extremum, extremum; length=17)
 mapstyle = (; aspect_ratio=:equal, xlabel="\$x\$", ylabel="\$y\$", colorbar=false, levels,
@@ -193,7 +195,9 @@ for (label, field, marker) in (("deep, \$f/H\$", c -> c.classical.deep, :circle)
     plot!(panel_d, s_values, field.(cases); marker, lw=1.5, label)
 end
 
-figure = plot(panel_a, panel_b, panel_c, panel_d; layout=(2, 2), size=(1100, 720),
+colorbar_ab = slim_colorbar((first(levels), last(levels)), style; color=:balance)
+figure = plot(panel_a, panel_b, colorbar_ab, panel_c, panel_d, blank_panel();
+    layout=grid(2, 3; widths=[0.48, 0.48, 0.04]), size=figure_size,
     left_margin=4Plots.mm, bottom_margin=4Plots.mm)
 for extension in ("pdf", "png")
     savefig(figure, joinpath(@__DIR__, "topographic_steering_comparison.$extension"))

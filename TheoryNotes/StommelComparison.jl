@@ -29,6 +29,7 @@ using PlanetaryGeostrophy
 using Plots
 using Printf
 include("ComparisonTools.jl")
+include("FigureStyle.jl")
 
 global_logger(ConsoleLogger(stderr, Logging.Warn))
 
@@ -103,13 +104,15 @@ end
 # Figure
 # ---------------------------------------------------------------------------
 reference = cases[2]
-style = (; titlefontsize=10, guidefontsize=9, framestyle=:box, legendfontsize=7)
+const figure_size = (1000, 720)
+style = manuscript_style(figure_size[1], 14)
 limits = (0.0, maximum(reference.Ψ_pg))
+mapticks = (; xlims=(-Lx / 2, Lx / 2), ylims=(-Ly / 2, Ly / 2), xticks=-1:0.5:1, yticks=-0.5:0.5:0.5)
 panel_a = contourf(reference.x, reference.y, reference.Ψ_pg'; levels=12, clims=limits,
-    color=:viridis, aspect_ratio=:equal, xlabel="\$x\$", ylabel="\$y\$",
+    color=:viridis, aspect_ratio=:equal, xlabel="\$x\$", ylabel="\$y\$", mapticks...,
     colorbar=false, title=@sprintf("(a) PG \$\\Psi\$, \$s = %.0f\$", reference.s), style...)
 panel_b = contourf(reference.x, reference.y, reference.Ψ_classical'; levels=12, clims=limits,
-    color=:viridis, aspect_ratio=:equal, xlabel="\$x\$", ylabel="\$y\$", colorbar=false,
+    color=:viridis, aspect_ratio=:equal, xlabel="\$x\$", ylabel="\$y\$", colorbar=false, mapticks...,
     title="(b) Stommel (1948), \$r = f_0\\delta_E/2H\$", style...)
 
 panel_c = plot(; xlabel="\$(x + L_x/2)\\,\\beta/r\$", ylabel="\$\\Psi / \\max \\Psi_{\\mathrm{Stommel}}\$",
@@ -135,7 +138,9 @@ plot!(panel_d, s_values, [c.local_drag for c in cases]; marker=:square, lw=1.5,
 plot!(panel_d, s_values, [c.thickness for c in cases]; marker=:diamond, lw=1.5,
     label="local \$r(y)\$, depth \$H - \\delta_E/2\$")
 
-figure = plot(panel_a, panel_b, panel_c, panel_d; layout=(2, 2), size=(1000, 720),
+colorbar_ab = slim_colorbar(limits, style; color=:viridis)
+figure = plot(panel_a, panel_b, colorbar_ab, panel_c, panel_d, blank_panel();
+    layout=grid(2, 3; widths=[0.48, 0.48, 0.04]), size=figure_size,
     left_margin=4Plots.mm, bottom_margin=4Plots.mm)
 for extension in ("pdf", "png")
     savefig(figure, joinpath(@__DIR__, "stommel_comparison.$extension"))

@@ -75,7 +75,7 @@
 %
 % Enter your Abstract here
 
-\abstract{\added[id=CL]{Planetary geostrophy (PG) with a prescribed density field, the robust-diagnostic approximation, determines the steady large-scale ocean circulation from the surface stress, the surface buoyancy, and a restoring buoyancy field. We solve the linear robust-diagnostic PG equations in closed form in the vertical direction, over arbitrary bathymetry and Coriolis parameter. Closed-form Green's functions give the buoyancy and horizontal velocity in each water column, resolving the surface and bottom Ekman layers even where they overlap. The surface pressure then satisfies one two-dimensional advection--diffusion equation with exact column-integral coefficients, solved with finite elements and no normal flow at the coast. The solution converges under mesh refinement, closes the depth-integrated momentum and vorticity balances, and agrees with a primitive-equation model to 1--2\% at 25 to 150 times lower cost. 
+\abstract{\added[id=CL]{Planetary geostrophy (PG) with a prescribed density field, the robust-diagnostic approximation, determines the steady large-scale ocean circulation from the surface stress, the surface buoyancy, and a restoring buoyancy field. We solve the linear robust-diagnostic PG equations in closed form in the vertical direction, over arbitrary bathymetry and Coriolis parameter. Closed-form Green's functions give the buoyancy and horizontal velocity in each water column, resolving the surface and bottom Ekman layers even where they overlap. The surface pressure then satisfies one two-dimensional advection--diffusion equation with exact column-integral coefficients, solved with finite elements and no normal flow at the coast. The solution converges under mesh refinement, closes the depth-integrated momentum and vorticity balances, and agrees with a primitive-equation model to 1--2\% at \CRnew{30 to 170} times lower cost. 
 It recovers the Sverdrup--Stommel gyre, $\beta$ plumes in open water and beside a coast, and topographic steering.
 The Ekman drag varies as $f^{1/2}$ for Coriolis parameter $f$, and the bottom Ekman layer of depth $\delta_E$ acts as a displacement thickness, so that the flow follows $f/(H - \delta_E/2)$ contours, where $H$ is the water depth; this steering fails where $H$ is less than one to two Ekman depths. 
 In a double basin joined by a strait, the integral constraint of N\o st and Isachsen on closed $f/H$ contours reproduces the bottom velocity to 3.1\% with the derived bottom stress,  but errs by more than 100\% with a calibrated isotropic drag.
@@ -828,7 +828,7 @@ The area-integrated GCVB over the northern and southern halves of the basin, eit
 
 \paragraph{Comparison with a primitive-equation model.}
 Appendix~C compares the solution with \texttt{Oceananigans.jl} \citep{wagner_etal25}, whose hydrostatic free-surface model is integrated from rest to a steady state with momentum and buoyancy advection switched off.
-\added[id=CL]{In a flat-bottomed elliptical basin with $\mathrm{Ek} = 0.02$, the two models solve the same linear equations, and on the finest \texttt{Oceananigans.jl} grid the relative $L_2$ differences away from the coast and the bottom are 1.5\% in $\mathbf{U}$ and 1.1\% in $\mathbf{u}$, converging with the horizontal grid spacing (Fig.~\ref{fig:oceananigans_comparison}). Since buoyancy is column-local, these test the surface-pressure solve and the coastal condition. The PG solution takes about a second to compute, 25 to 150 times faster than the \texttt{Oceananigans.jl} run (Appendix~C).}
+\added[id=CL]{In a flat-bottomed elliptical basin with $\mathrm{Ek} = 0.02$, the two models solve the same linear equations, and on the finest \texttt{Oceananigans.jl} grid the relative $L_2$ differences away from the coast and the bottom are 1.5\% in $\mathbf{U}$ and 1.1\% in $\mathbf{u}$, converging with the horizontal grid spacing (Fig.~\ref{fig:oceananigans_comparison}). Since buoyancy is column-local, these test the surface-pressure solve and the coastal condition. The PG solution takes about a second to compute, \replaced[id=CR]{30 to 170}{25 to 150} times faster than the \texttt{Oceananigans.jl} run (Appendix~C).}
 
 \begin{figure}
 \centering
@@ -1383,9 +1383,9 @@ With a stair-stepped bottom, the transport difference is 29\% at $80 \times 60 \
 \added[id=CL]{Partial bottom cells reduce the difference to 18\% at $80 \times 60 \times 40$, and a weak horizontal viscosity of $10^{-4}$ reduces it to 7.6\% at $160 \times 120 \times 40$.}
 The buoyancy differences are about 1\% in all these cases.
 Table~\ref{tab:oceananigans_timing} compares the wall-clock times on an Apple M5 Max (18 threads) after compilation.
-The PG solve, including meshing the coastline at $h = 0.02$ and solving for $p_s$, takes 0.7~s for the flat bottom and 1.0~s for the bowl, and sampling the solution at the \texttt{Oceananigans.jl} cell \added[id=CL]{centers} takes a further 0.05--0.7~s.
-The \texttt{Oceananigans.jl} spin-up takes 18~s to 180~s on the CPU with the same threads, so computing the PG solution is 25 to 150 times faster, and the ratio grows with resolution.
-The spin-up is long because the time step is limited by the explicit boundary fluxes to about $\Delta z^2/\mathrm{Ek}$, and partial bottom cells, which are thinner, need a time step four times smaller (540~s at $80 \times 60 \times 40$).
+The PG solve, including meshing the coastline at $h = 0.02$ and solving for $p_s$, takes 0.7~s for the flat bottom and 1.0~s for the bowl, and sampling the solution at the \texttt{Oceananigans.jl} cell \added[id=CL]{centers} takes a further \replaced[id=CR]{0.04--0.8}{0.05--0.7}~s.
+The \texttt{Oceananigans.jl} spin-up takes \replaced[id=CR]{20~s to 210~s}{18~s to 180~s} on the CPU with the same threads, so computing the PG solution is \replaced[id=CR]{30 to 170}{25 to 150} times faster, and the ratio grows with resolution.
+The spin-up is long because the time step is limited by the explicit boundary fluxes to about $\Delta z^2/\mathrm{Ek}$, and partial bottom cells, which are thinner, need a time step four times smaller (\replaced[id=CR]{460}{540}~s at $80 \times 60 \times 40$).
 The PG solution needs no spin-up, and its cost is set by the two-dimensional surface-pressure mesh, independent of the vertical resolution at which it is sampled.
 }
 
@@ -1397,9 +1397,9 @@ The PG solution needs no spin-up, and its cost is set by the two-dimensional sur
 \hline
 Grid & \added[id=CL]{$\Delta t$ ($1/f_0$)} & Steps & $b$ & $\mathbf{u}$ & $\mathbf{U}$ & \texttt{Oceananigans.jl} (s) & PG (s) \\
 \hline
-$40 \times 30 \times 20$ & 0.05 & 4\,000 & $1.5 \times 10^{-3}$ & 0.080 & 0.112 & 18 & 0.7 \\
-$80 \times 60 \times 40$ & 0.0125 & 16\,000 & $3.5 \times 10^{-4}$ & 0.034 & 0.043 & 83 & 0.9 \\
-$160 \times 120 \times 40$ & 0.0125 & 16\,000 & $3.5 \times 10^{-4}$ & 0.011 & 0.015 & 180 & 1.2 \\
+$40 \times 30 \times 20$ & 0.05 & 4\,000 & $1.5 \times 10^{-3}$ & 0.080 & 0.112 & \replaced[id=CR]{20}{18} & 0.7 \\
+$80 \times 60 \times 40$ & 0.0125 & 16\,000 & $3.5 \times 10^{-4}$ & 0.034 & 0.043 & \replaced[id=CR]{93}{83} & \replaced[id=CR]{0.8}{0.9} \\
+$160 \times 120 \times 40$ & 0.0125 & 16\,000 & $3.5 \times 10^{-4}$ & 0.011 & 0.015 & \replaced[id=CR]{212}{180} & 1.2 \\
 \hline
 \end{tabular}
 \end{table}
@@ -1410,7 +1410,7 @@ $160 \times 120 \times 40$ & 0.0125 & 16\,000 & $3.5 \times 10^{-4}$ & 0.011 & 0
 \caption{\added[id=CL]{\label{fig:oceananigans_comparison} Comparison with \texttt{Oceananigans.jl}.
 (a) \texttt{Oceananigans.jl} and (b) PG depth-integrated transport magnitude $|\mathbf{U}|$ for the flat-bottom basin on the $160 \times 120 \times 40$ grid, and (c) their difference over the comparison columns.
 (d) Relative $L_2$ differences for the flat bottom against the \texttt{Oceananigans.jl} grid spacing; the gray line is proportional to $\Delta x$.
-(e) Relative $L_2$ differences in $\mathbf{u}$ and $\mathbf{U}$ for the Gaussian-bowl bottom with stair-stepped and partial bottom cells, and with a horizontal viscosity $\nu_h = 10^{-4}$.
+(e) Relative $L_2$ differences in $\mathbf{u}$ and $\mathbf{U}$ for the Gaussian-bowl bottom with stair-stepped and partial bottom cells, and with a horizontal viscosity $\nu_h = 10^{-4}$\added[id=CR]{; the labels give the horizontal grid, and all four grids have 40 levels}.
 (f) Wall-clock time to solution for the flat bottom.}}
 \end{figure}
 

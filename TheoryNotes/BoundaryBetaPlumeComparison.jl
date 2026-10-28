@@ -34,6 +34,7 @@ using Plots
 using Printf
 using SpecialFunctions
 include("ComparisonTools.jl")
+include("FigureStyle.jl")
 
 global_logger(ConsoleLogger(stderr, Logging.Warn))
 
@@ -168,12 +169,13 @@ end
 # ---------------------------------------------------------------------------
 # Figure
 # ---------------------------------------------------------------------------
-style = (; titlefontsize=10, guidefontsize=9, framestyle=:box, legendfontsize=7)
+const figure_size = (1300, 720)
+style = manuscript_style(figure_size[1], 16)
 panels = []
 for c in cases
     levels = range(minimum(filter(isfinite, c.Ψ_pg)), 0; length=13)
     mapstyle = (; aspect_ratio=:equal, xlabel="\$x\$", ylabel="\$y\$", colorbar=false, levels,
-        color=:viridis, xlims=(box[1], box[2]), ylims=(box[3], box[4]))
+        color=:viridis, xlims=(box[1], box[2]), ylims=(box[3], box[4]), xticks=-3:1:1, yticks=-2:1:1)
     degrees = round(Int, rad2deg(c.θ))
     line = [(s * cos(c.θ), s * sin(c.θ)) for s in (0.0, -3.5)]
     a = contourf(c.x, c.y, c.Ψ_pg'; title="PG \$\\Psi\$, \$\\theta = $(degrees)^\\circ\$", mapstyle..., style...)
@@ -183,16 +185,18 @@ for c in cases
     scale = maximum(abs, c.Ψ_line_classical)
     profile = plot(-c.along ./ δ_S, abs.(c.Ψ_line_pg) ./ scale; yscale=:log10, lw=2, color=:black,
         label="PG", xlabel="distance down-plume, \$d/\\delta_S\$", ylabel="\$|\\Psi| / \\max|\\Psi_{\\mathrm{HF}}|\$",
-        title="along the line through the source, \$\\theta = $(degrees)^\\circ\$", legend=:bottomleft, style...)
+        title="along the source line, \$\\theta = $(degrees)^\\circ\$", legend=:bottomleft, style...)
     plot!(profile, -c.along ./ δ_S, abs.(c.Ψ_line_classical) ./ scale; lw=1.5, ls=:dash, color=1, label="Haine & Fuller")
     s_ref = -c.along[end÷2]
     ref = abs(c.Ψ_line_classical[end÷2]) / scale
     plot!(profile, -c.along ./ δ_S,
         ref .* (-c.along ./ s_ref) .^ -1.5 .* exp.(-(-c.along .- s_ref) ./ c.efold_theory); color=:gray,
         lw=1, label="far-field asymptote")
-    append!(panels, [a, b, profile])
+    bar = slim_colorbar((first(levels), last(levels)), style; color=:viridis)
+    append!(panels, [a, b, bar, profile])
 end
-figure = plot(panels...; layout=(2, 3), size=(1300, 720), left_margin=4Plots.mm, bottom_margin=4Plots.mm)
+figure = plot(panels...; layout=grid(2, 4; widths=[0.31, 0.31, 0.03, 0.35]), size=figure_size,
+    left_margin=4Plots.mm, bottom_margin=4Plots.mm)
 for extension in ("pdf", "png")
     savefig(figure, joinpath(@__DIR__, "boundary_beta_plume_comparison.$extension"))
 end

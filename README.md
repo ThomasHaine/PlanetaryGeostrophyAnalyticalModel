@@ -691,6 +691,9 @@ then a direct check on whether they recover the model's reference velocity.
   Gaussian-curl stress and error helpers shared by the comparison scripts; and
   `AnalyticalModel/ContourGeometry.jl` holds the contour-tracing helpers that
   each of the Nøst–Isachsen, GCVB and isobath diagnostic modules includes.
+- `TheoryNotes/FigureStyle.jl` sets the font sizes of the Plots.jl figures
+  (Figs. 3–10) from their pixel width and printed width, so that text prints
+  at the same size in every figure, and draws their slim colorbars.
 - `TheoryNotes/PlotCoefficientRegimes.jl` plots the column coefficients
   $\mathfrak A$ (56), $S$ (53), and the surface-stress weight in $T$ (54)
   against $s = H/\delta_E$, with their deep and shallow asymptotes (manuscript
