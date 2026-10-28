@@ -54,6 +54,7 @@ export CellBudgetQuadrature,
        buoyancy,
        bottom_stress,
        bottom_pressure,
+       bottom_pressure_stress_forcing,
        baroclinic_potential_energy,
        depth_integrated_current,
        solve_forcing_sensitivities,
@@ -489,24 +490,47 @@ Evaluate the bottom pressure
 """
 function bottom_pressure(solution::PGSolution, x, y)
     require_water(solution, x, y)
+    return surface_pressure(solution, x, y) - column_buoyancy(solution, x, y)
+end
+
+# `∫_{-H}^0 b dz` at one column, from the buoyancy solution alone.
+function column_buoyancy(solution::PGSolution, x, y)
     problem = solution.problem
     p = internal_parameters(problem.parameters)
-    column_buoyancy = if solution.pressure.method === :fast
+    if solution.pressure.method === :fast
         quadrature = solution.pressure.quadrature
-        fast_column_integral(
+        return fast_column_integral(
             solution.kernels, p, problem.depth, problem.restoring_buoyancy,
             problem.surface_buoyancy, x, y, quadrature,
             panel_count(
                 quadrature, p, problem.coriolis(x, y), problem.depth(x, y),
             ),
         )
-    else
-        VelocityFieldPrototype.buoyancy_column_integral(
-            solution.kernels, p, problem.depth, problem.restoring_buoyancy,
-            problem.surface_buoyancy, x, y,
-        )
     end
-    return surface_pressure(solution, x, y) - column_buoyancy
+    return VelocityFieldPrototype.buoyancy_column_integral(
+        solution.kernels, p, problem.depth, problem.restoring_buoyancy,
+        problem.surface_buoyancy, x, y,
+    )
+end
+
+"""
+    bottom_pressure_stress_forcing(solution, x, y)
+
+Evaluate `T*` in the bottom stress written in terms of the bottom pressure,
+`τ_b = S (∂x + i∂y)p_b + T*`. From (45) and (52), `T* = T + S (∂x + i∂y)∫_{-H}^0 b dz`,
+so it depends only on the buoyancy and the surface stress, not on `p_s`.
+Returned as a complex number `T*x + i T*y`.
+"""
+function bottom_pressure_stress_forcing(solution::PGSolution, x, y)
+    H = require_water(solution, x, y)
+    problem = solution.problem
+    p = internal_parameters(problem.parameters)
+    gradient = VelocityFieldPrototype.finite_complex_gradient(
+        (xx, yy) -> column_buoyancy(solution, xx, yy), x, y;
+        step=problem.derivative_step,
+    )
+    S = bottom_stress_coefficient(p, H, problem.coriolis(x, y))
+    return solution.pressure.T_fn(Point(x, y)) + S * gradient
 end
 
 """
