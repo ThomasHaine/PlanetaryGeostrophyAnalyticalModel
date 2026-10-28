@@ -1406,6 +1406,27 @@ end
             @test bottom_pressure(fast, x, y) ≈ bottom_pressure(b23, x, y) rtol=1e-8
             @test baroclinic_potential_energy(fast, x, y) ≈
                   baroclinic_potential_energy(b23, x, y) rtol=1e-8
+
+            # τ_b = S (∂x + i∂y)p_b + T*, with T* = T + S (∂x + i∂y)∫b dz
+            # from the buoyancy alone, (45) and (52).
+            p_internal = PlanetaryGeostrophy.internal_parameters(problem.parameters)
+            S = PlanetaryGeostrophy.bottom_stress_coefficient(
+                p_internal, H, problem.coriolis(x, y),
+            )
+            for solution in (fast, b23)
+                column_gradient =
+                    PlanetaryGeostrophy.VelocityFieldPrototype.finite_complex_gradient(
+                        (xx, yy) -> surface_pressure(solution, xx, yy) -
+                                    bottom_pressure(solution, xx, yy),
+                        x, y,
+                    )
+                gradpb = solution.pressure.gradps(x, y) - column_gradient
+                stress = bottom_stress(solution, x, y)
+                @test S * gradpb + bottom_pressure_stress_forcing(solution, x, y) ≈
+                      complex(stress.x, stress.y) rtol=1e-6
+            end
+            @test bottom_pressure_stress_forcing(fast, x, y) ≈
+                  bottom_pressure_stress_forcing(b23, x, y) rtol=1e-6
         end
 
         xs, ys = range(-0.8, 0.8; length=9), range(-0.6, 0.6; length=7)

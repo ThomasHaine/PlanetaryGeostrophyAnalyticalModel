@@ -274,6 +274,10 @@ plot_streamfunction(diagnostics)
 ```
 
 `depth_integrated_current` returns the direct analytical expression (55).
+`bottom_pressure_stress_forcing(solution, x, y)` returns `T*` in the bottom
+stress written with the bottom pressure, `τ_b = S(∂x + i∂y)p_b + T*`, where
+`T* = T + S(∂x + i∂y)∫_{-H}^0 b dz`. It depends only on the buoyancy and the
+surface stress, and the Nøst–Isachsen diagnostic uses it as its drag law.
 Because Gridap enforces its nondivergence only weakly, `compute_diagnostics`
 uses the discretely nondivergent current
 `(U, V) = (-∂yΨ, ∂xΨ)` for `transport_U` and `transport_V`, so plotted arrows

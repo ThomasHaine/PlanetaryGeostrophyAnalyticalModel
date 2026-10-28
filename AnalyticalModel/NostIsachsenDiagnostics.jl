@@ -53,10 +53,12 @@ end
 """
     exact_drag_contour_integrals(problem, p, xs, ys, grid_x, grid_y, T_star_over_f)
 
-Exact (closure-free) contour-integral theory for `G(q) = dp_b/dq`, derived
-from the model's actual Ekman bottom-stress closure `τ_b = S·∇p_b + T*`
-(with `T* = S·∇χ + T` from equations (52)--(54)) rather than a fitted linear
-or quadratic drag law. Stokes' theorem applied to the TDVB identity (37) on a
+Contour-integral theory for `G(q) = dp_b/dq` with the bottom stress derived
+from the PG column solution, `τ_b = S·∇p_b + T*`, where
+`T* = T + S·∇∫_{-H}^0 b dz` (equations (45) and (52)--(54)), rather than a
+fitted linear or quadratic drag law. `S` and `T*` depend only on `H`, `f`,
+`Ek`, the buoyancy and the surface stress, so the prediction needs no surface
+pressure; its one assumption is that `p_b = P(q)` on each closed contour. Stokes' theorem applied to the TDVB identity (37) on a
 closed `q = f/H` contour gives
 `Ek·[G(q)·D(q) + F_T(q)] = -enclosed_forcing(q)`, where
 
@@ -95,9 +97,9 @@ end
 
 Compare the PG bottom-geostrophic flow with the closed-`q` contour
 predictions of Nøst & Isachsen (2003) using globally fitted linear and
-quadratic drag magnitudes, together with an exact, closure-free `G(q)`
-theory derived from the model's actual Ekman bottom-stress closure
-`τ_b = S·∇p_b + T*` (see `exact_drag_contour_integrals`). The returned
+quadratic drag magnitudes, together with a `G(q)` theory that uses the
+bottom stress derived from the column solution, `τ_b = S·∇p_b + T*`, computed
+from the buoyancy and surface stress alone (see `exact_drag_contour_integrals`). The returned
 `metrics.stress_velocity_alignment` reports the signed alignment that is
 intentionally excluded from the fitted positive drag laws.
 """
@@ -168,20 +170,19 @@ function compute_nost_isachsen_diagnostics(
         (effective_bottom_stress_magnitude .* pg_speed)[comparison_wet],
     )
 
-    # Exact (closure-free) bottom-stress decomposition τ_b = S·∇p_b + T*,
-    # with T* = τ_b - S·∇p_b (equations (52)--(54)). `S` is evaluated
-    # analytically; `∇p_b` reuses the grid-based `pb_gradient` already
-    # computed above, so no additional expensive quadratures are needed.
-    S_field = fill(NaN + 0.0im, size(q))
-    for j in eachindex(y), i in eachindex(x)
-        diagnostics.wet[i, j] || continue
-        H = problem.depth(x[i], y[j])
-        S_field[i, j] =
-            PlanetaryGeostrophy.bottom_stress_coefficient(p_internal, H, f[i, j])
+    # Bottom stress in terms of the bottom pressure, τ_b = S·∇p_b + T*, with
+    # T* = T + S·∇∫b dz from (45) and (52)--(54). S depends only on H, f and
+    # Ek, and T* only on the buoyancy and the surface stress, so the closure
+    # below uses nothing from the surface-pressure solution.
+    T_star_over_f = fill(NaN + 0.0im, size(q))
+    Threads.@threads for j in eachindex(y)
+        for i in eachindex(x)
+            diagnostics.wet[i, j] || continue
+            T_star_over_f[i, j] = PlanetaryGeostrophy.bottom_pressure_stress_forcing(
+                solution, x[i], y[j],
+            ) / f[i, j]
+        end
     end
-    tau_b = complex.(diagnostics.bottom_stress_x, diagnostics.bottom_stress_y)
-    T_star = tau_b .- S_field .* complex.(pb_gradient.x, pb_gradient.y)
-    T_star_over_f = T_star ./ f
 
     ni_forcing = tdvb.surface_stress_curl .+ tdvb.baroclinic_torque
     dxdy = (x[2] - x[1]) * (y[2] - y[1])
