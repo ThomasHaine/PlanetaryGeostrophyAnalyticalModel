@@ -53,8 +53,6 @@
 \definechangesauthor[name={Claude}, color=blue]{CL}
 % Review corrections of 2026-10-26, for checking.
 \definechangesauthor[name={Claude review}, color=magenta]{CR}
-% Review markup for CR changes; remove with them.
-\newcommand{\CRnew}[1]{{\color{magenta}#1}}
 
 
 %% May use \\ to break lines in title:
@@ -80,8 +78,7 @@
 \abstract{\added[id=CL]{Planetary geostrophy (PG) with a prescribed density field, the robust-diagnostic approximation, determines the steady large-scale ocean circulation from the surface stress, the surface buoyancy, and a restoring buoyancy field. We solve the linear robust-diagnostic PG equations in closed form in the vertical direction, over arbitrary bathymetry and Coriolis parameter. Closed-form Green's functions give the buoyancy and horizontal velocity in each water column, resolving the surface and bottom Ekman layers even where they overlap. The surface pressure then satisfies one two-dimensional advection--diffusion equation with exact column-integral coefficients, solved with finite elements and no normal flow at the coast. The solution converges under mesh refinement, closes the depth-integrated momentum and vorticity balances, and agrees with a primitive-equation model to 1--2\% at 25 to 150 times lower cost. 
 It recovers the Sverdrup--Stommel gyre, $\beta$ plumes in open water and beside a coast, and topographic steering.
 The Ekman drag varies as $f^{1/2}$ for Coriolis parameter $f$, and the bottom Ekman layer of depth $\delta_E$ acts as a displacement thickness, so that the flow follows $f/(H - \delta_E/2)$ contours, where $H$ is the water depth; this steering fails where $H$ is less than one to two Ekman depths. 
-In a double basin joined by a strait, the integral constraint of N\o st and Isachsen on closed $f/H$ contours reproduces the bottom velocity to \CRnew{3.1\%} with the derived bottom stress, % was 4.5\%
- but errs by more than 100\% with a calibrated isotropic drag.
+In a double basin joined by a strait, the integral constraint of N\o st and Isachsen on closed $f/H$ contours reproduces the bottom velocity to 3.1\% with the derived bottom stress,  but errs by more than 100\% with a calibrated isotropic drag.
 One adjoint solve maps the forcing that sets the strait transport.}
 }
 
@@ -934,17 +931,16 @@ The steady circulation consists of two cyclonic gyres steered by the closed isob
 \added[id=CL]{Table~\ref{tab:double_basin} lists the cost of each stage and the closure of each balance: the solve on a mesh of size 0.02 takes 7~s on 18 threads, and the balances close as in Section~\ref{sect:results}\ref{sect:verification}.}
 
 \added[id=CL]{The solution also tests the integral constraint of \citet{nost&isachsen03}.}
-\added[id=CR]{Integrating the TDVB (\ref{eqn:TDVB}) over the area enclosed by a closed $f/H$ contour removes the bottom-pressure torque, because $H/f$ is constant on the boundary, and leaves
+\added[id=CL]{Integrating the TDVB (\ref{eqn:TDVB}) over the area enclosed by a closed $f/H$ contour removes the bottom-pressure torque, because $H/f$ is constant on the boundary, and leaves
 $\mathrm{Ek} \oint (\boldsymbol{\tau}_b / f) \cdot \hat{\mathbf{t}} \, dt = - \iint [ J(\chi, 1/f) + \mathrm{Ek} \, \hat{\mathbf{z}} \cdot \nabla \times (\boldsymbol{\tau}/f) ] \, dA$.
 \citet{nost&isachsen03} assume that the bottom flow is geostrophic and follows the contours, so that $p_b = P(f/H)$ and the bottom geostrophic velocity is $(P'/f) \, \hat{\mathbf{z}} \times \nabla (f/H)$; a drag law relating $\boldsymbol{\tau}_b$ to this velocity then gives $P'$ on each contour from the enclosed forcing.}
 \added[id=CL]{With a linear or quadratic isotropic drag, calibrated by least squares against the PG bottom stress itself, the predicted bottom velocity differs from the PG velocity by 103\% and 120\% (relative $L_2$, 3008 points), although the speeds remain correlated (0.91 and 0.85).}
-\added[id=CR]{An isotropic drag cannot represent the PG bottom stress, which is nearly perpendicular to the bottom geostrophic velocity: their normalized projection is $-0.03$.
+\added[id=CL]{An isotropic drag cannot represent the PG bottom stress, which is nearly perpendicular to the bottom geostrophic velocity: their normalized projection is $-0.03$.
 The column solution instead gives the stress in terms of the bottom pressure.
 From (\ref{eqn:pb}) and (\ref{eqn:bottom_stress_ST_def}), $\tau_b^x + i \tau_b^y = S (\partial_x + i \partial_y) p_b + T^*$, with $T^* = T + S (\partial_x + i \partial_y) \int_{-H}^{0} b \, dz$.
 Both $S$ and $T^*$ depend only on the depth, the Coriolis parameter, the buoyancy, and the surface stress, so with this drag the constraint predicts the bottom velocity on closed contours without solving for the surface pressure, and its only assumption is $p_b = P(f/H)$.
 It reproduces the PG bottom velocity to 3.1\% (speed correlation 0.9997; Fig.~\ref{fig:double_basin_showcase}c), and the cross-contour component of the PG bottom velocity, which the assumption neglects, is only 0.4\% of the speed.
 The classical method is therefore limited by the drag closure, not by the integral constraint.}
-\deleted[id=CR]{With the drag derived from the PG bottom stress, the same constraint reproduces the PG bottom velocity to 4.5\%. Because the derived stress is taken from the PG solution itself, this is a consistency check, but it suggests that the drag closure, not the integral constraint, limits the classical method.}
 
 \added[id=CL]{Finally, one adjoint solve of the surface-pressure equation gives the sensitivity of the northward transport through the strait }\added[id=CL]{to the wind stress and the restoring buoyancy everywhere (Fig.~\ref{fig:double_basin_showcase}d--f).}\added[id=CL]{
 }\added[id=CL]{The adjoint identity holds to $10^{-14}$.}\added[id=CL]{
@@ -964,7 +960,7 @@ Depth-integrated momentum (DIM) & \added[id=CL]{0.6} & \added[id=CL]{$3.6 \times
 Barotropic vorticity (BV), cell averages & \added[id=CL]{12.3} & 0.034 \\
 Geostrophic-contour vorticity (GCVB) & 1.6 & \added[id=CL]{0.026} \\
 Transport-divergence vorticity (TDVB) & 1.6 & 0.034 \\
-Nøst--Isachsen comparison & \replaced[id=CR]{1.9}{1.6} & \\
+Nøst--Isachsen comparison & \added[id=CL]{1.9} & \\
 Adjoint sensitivity of the strait transport & \added[id=CL]{21.5} & \\
 \hline
 \end{tabular}
@@ -976,7 +972,7 @@ Adjoint sensitivity of the strait transport & \added[id=CL]{21.5} & \\
 \caption{\added[id=CL]{\label{fig:double_basin_showcase} Double basin on an $f$-plane, $\mathrm{Ek} = 0.002$.
 (a) Transport streamfunction $\Psi$, with isobaths $H = 0.4$, 0.8, and 1.2 (gray) and the strait section (gold).
 (b) Meridional velocity $v$ (color) and buoyancy $b$ (contours) in a zonal section at $y = 0$; the strait section is shaded.
-(c) Bottom speed on closed $f/H$ contours from the \citet{nost&isachsen03} integral constraint against the PG bottom speed, with an assumed linear drag calibrated against the PG bottom stress (gray) and with the \replaced[id=CR]{bottom stress of the column solution, $S (\partial_x + i \partial_y) p_b + T^*$, which needs only the buoyancy and the surface stress}{drag derived from the PG bottom stress} (blue); percentages are relative $L_2$ velocity differences.
+(c) Bottom speed on closed $f/H$ contours from the \citet{nost&isachsen03} integral constraint against the PG bottom speed, with an assumed linear drag calibrated against the PG bottom stress (gray) and with the bottom stress of the column solution, $S (\partial_x + i \partial_y) p_b + T^*$, which needs only the buoyancy and the surface stress (blue); percentages are relative $L_2$ velocity differences.
 (d--f) Adjoint sensitivity of the northward strait transport to the local wind stress $\tau^x$ and $\tau^y$, and to the restoring buoyancy $B$ at $z = -0.5$; color scales are clipped at the 97th percentile of the magnitude.}\added[id=CL]{ Positive values mean that increasing the local forcing increases the northward transport.}}
 \end{figure}
 
@@ -1052,7 +1048,7 @@ Third, a single length, $\ell = |\mathfrak{A}^r| / |\nabla \mathfrak{A}^i| \appr
 The $\ell$ formula yields Stommel's lengthscale $r/\beta$ on a flat $\beta$-plane, with $r = f \delta_E/(2H)$ the linear drag coefficient of Section~\ref{sect:results}\ref{sect:kernels}, and $\delta_E/(2|\nabla H|)$ over a slope.
 }\added[id=CL]{Along coasts parallel to the steering flow, the same scaling suggests that frictional layers instead widen as $\sqrt{\ell d}$ with along-coast distance $d$, as a diffusing tracer does; this was not tested here.}\added[id=CL]{
 }\added[id=CL]{Fourth, the deep-water layer coefficients are accurate where the water is deeper than about three Ekman depths, although a layer model built on them errs by several percent until $s \gtrsim 5$--7;}\added[id=CL]{ }\added[id=CL]{where it is shallower than one to two,}\added[id=CL]{ the Ekman layers overlap, the transport becomes a lubrication flow down the pressure gradient, and $f/H$ contours no longer guide it.
-The double basin shows the practical consequence: the integral constraint of \citet{nost&isachsen03} }\added[id=CL]{reproduces the bottom velocity on closed $f/H$ contours to \replaced[id=CR]{3.1}{4.5}\% with the derived bottom stress}\added[id=CL]{ \replaced[id=CR]{(which needs only the buoyancy and the surface stress)}{(a consistency check, since that stress is taken from the PG solution itself)}, }\added[id=CL]{but errs by more than 100\% with an isotropic drag}\added[id=CL]{ calibrated against the same stress (Section~\ref{sect:results}\ref{sect:double_basin}).}
+The double basin shows the practical consequence: the integral constraint of \citet{nost&isachsen03} }\added[id=CL]{reproduces the bottom velocity on closed $f/H$ contours to 3.1\% with the derived bottom stress}\added[id=CL]{ (which needs only the buoyancy and the surface stress), }\added[id=CL]{but errs by more than 100\% with an isotropic drag}\added[id=CL]{ calibrated against the same stress (Section~\ref{sect:results}\ref{sect:double_basin}).}
 
 \added[id=CL]{The solution has limitations, each of which involves some excluded physics.
 Buoyancy is not advected, so the density field is prescribed through the restoring field $B$ and the surface buoyancy $b_s$.
