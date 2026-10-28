@@ -9,7 +9,8 @@
 #     vorticity, GCVB, TDVB), as relative L2 residuals on the diagnostic grid;
 #   - the Nøst–Isachsen (2003) bottom velocity on closed f/H contours with an
 #     assumed (calibrated, isotropic) linear or quadratic drag, and with the
-#     drag derived from the PG bottom stress (no closure);
+#     bottom stress of the column solution, S∇p_b + T*, computed from the
+#     buoyancy and surface stress alone (no fitted drag);
 #   - the adjoint sensitivity of the strait transport to the local wind stress,
 #     surface buoyancy, and restoring buoyancy, from one adjoint solve, and the
 #     exact finite-element check of the adjoint identity.
@@ -158,7 +159,7 @@ println("Nøst–Isachsen bottom velocity on closed f/H contours ($(m.comparison
     m.linear_relative_l2_velocity_error, m.linear_speed_correlation)
 @printf("  calibrated quadratic drag %.4g: %.3f (speed correlation %.3f)\n", m.calibrated_quadratic_drag,
     m.quadratic_relative_l2_velocity_error, m.quadratic_speed_correlation)
-@printf("  derived PG drag (no closure): %.4f (speed correlation %.4f)\n",
+@printf("  column-solution drag, from b and τ only: %.4f (speed correlation %.4f)\n",
     m.exact_relative_l2_velocity_error, m.exact_speed_correlation)
 @printf("  stress–velocity alignment of the PG bottom stress %.3f; cross-contour velocity %.2e of the speed\n",
     m.stress_velocity_alignment, m.relative_l2_cross_q_velocity)
