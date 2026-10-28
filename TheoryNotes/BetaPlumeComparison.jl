@@ -142,14 +142,14 @@ plot!(panel_b, first.(source), last.(source); color=:white, ls=:dash, label="")
 # (c) Meridional sections across the plume, west of the source.
 section_x = -0.6
 panel_c = plot(; xlabel="\$y\$", ylabel="\$\\Psi / \\min \\Psi_{\\mathrm{Stommel}}\$",
-    title="(c) section across the plume, \$x = $(section_x)\$", legend=:topleft, style...)
+    title="(c) section across the plume, \$x = $(section_x)\$", legend=:bottom, style...)
 for (k, c) in enumerate(cases)
     i = argmin(abs.(c.x .- section_x))
     scale = minimum(c.Ψ_classical[i, :])
-    plot!(panel_c, c.y, c.Ψ_pg[i, :] ./ scale; color=k, lw=1.5, label=@sprintf("PG, \$s = %.1f\$", c.s))
+    plot!(panel_c, c.y, c.Ψ_pg[i, :] ./ scale; color=k, lw=1.5, label=@sprintf("\$s = %.1f\$", c.s))
     plot!(panel_c, c.y, c.Ψ_classical[i, :] ./ scale; color=k, ls=:dash, lw=1, label="")
 end
-plot!(panel_c, [NaN], [NaN]; color=:black, ls=:dash, label="Stommel, constant \$r\$")
+plot!(panel_c, [NaN], [NaN]; color=:black, ls=:dash, label="Stommel")
 
 s_values = [c.s for c in cases]
 panel_d = plot(s_values, [c.classical for c in cases]; marker=:circle, lw=1.5, xscale=:log10,

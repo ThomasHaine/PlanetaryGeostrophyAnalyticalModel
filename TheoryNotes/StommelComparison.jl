@@ -121,7 +121,7 @@ for (k, c) in enumerate(cases)
     j = (length(c.y) + 1) ÷ 2
     scale = maximum(c.Ψ_classical[:, j])
     ξ = (c.x .+ Lx / 2) ./ c.width
-    plot!(panel_c, ξ, c.Ψ_pg[:, j] ./ scale; color=k, lw=1.5, label=@sprintf("PG, \$s = %.1f\$", c.s))
+    plot!(panel_c, ξ, c.Ψ_pg[:, j] ./ scale; color=k, lw=1.5, label=@sprintf("\$s = %.1f\$", c.s))
     plot!(panel_c, ξ, c.Ψ_classical[:, j] ./ scale; color=k, ls=:dash, lw=1, label="")
 end
 plot!(panel_c, [NaN], [NaN]; color=:black, ls=:dash, label="Stommel")
@@ -129,14 +129,14 @@ plot!(panel_c, [NaN], [NaN]; color=:black, ls=:dash, label="Stommel")
 s_values = [c.s for c in cases]
 panel_d = plot(s_values, [c.classical for c in cases]; marker=:circle, lw=1.5, xscale=:log10,
     yscale=:log10, xlabel="\$s = H/\\delta_E\$", ylabel="relative \$L_2\$ difference in \$\\Psi\$",
-    title="(d) PG against Stommel", label="constant \$r = f_0\\delta_E/2H\$",
+    title="(d) PG against Stommel", label="constant \$r\$",
     xticks=(s_values, [@sprintf("%.1f", v) for v in s_values]),
-    yticks=([0.01, 0.02, 0.05, 0.1], ["0.01", "0.02", "0.05", "0.1"]), ylims=(0.007, 0.12),
+    yticks=([0.01, 0.02, 0.05, 0.1], ["0.01", "0.02", "0.05", "0.1"]), ylims=(0.007, 0.2),
     legend=:topright, style...)
 plot!(panel_d, s_values, [c.local_drag for c in cases]; marker=:square, lw=1.5,
-    label="local \$r(y) = f\\delta_E/2H\$")
+    label="local \$r(y)\$")
 plot!(panel_d, s_values, [c.thickness for c in cases]; marker=:diamond, lw=1.5,
-    label="local \$r(y)\$, depth \$H - \\delta_E/2\$")
+    label="local \$r(y)\$, \$H - \\delta_E/2\$")
 
 colorbar_ab = slim_colorbar(limits, style; color=:viridis)
 figure = plot(panel_a, panel_b, colorbar_ab, panel_c, panel_d, blank_panel();
