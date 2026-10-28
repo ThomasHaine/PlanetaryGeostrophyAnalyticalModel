@@ -160,8 +160,8 @@ Notable twenty-first century advances include the following.
 To do so, they assume simple forms for the bottom drag and use climatological density data: that is, they exploit observations of the temperature and salinity fields and do not try to infer them.
 The circulation on a particular closed $f/H$ contour is computed from the density data and the integrated surface stress curl over the area enclosed by the $f/H$ contour (or, equivalently, the total torque of the stress around the contour).
 Papers in the last few years have explored the nature and consequences of the boundary layer at the sea floor (e.g., \citealt{peterson&callies23,peterson&callies26}).
-Diapycnal (near vertical) mixing is known to be enhanced near the bottom. 
-Also, the heat and freshwater fluxes (hence the buoyancy flux) across the sea floor are very small.
+Diapycnal (near vertical) mixing is known to be enhanced near the sea floor. 
+Also, the heat and freshwater fluxes (hence the buoyancy flux) across the bottom are very small.
 This constraint implies a non-zero horizontal density gradient near sloping topography that associates with horizontal pressure gradients and therefore geostrophic flow.
 These bottom boundary layer processes therefore provide a mechanism to induce circulation, in addition to air/sea stress and buoyancy exchange.
 
@@ -170,7 +170,8 @@ The central question tackled in this paper is therefore: Given a three-dimension
 Equivalently: How does the PG flow at a particular point depend on the buoyancy field and the surface stress at other points?
 We answer this question for an arbitrary basin shape, a variable Coriolis parameter, and resolved surface and bottom boundary layers.
 The deep tropics, where the Coriolis parameter vanishes and PG breaks down, are excluded.
-\added[id=CL]{The solution is analytical in the vertical: closed-form Green's functions give the buoyancy and velocity in each water column, and only a two-dimensional elliptic equation for the surface pressure (and thus the surface height) must be solved numerically. Software to derive and compute the solutions is provided. The benefits are conceptual transparency, access to parameter regimes that are expensive or impossible to reach numerically, and speed; the cost is a restriction on the forms of viscous and diabatic dissipation. Specifying the density field, rather than computing it by advection, is called the \emph{robust diagnostic} assumption (\citealt{sarmiento&bryan82}; see also \citealt{bogden_etal93,park&guernier01,nost&isachsen03,nilsson_etal05}); considering buoyancy alone is no restriction if temperature and salinity are wanted individually.}
+\added[id=CL]{The solution is analytical in the vertical: closed-form Green's functions give the buoyancy and velocity in each water column, and only a two-dimensional elliptic equation for the surface pressure (and thus the surface height) must be solved numerically. Software to derive and compute the solutions is provided. The benefits are conceptual transparency, access to parameter regimes that are expensive or impossible to reach numerically, and speed. 
+Specifying the density field, rather than computing it by advection, is called the \emph{robust diagnostic} assumption (\citealt{sarmiento&bryan82}; see also \citealt{bogden_etal93,park&guernier01,nost&isachsen03,nilsson_etal05}); considering buoyancy alone is no restriction if temperature and salinity are wanted individually.}
 
 \added[id=CL]{Section~\ref{sect:equations} sets out the robust-diagnostic PG equations and their nondimensionalization, and Section~\ref{sect:dynamical_balances} the diagnostic balances for the depth-integrated flow and its vorticity. Section~\ref{sect:b_solution} solves the linear buoyancy equation, a prototype for Section~\ref{sect:PG_soln}, which solves the PG equations and derives the elliptic equation for the surface pressure. Section~\ref{sect:results} verifies the method and applies it to classical problems and a double basin, and Section~\ref{sect:discussion} discusses its uses, limitations, and extensions. The appendices contain mathematical and numerical details.}
 
@@ -482,7 +483,7 @@ This issue is especially acute in the vicinity of bottom topography that is coar
 {\color{blue}b|_{z = 0}} & = b_s , \\
 \partial_z b|_{z = -H} &= 0 , \label{eqn:simple_bot_b_bc}
 \end{align}
-for buoyancy profile $B(x,y,z)$, relaxation coefficient $\Gamma $, surface buoyancy field $b_s(x,y)$, and zero vertical buoyancy gradient at the sea bed.\myfootnote{The more accurate bottom boundary condition on buoyancy, Eq.~(\ref{eqn:bot_b_bc}), includes terms like $\partial_x b \, \partial_x H$, which are proportional to the aspect ratio $\delta$ squared. They couple the vertical buoyancy variations to the horizontal buoyancy variations. As $\delta \approx 10^{-3} \ll 1$ these effects are small, as assumed in Section \ref{sect:equations}\ref{sect:non-dimensionalization}. Still, if necessary (for example in the presence of steep topography), they can be handled in what follows using a Steklov-Poincar\'{e} operator \citep{quarteroni&valli23} or a perturbative approach.
+for buoyancy profile $B(x,y,z)$, relaxation coefficient $\Gamma $, surface buoyancy field $b_s(x,y)$, and zero vertical buoyancy gradient at the sea floor.\myfootnote{The more accurate bottom boundary condition on buoyancy, Eq.~(\ref{eqn:bot_b_bc}), includes terms like $\partial_x b \, \partial_x H$, which are proportional to the aspect ratio $\delta$ squared. They couple the vertical buoyancy variations to the horizontal buoyancy variations. As $\delta \approx 10^{-3} \ll 1$ these effects are small, as assumed in Section \ref{sect:equations}\ref{sect:non-dimensionalization}. Still, if necessary (for example in the presence of steep topography), they can be handled in what follows using a Steklov-Poincar\'{e} operator \citep{quarteroni&valli23} or a perturbative approach.
 % Wiki: https://en.wikipedia.org/wiki/Poincar%C3%A9%E2%80%93Steklov_operator
 % See also: Notes on bottom buoyancy BC.tex
 } 
@@ -1045,7 +1046,7 @@ The double basin shows the practical consequence: the integral constraint of \ci
 \added[id=CL]{The solution has limitations, each of which involves some excluded physics.
 Buoyancy is not advected, so the density field is prescribed through the restoring field $B$ and the surface buoyancy $b_s$.
 }\added[id=CL]{Given a density field with horizontal gradients, the solution does turn with depth by thermal wind, but it cannot satisfy the advective density balance on which the $\beta$-spiral method rests, and its reference velocity is set instead by the basin-wide balance of wind stress, bottom friction, and no normal flow at the coast \citep{stommel&schott77,schott&stommel78}.}\added[id=CL]{
-Friction is vertical only, so the frictional boundary layers are of Stommel type, and the viscous sublayers of \citet{munk50} are absent; in the comparison with \texttt{Oceananigans.jl}, it was the $z$-level model that needed horizontal viscosity to suppress grid-scale noise over a sloping bottom (Appendix~C).}\added[id=CL]{ Adding horizontal friction would couple neighboring columns and so break the column separability on which the method rests.}
+Friction is vertical only, so the frictional boundary layers are of Stommel type, and the viscous sublayers of \citet{munk50} are absent; in the comparison with \texttt{Oceananigans.jl}, it was the $z$-level model that needed horizontal viscosity to suppress grid-scale noise over a sloping bottom (Appendix~C).}\added[id=CL]{ Adding horizontal friction would couple neighboring columns and so break the column separability, which is a key part of the method.}
 \added[id=CL]{The viscosity and diffusivity are uniform in the vertical.
 Each column then has a buoyancy bottom boundary layer of thickness $(\kappa\,\mathrm{Ek}/\Gamma)^{1/2}$ in which the no-flux condition $\partial_z b = 0$ bends isopycnals into a sloping bottom, so the solution contains cross-slope buoyancy gradients and a thermal wind near the bed, but not the stronger ones that bottom-enhanced mixing produces as it erodes the stratification \citep{peterson&callies23,peterson&callies26}.
 Such diffusivity profiles, like the exponential profile of \citet{peterson&callies26}, need new Green's functions; for exponential profiles they can be found using hypergeometric functions (Appendix~A).
@@ -1157,11 +1158,10 @@ G_\mathfrak{u} |_{z = - H} & = 0 .
 As for the buoyancy equation in \appbEqnSoln , the Green's function for exponential viscosity profiles can be found using hypergeometric functions.
 
 \subsection*{Solution for velocity field}
-\added[id=CL]{The velocity field is (\ref{eqn:expanded_form_of_u}), in which $\Pi(\xi) \equiv \int_{\xi}^{0} b(z') \; dz'$.}
 In what follows, remember that $p_s, \tau^x, \tau^y, b$ (from $B$ and $b_s$), $H$ (and hence $G_{\mathfrak{u}}$ and $G_b$) are all functions of horizontal position $(x,y)$.
 This explicit dependence is suppressed for notational clarity.
 
-The first term on the right hand side of (\ref{eqn:expanded_form_of_u}) is a product of the surface pressure gradient and the known function
+The first term on the right hand side of the expression for the velocity field (\ref{eqn:expanded_form_of_u}) is a product of the surface pressure gradient and the known function
 \begin{align}
  \int_{-H}^0 G_{ \mathfrak{u}}(z;\xi) \; d \xi & = 
  \frac{ \mathrm{e}^{\varphi \left(  z + H \right)} +  \mathrm{e}^{\varphi \left( H - z \right)} - \mathrm{e}^{2 \varphi  H} - 1}{ \nu \, \varphi^{2} \left( 1 + \mathrm{e}^{2 \varphi H} \right)} \equiv G_{\mathfrak{u},1}(z)
@@ -1284,7 +1284,6 @@ Thus, (\ref{eqn:expanded_form_of_u}) leads to
 \; - \; \mathrm{Ek} \, \underbrace{G_{\mathfrak{u},2} (z)}_{\text{(\ref{eqn:Guv0})}}  \left( \tau^x + i \tau^y \right)  \nonumber \\
 & - \left( \partial_x + i \partial_y \right) \bigg[ \int_{-H}^{0} \underbrace{G_{ \mathfrak{u}, b} ( z; \xi')}_{\text{(\ref{eqn:Guv_b_def})}}  B(\xi') \; d \xi' 
 + \underbrace{G_{ \mathfrak{u}, {b_\xi}} ( z)}_{\text{(\ref{eqn:Guv_b_xi_def})}} \; b_s \bigg] \nonumber \\
-&  \nonumber  \\
 & + \int_{-H}^{0} \underbrace{G_{ \mathfrak{u}_x, b} ( z; \xi') }_{\text{from (\ref{eqn:Guv_y_b_def})}} B(\xi') \; d \xi'
 + \underbrace{G_{ \mathfrak{u}_x, {b_\xi}} ( z)}_{\text{from (\ref{eqn:Guv_y_b_xi_def})}} \; b_s \nonumber \\
 & + i \int_{-H}^{0} \underbrace{G_{ \mathfrak{u}_y, b} ( z; \xi') }_{\text{(\ref{eqn:Guv_y_b_def})}} B(\xi') \; d \xi'
