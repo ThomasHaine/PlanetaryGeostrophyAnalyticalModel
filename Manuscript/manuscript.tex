@@ -43,6 +43,11 @@
   \fi
 }
 
+% Tracked changes for review: magenta insertions, struck-through deletions.
+% To accept every change, load the package as \usepackage[final]{changes}.
+\usepackage{changes}
+\definechangesauthor[name={Claude review}, color=magenta]{CR}
+
 
 %% May use \\ to break lines in title:
 
@@ -88,8 +93,8 @@ One adjoint solve maps the forcing that sets the strait transport.
 % \statement
 % Significance statement here.
 \statement
-The large-scale ocean circulation is often explained by simple rules: currents follow contours of depth and latitude, friction at the sea floor acts as a linear drag, and the circulation around closed depth contours is set by the wind and the density field. We give an accurate solution, in closed form in the vertical, for the steady wind- and density-driven circulation of a model ocean with idealized but complex topography, in which the friction near the sea floor is resolved rather than assumed. 
-The solution agrees with a numerical ocean circulation model, and shows where the classical rules hold and where they fail, notably over shallow shelves and when the bottom drag is assumed. It is a fast and accurate baseline for interpreting ocean models and observations.
+The large-scale ocean circulation is often explained by simple rules: currents follow contours of depth and latitude, friction at the sea floor acts as a linear drag, and the circulation around closed depth contours is set by the wind and the density field. \replaced[id=CR]{We solve, in closed form in the vertical, for the steady wind- and density-driven circulation over idealized but complex topography, resolving rather than assuming the bottom friction.}{We give an accurate solution, in closed form in the vertical, for the steady wind- and density-driven circulation of a model ocean with idealized but complex topography, in which the friction near the sea floor is resolved rather than assumed.} 
+\replaced[id=CR]{The solution agrees with a numerical ocean model and shows}{The solution agrees with a numerical ocean circulation model, and shows} where the classical rules hold and where they fail, notably over shallow shelves and when the bottom drag is assumed. \replaced[id=CR]{It is a fast, accurate baseline for interpreting models and observations.}{It is a fast and accurate baseline for interpreting ocean models and observations.}
 %
 % \capsule
 % Capsule summary here.
@@ -278,9 +283,6 @@ Table \ref{tab:dynamical_balances} summarizes salient properties of the diagnost
 
 
 \begin{table}
-\caption{\label{tab:dynamical_balances} Summary of diagnostic dynamical balances explained in Section \ref{sect:dynamical_balances}.
-The starting point is the three-dimensional momentum (3DM) equations explained in Section \ref{sect:equations}.
-The variables are: $(u,v,w)$ velocity, $(U,V)$ depth-integrated horizontal velocity, $p$ pressure, $b$ buoyancy, $\tau$ surface stress, $p_b$ bottom pressure, $\chi$ baroclinic potential energy, $\tau_b$ bottom stress, $\Psi$ streamfunction for depth-integrated horizontal velocity. For the DIV balance, $w_b$ is the vertical velocity and $[\partial_z \zeta]_b$ the vertical shear of relative vorticity at the sea floor; $p_b$ and $\tau_b$ enter through (\ref{eqn:bottom_vorticity_flux}).}
 \centering
 \begin{tabular}{lccl}
 \hline
@@ -294,6 +296,10 @@ Geostrophic contour vorticity balance (GCVB)   & (\ref{eqn:GCVB}) & $\Psi, \chi,
 Transport divergence vorticity balance (TDVB)   & (\ref{eqn:TDVB}) & $p_b, \chi, \tau, \tau_b$ & Divide DIM by $f$, then take curl \\
 \hline
 \end{tabular}
+\vspace{6pt}
+\caption{\label{tab:dynamical_balances} Summary of diagnostic dynamical balances explained in Section \ref{sect:dynamical_balances}.
+The starting point is the three-dimensional momentum (3DM) equations explained in Section \ref{sect:equations}.
+The variables are: $(u,v,w)$ velocity, $(U,V)$ depth-integrated horizontal velocity, $p$ pressure, $b$ buoyancy, $\tau$ surface stress, $p_b$ bottom pressure, $\chi$ baroclinic potential energy, $\tau_b$ bottom stress, $\Psi$ streamfunction for depth-integrated horizontal velocity. For the DIV balance, $w_b$ is the vertical velocity and $[\partial_z \zeta]_b$ the vertical shear of relative vorticity at the sea floor; $p_b$ and $\tau_b$ enter through (\ref{eqn:bottom_vorticity_flux}).}
 \end{table}
 
 
@@ -769,7 +775,6 @@ The errors are not concentrated near the coast or its polygon vertices: the erro
 At $h = 0.020$ the relative error is $8 \times 10^{-6}$ in $p_s$ and about $2 \times 10^{-3}$ in $\mathbf{U}$ and $\boldsymbol{\tau}_b$.
 
 \begin{table}
-\caption{\label{tab:mesh_convergence} Relative $L_2$ error against the finest solution ($h = 0.010$) for the test basin of Section~\ref{sect:results}\ref{sect:verification}, with the observed order of convergence between successive meshes in parentheses. The mesh size $h$ is the mean triangle edge length.}
 \centering
 \begin{tabular}{cccccc}
 \hline
@@ -781,6 +786,8 @@ $h$ & $p_s$ & $\mathbf{U}$ & $\boldsymbol{\tau}_b$ & $\mathbf{u}(-H/2)$ & $\Psi$
 0.020 & $7.9 \times 10^{-6}$ (3.2) & $1.6 \times 10^{-3}$ (2.1) & $2.1 \times 10^{-3}$ (2.0) & $1.3 \times 10^{-3}$ (2.0) & $2.1 \times 10^{-5}$ (3.3) \\
 \hline
 \end{tabular}
+\vspace{6pt}
+\caption{\label{tab:mesh_convergence} Relative $L_2$ error against the finest solution ($h = 0.010$) for the test basin of Section~\ref{sect:results}\ref{sect:verification}, with the observed order of convergence between successive meshes in parentheses. The mesh size $h$ is the mean triangle edge length.}
 \end{table}
 
 
@@ -916,7 +923,6 @@ The adjoint identity holds to $10^{-14}$.
 The kernels extend from the strait along the isobaths of the western slope and around the southern bowl, mapping the region whose forcing sets the strait transport.
 
 \begin{table}
-\caption{\label{tab:double_basin} Wall-clock times on 18 threads (Apple M5 Max) for the double basin of Fig.~\ref{fig:double_basin_showcase}, and the closure of each balance as the relative $L_2$ residual on the $69 \times 69$ diagnostic grid. The DIV balance is identical to the BV balance (Section~\ref{sect:dynamical_balances}) and is not listed.}
 \centering
 \begin{tabular}{lcc}
 \hline
@@ -933,6 +939,8 @@ Nøst--Isachsen comparison & 1.9 & \\
 Adjoint sensitivity of the strait transport & 21.5 & \\
 \hline
 \end{tabular}
+\vspace{6pt}
+\caption{\label{tab:double_basin} Wall-clock times on 18 threads (Apple M5 Max) for the double basin of Fig.~\ref{fig:double_basin_showcase}, and the closure of each balance as the relative $L_2$ residual on the $69 \times 69$ diagnostic grid. The DIV balance is identical to the BV balance (Section~\ref{sect:dynamical_balances}) and is not listed.}
 \end{table}
 
 \begin{figure}
@@ -961,7 +969,6 @@ The column integrals grow with $s$, which reaches about 300, and the mesh must r
 Extrapolating linearly from $\mathrm{Ek} = 10^{-5}$ at $h = 0.04$, a uniform mesh of size $h = 0.005$ (5~km), fine enough only for gentle slopes, would take about 4~hours on 18 threads, and resolving continental slopes with a uniform mesh would cost $10^2$ to $10^3$ times more (for $h \approx \ell$), which is impractical, so realistic Ekman numbers call for meshes refined over steep slopes.
 
 \begin{table}
-\caption{\label{tab:cost_scaling} Wall-clock time of the PG solve (best of three, after compilation) in the test basin of Section~\ref{sect:results}\ref{sect:verification}, on 18 threads of an Apple M5 Max unless stated. The forcing evaluation computes the column integrals at the quadrature points of the surface-pressure mesh. The script is \texttt{TheoryNotes/CostScaling.jl}. The mesh, Ekman-number, and thread rows are separate runs; run-to-run variation makes the 18-thread time at $h = 0.02$ 2.6~s in the first and 2.0~s in the last.}
 \centering
 \begin{tabular}{lrrrr}
 \hline
@@ -980,11 +987,11 @@ $\mathrm{Ek} = 10^{-2}$, $h = 0.02$, 1 thread & 82\,896 & 16.9 & 16.6 & 0.21 \\
 \quad 2 / 4 / 8 / 18 threads & & 10.5 / 5.0 / 3.4 / 2.0 & & \\
 \hline
 \end{tabular}
+\vspace{6pt}
+\caption{\label{tab:cost_scaling} Wall-clock time of the PG solve (best of three, after compilation) in the test basin of Section~\ref{sect:results}\ref{sect:verification}, on 18 threads of an Apple M5 Max unless stated. The forcing evaluation computes the column integrals at the quadrature points of the surface-pressure mesh. The script is \texttt{TheoryNotes/CostScaling.jl}. The mesh, Ekman-number, and thread rows are separate runs; run-to-run variation makes the 18-thread time at $h = 0.02$ 2.6~s in the first and 2.0~s in the last.}
 \end{table}
 
 \begin{table}
-\caption{\label{tab:dimensional} Dimensional values for $L = 1000$~km, $H_0 = 4000$~m, $f_0 = 10^{-4}$~s$^{-1}$, and $\nu = \kappa$ ($\mathrm{Pr} = 1$): $\nu_0 = \mathrm{Ek}\, f_0 H_0^2$ and $\delta_E = H_0 \sqrt{2\,\mathrm{Ek}}$.
-The nondimensional $\beta = 0.15$ of the test basin is $1.5 \times 10^{-11}$~m$^{-1}$\,s$^{-1}$, and $\Gamma = 0.2$ is a relaxation rate $\gamma = \Gamma f_0/\mathrm{Pr} = 2 \times 10^{-5}$~s$^{-1}$ (0.6~days).}
 \centering
 \begin{tabular}{lccc}
 \hline
@@ -997,6 +1004,9 @@ Boundary $\beta$ plume (Section~\ref{sect:results}\ref{sect:classical_limits}) &
 Realistic & $6 \times 10^{-6}$ & 0.01 & 14 \\
 \hline
 \end{tabular}
+\vspace{6pt}
+\caption{\label{tab:dimensional} Dimensional values for $L = 1000$~km, $H_0 = 4000$~m, $f_0 = 10^{-4}$~s$^{-1}$, and $\nu = \kappa$ ($\mathrm{Pr} = 1$): $\nu_0 = \mathrm{Ek}\, f_0 H_0^2$ and $\delta_E = H_0 \sqrt{2\,\mathrm{Ek}}$.
+The nondimensional $\beta = 0.15$ of the test basin is $1.5 \times 10^{-11}$~m$^{-1}$\,s$^{-1}$, and $\Gamma = 0.2$ is a relaxation rate $\gamma = \Gamma f_0/\mathrm{Pr} = 2 \times 10^{-5}$~s$^{-1}$ (0.6~days).}
 \end{table}
 
 \section{Discussion}
@@ -1353,7 +1363,6 @@ The spin-up is long because the time step is limited by the explicit boundary fl
 The PG solution needs no spin-up, and its cost is set by the two-dimensional surface-pressure mesh, independent of the vertical resolution at which it is sampled.
 
 \begin{table}
-\caption{\label{tab:oceananigans_timing} Comparison with \texttt{Oceananigans.jl} for the flat-bottom basin: relative $L_2$ differences in buoyancy $b$, horizontal velocity $\mathbf{u}$, and depth-integrated transport $\mathbf{U}$, and wall-clock time to solution on 18 threads. The PG solve (meshing and surface pressure, $h = 0.02$) takes 0.7~s; the PG time includes sampling at the \texttt{Oceananigans.jl} cell centers.}
 \centering
 \begin{tabular}{lccccccc}
 \hline
@@ -1364,6 +1373,8 @@ $80 \times 60 \times 40$ & 0.0125 & 16\,000 & $3.5 \times 10^{-4}$ & 0.034 & 0.0
 $160 \times 120 \times 40$ & 0.0125 & 16\,000 & $3.5 \times 10^{-4}$ & 0.011 & 0.015 & 212 & 1.2 \\
 \hline
 \end{tabular}
+\vspace{6pt}
+\caption{\label{tab:oceananigans_timing} Comparison with \texttt{Oceananigans.jl} for the flat-bottom basin: relative $L_2$ differences in buoyancy $b$, horizontal velocity $\mathbf{u}$, and depth-integrated transport $\mathbf{U}$, and wall-clock time to solution on 18 threads. The PG solve (meshing and surface pressure, $h = 0.02$) takes 0.7~s; the PG time includes sampling at the \texttt{Oceananigans.jl} cell centers.}
 \end{table}
 
 \begin{figure}
