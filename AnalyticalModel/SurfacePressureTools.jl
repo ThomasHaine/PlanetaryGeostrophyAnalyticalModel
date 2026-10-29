@@ -266,17 +266,17 @@ end
 
 Solve the same coupled Gridap surface-pressure problem used in
 `PG_Solution_v0.1.ipynb`. The returned `gradps(x, y)` evaluates
-`(∂x + i ∂y) p_s` for use in `velocity_b23_from_gradps`.
+`(∂x + i ∂y) p_s` for use in `velocity_symbolic_from_gradps`.
 
 With `method=:fast` (the default), the transport forcing `𝔅` and the
 bottom-stress forcing `T` use the single-integral forms (57) and (54). `𝔅` is
-evaluated in parallel before assembly. With `forcing_assembly=:quadrature`
-(the default) it is evaluated at every quadrature point, which gives the same
-load vector as direct evaluation. With `:nodal` it is evaluated once per node
-and assembled as an order-`order` Lagrangian interpolant, with about a third
-of the evaluations and an O(h^(order+1)) interpolation error.
-`method=:b23` restores the original B23 quadrature, evaluated serially at every
-quadrature point.
+evaluated in parallel before assembly. With `forcing_assembly=:quadrature` (the
+default) it is evaluated at every quadrature point, which gives the same load
+vector as direct evaluation. With `:nodal` it is evaluated once per node and
+assembled as an order-`order` Lagrangian interpolant, with about a third of the
+evaluations and an O(h^(order+1)) interpolation error. `method=:symbolic`
+restores the original symbolic-kernel quadrature of (B19), evaluated serially at
+every quadrature point.
 
 `coastal_condition=:no_normal_flow` (the default) enforces zero normal
 depth-integrated transport through the coast and fixes the mean of `p_s` to
@@ -293,8 +293,8 @@ function solve_surface_pressure(
     coastal_condition=:no_normal_flow,
 )
     check_coastal_condition(coastal_condition)
-    method in (:fast, :b23) ||
-        throw(ArgumentError("method must be :fast or :b23; got $method"))
+    method in (:fast, :symbolic) ||
+        throw(ArgumentError("method must be :fast or :symbolic; got $method"))
     solve_started = time()
     @info "Surface-pressure solve started" mesh_file=string(mesh_file) finite_element_order=order method coastal_condition threads=Threads.nthreads()
     model, mesh_timing = timed_stage("loading Gridap surface mesh") do
@@ -316,7 +316,7 @@ function solve_surface_pressure(
     function baroclinic_B_fn(x)
         H = Hfun(x[1], x[2])
         H > 0 || return 0.0 + 0.0im
-        method === :b23 && return buoyancy_transport_b23(
+        method === :symbolic && return buoyancy_transport_symbolic(
             kernels, p, Hfun, ffun, f_x, f_y, B, bs, H_x, H_y, x[1], x[2],
         )
         return fast_baroclinic_transport(
@@ -335,7 +335,7 @@ function solve_surface_pressure(
     function diagnostic_B_fn(x)
         H = Hfun(x[1], x[2])
         H > 0 || return 0.0 + 0.0im
-        method === :b23 && return transport_forcing(
+        method === :symbolic && return transport_forcing(
             p, Hfun, ffun, τ, B, bs, x[1], x[2],
         )
         return B_fn(x)
@@ -343,7 +343,7 @@ function solve_surface_pressure(
     function T_fn(x)
         H = Hfun(x[1], x[2])
         H > 0 || return 0.0 + 0.0im
-        method === :b23 && return bottom_stress_forcing(
+        method === :symbolic && return bottom_stress_forcing(
             p, Hfun, ffun, τ, B, bs, x[1], x[2],
         )
         return fast_bottom_stress_forcing(
@@ -361,17 +361,17 @@ function solve_surface_pressure(
     ))
     nodal_table = Ref{Any}(nothing)
     function B_nodal(x)
-        method === :b23 && return B_fn(x)
+        method === :symbolic && return B_fn(x)
         if isnothing(nodal_table[])
             nodal_table[] = first(nodal_lookup(x -> ComplexF64(B_fn(x)), model, order))
         end
         return nodal_table[](x)
     end
     forcing, forcing_timing = timed_stage(
-        method === :b23 ? "deferring transport forcing to quadrature points" :
+        method === :symbolic ? "deferring transport forcing to quadrature points" :
         "evaluating transport forcing at $(forcing_assembly) points",
     ) do
-        method === :b23 && return (; load=B_fn, points=0)
+        method === :symbolic && return (; load=B_fn, points=0)
         if forcing_assembly === :nodal
             B_nodal((0.0, 0.0))
             vector_space = TestFESpace(

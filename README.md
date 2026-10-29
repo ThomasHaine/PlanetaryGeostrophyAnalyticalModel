@@ -185,14 +185,14 @@ using IJulia
 IJulia.installkernel("Julia (auto threads)", env=Dict("JULIA_NUM_THREADS" => "auto"))
 ```
 
-`method=:b23` restores the original (B19) symbolic-kernel quadratures. The test
-suite checks that the two methods agree to about 1e-9.
+`method=:symbolic` restores the original (B19) symbolic-kernel quadratures. The
+test suite checks that the two methods agree to about 1e-9.
 
 Timings for the `PG_Double_Basin_Prototype.ipynb` high-resolution setting
 (mesh 0.02, 128×129×98 samples, 65² diagnostic grid) on an 18-thread Apple
 M5 Max:
 
-| Stage | `:b23` | `:fast` |
+| Stage | `:symbolic` | `:fast` |
 |---|---|---|
 | `solve_pg` | 1037 s | 3.5 s |
 | `sample_solution` | 207 s | 1.05 s |

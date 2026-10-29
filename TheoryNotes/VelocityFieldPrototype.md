@@ -1,7 +1,7 @@
 # Velocity-field prototype
 
 `VelocityFieldPrototype.jl` compares the complex velocity \(u + iv\) from
-equations (B8) and (B19) of the manuscript (the function names keep the older numbers B10 and B23).
+equations (B8) and (B19) of the manuscript.
 
 The implementation uses conventional oceanographic buoyancy,
 \(\partial_z p=b\), so the internal pressure is
@@ -30,8 +30,8 @@ The script uses the smooth manufactured fields in `run_manufactured_test` and
 fails if the relative difference exceeds `2e-5`. It reports both velocity
 values, their relative difference, median timings, and the measured speedup.
 
-`velocity_b10` is deliberately the direct nested-quadrature reference:
-evaluate it only for validation. `velocity_b23` is the production prototype:
+`velocity_direct` is deliberately the direct nested-quadrature reference:
+evaluate it only for validation. `velocity_symbolic` is the production prototype:
 it evaluates the generated `Guvb`, `Guvb_xi`, `Guv_y_b`, `Guv_y_b_xi`,
 `inner_Gb`, and `inner_Gb_xi` kernels derived by `ComputeQuadratures.ipynb`,
 then performs only the remaining single vertical quadratures. The prototype

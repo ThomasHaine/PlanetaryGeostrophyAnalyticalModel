@@ -1,12 +1,12 @@
 # Fast single-integral column evaluations of the linear PG solution.
 #
-# The B23 path nests an adaptive z-quadrature around several adaptive
-# ξ-quadratures of the large symbolic G_u,b kernels. The functions here use
-# the single-integral forms instead: transport forcing (57), bottom-stress
+# The symbolic-kernel path (B19) nests an adaptive z-quadrature around several
+# adaptive ξ-quadratures of the large symbolic G_u,b kernels. The functions here
+# use the single-integral forms instead: transport forcing (57), bottom-stress
 # forcing (54), and horizontal velocity (51). Each needs only the baroclinic
 # pressure Π(ξ) = ∫_ξ^0 b dz, which comes from the closed-form kernels
-# (A5)--(A6). All vertical integrals use a fixed composite Gauss--Legendre
-# rule, so finite differences of Π between neighboring columns are smooth.
+# (A5)--(A6). All vertical integrals use a fixed composite Gauss--Legendre rule,
+# so finite differences of Π between neighboring columns are smooth.
 
 using QuadGK: gauss
 using Gridap.Arrays: return_cache, evaluate!
