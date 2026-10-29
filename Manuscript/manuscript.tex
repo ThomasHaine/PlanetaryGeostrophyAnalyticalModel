@@ -278,21 +278,22 @@ Table \ref{tab:dynamical_balances} summarizes salient properties of the diagnost
 
 
 \begin{table}
-    \centering
-    \begin{tabular}{lccl}
-        Diagnostic balance & Equation & Variables & Derivation \\
-        \hline
-    3D momentum (3DM)    & (\ref{eqn:u_mom})--(\ref{eqn:v_mom}) & $u, v, p$, and implicitly $\tau, b, w$ & Axiomatic \\
-     Depth-integrated momentum (DIM)    & (\ref{eqn:U_mom})--(\ref{eqn:V_mom}) & $U, V, p_b, \chi, \tau, \tau_b$ & Integrate 3DM vertically \\
-      Barotropic vorticity (BV)   & (\ref{eqn:BVE}) & $U, V, p_b, \tau, \tau_b$ & Integrate 3DM  vertically, then take curl\\
-      Depth-integrated vorticity (DIV)   & (\ref{eqn:DIV}) & $U, V, w_b, \tau, [\partial_z \zeta]_b$ & Curl of 3DM, then integrate vertically \\
-      Geostrophic contour vorticity balance (GCVB)   & (\ref{eqn:GCVB}) & $\Psi, \chi, \tau, \tau_b$ & Divide DIM by $H$, then take curl \\
-    Transport divergence vorticity balance (TDVB)   & (\ref{eqn:TDVB}) & $p_b, \chi, \tau, \tau_b$ & Divide DIM by $f$, then take curl \\
-    \end{tabular}
-    \caption{Summary of diagnostic dynamical balances explained in Section \ref{sect:dynamical_balances}. 
-    The starting point is the three-dimensional momentum (3DM) equations explained in Section \ref{sect:equations}.
-    The variables are: $(u,v,w)$ velocity, $(U,V)$ depth-integrated horizontal velocity, $p$ pressure, $b$ buoyancy, $\tau$ surface stress, $p_b$ bottom pressure, $\chi$ baroclinic potential energy, $\tau_b$ bottom stress, $\Psi$ streamfunction for depth-integrated horizontal velocity. For the DIV balance, $w_b$ is the vertical velocity and $[\partial_z \zeta]_b$ the vertical shear of relative vorticity at the sea floor; $p_b$ and $\tau_b$ enter through (\ref{eqn:bottom_vorticity_flux}).}
-    \label{tab:dynamical_balances}
+\caption{\label{tab:dynamical_balances} Summary of diagnostic dynamical balances explained in Section \ref{sect:dynamical_balances}.
+The starting point is the three-dimensional momentum (3DM) equations explained in Section \ref{sect:equations}.
+The variables are: $(u,v,w)$ velocity, $(U,V)$ depth-integrated horizontal velocity, $p$ pressure, $b$ buoyancy, $\tau$ surface stress, $p_b$ bottom pressure, $\chi$ baroclinic potential energy, $\tau_b$ bottom stress, $\Psi$ streamfunction for depth-integrated horizontal velocity. For the DIV balance, $w_b$ is the vertical velocity and $[\partial_z \zeta]_b$ the vertical shear of relative vorticity at the sea floor; $p_b$ and $\tau_b$ enter through (\ref{eqn:bottom_vorticity_flux}).}
+\centering
+\begin{tabular}{lccl}
+\hline
+Diagnostic balance & Equation & Variables & Derivation \\
+\hline
+3D momentum (3DM)    & (\ref{eqn:u_mom})--(\ref{eqn:v_mom}) & $u, v, p$, and implicitly $\tau, b, w$ & Axiomatic \\
+Depth-integrated momentum (DIM)    & (\ref{eqn:U_mom})--(\ref{eqn:V_mom}) & $U, V, p_b, \chi, \tau, \tau_b$ & Integrate 3DM vertically \\
+Barotropic vorticity (BV)   & (\ref{eqn:BVE}) & $U, V, p_b, \tau, \tau_b$ & Integrate 3DM  vertically, then take curl\\
+Depth-integrated vorticity (DIV)   & (\ref{eqn:DIV}) & $U, V, w_b, \tau, [\partial_z \zeta]_b$ & Curl of 3DM, then integrate vertically \\
+Geostrophic contour vorticity balance (GCVB)   & (\ref{eqn:GCVB}) & $\Psi, \chi, \tau, \tau_b$ & Divide DIM by $H$, then take curl \\
+Transport divergence vorticity balance (TDVB)   & (\ref{eqn:TDVB}) & $p_b, \chi, \tau, \tau_b$ & Divide DIM by $f$, then take curl \\
+\hline
+\end{tabular}
 \end{table}
 
 
