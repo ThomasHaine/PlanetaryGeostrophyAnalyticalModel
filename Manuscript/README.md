@@ -16,21 +16,19 @@ kept in step with the Overleaf project.
 
 ## How changes are marked
 
-Two conventions are in use:
+All tracked changes have been accepted, and `manuscript.tex` carries no
+change markup. To propose new edits for review, load the
+[`changes`](https://ctan.org/pkg/changes) package in the preamble:
 
-- `\Claude{...}` (red) marks earlier text drafted by Claude and pasted in on
-  Overleaf.
-- Edits made in this folder use the
-  [`changes`](https://ctan.org/pkg/changes) package with author `CL` (Claude):
-  insertions in blue, deletions struck through, each tagged CL. All changes
-  to date have been accepted. For a summary of their counts after the title,
-  add `\listofchanges[style=summary]` after `\maketitle`.
-  - To review: compile and read the blue text.
-  - To accept every change: change `\usepackage{changes}` to
-    `\usepackage[final]{changes}`. That keeps the insertions, drops the
-    deletions, and removes all marking and the summary.
-  - To accept changes selectively, edit `\added{...}`, `\deleted{...}` and
-    `\replaced{new}{old}` by hand.
+```latex
+\usepackage{changes}
+\definechangesauthor[name={Claude review}, color=magenta]{CR}
+```
+
+and mark edits with `\added[id=CR]{...}`, `\deleted[id=CR]{...}` and
+`\replaced[id=CR]{new}{old}`. To accept them, keep the new text, drop the old,
+and remove the package lines again (or load it as
+`\usepackage[final]{changes}`, which hides all marking).
 
 ## Figures made in this repository
 
