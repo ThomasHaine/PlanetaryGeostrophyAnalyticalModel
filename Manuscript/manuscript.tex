@@ -383,7 +383,7 @@ u \partial_x f + v \partial_y f - f \partial_z w  & = \mathrm{Ek} \; \partial_{z
 Integrating in the vertical, with $w|_{z=0} = 0$, gives 
 % Pedlosky96 page 8
 \begin{align}
-U \partial_x f + V \partial_y f + f  w|_{z = -H} & = {\color{blue}\mathrm{Ek} \, \hat{\mathbf{z}} \cdot \left( \nabla \times \boldsymbol{\tau} \right) - \mathrm{Ek} \left[ \nu \, \partial_z \zeta \right]_{z=-H}} 
+U \partial_x f + V \partial_y f + f  w|_{z = -H} & = {\mathrm{Ek} \, \hat{\mathbf{z}} \cdot \left( \nabla \times \boldsymbol{\tau} \right) - \mathrm{Ek} \left[ \nu \, \partial_z \zeta \right]_{z=-H}} 
 \label{eqn:DIV}
 \end{align}
 (\citealt{pedlosky96} Eq.~(1.2.15); \citealt{waldman&giordani23} Eq.~(4)), where $\left[ \cdot \right]_{z=-H}$ denotes evaluation at the sea floor after the horizontal derivatives in $\zeta$ have been taken at fixed $z$.
@@ -393,7 +393,7 @@ Two features of the present problem simplify it.
 First, the no-slip condition (\ref{eqn:bot_uv_bc}) and the kinematic condition $w|_{z=-H} = -\left( u \, \partial_x H + v \, \partial_y H \right)|_{z=-H}$ give $w|_{z=-H} = 0$, so there is no vortex stretching at the sea floor.
 Second, the bottom term is not the curl of the bottom stress, because the curl does not commute with evaluation on the sloping sea floor $z = -H(x,y)$.
 Applying the chain rule to $\boldsymbol{\tau}_b(x,y) = - \nu \, \partial_z (u, v) |_{z = -H(x,y)}$, and using the momentum equations (\ref{eqn:u_mom})--(\ref{eqn:v_mom}) at the sea floor, where $u = v = 0$ and $\partial_x p |_{z=-H} = \partial_x p_b + b|_{z=-H} \, \partial_x H$ (and similarly for $y$), gives, for any $\nu(z)$,
-{\color{blue}
+{
 \begin{align}
 - \mathrm{Ek} \left[ \nu \, \partial_z \zeta \right]_{z=-H} & = \mathrm{Ek} \, \hat{\mathbf{z}} \cdot \left( \nabla \times \boldsymbol{\tau}_b \right) + J(p_b, H) .
 \label{eqn:bottom_vorticity_flux}
@@ -480,7 +480,7 @@ This section computes the full buoyancy field $b$ from the relaxation field $B$ 
 For time-independent flow, negligible buoyancy advection ($\mathrm{Pr}\,\mathrm{Bu} \ll 1$ in (\ref{eqn:b})), and small aspect ratio, the buoyancy equation (\ref{eqn:b}), (\ref{eqn:top_b_bc}), (\ref{eqn:bot_b_bc}) reads:
 \begin{align}
 \mathrm{Ek} \; \partial_z \left( \kappa \partial_ z b \right) - \Gamma b & = - \Gamma B , \label{eqn:steady_vertical_b} \\
-{\color{blue}b|_{z = 0}} & = b_s , \\
+{b|_{z = 0}} & = b_s , \\
 \partial_z b|_{z = -H} &= 0 , \label{eqn:simple_bot_b_bc}
 \end{align}
 for buoyancy profile $B(x,y,z)$, relaxation coefficient $\Gamma $, surface buoyancy field $b_s(x,y)$, and zero vertical buoyancy gradient at the sea floor.\myfootnote{The more accurate bottom boundary condition on buoyancy, Eq.~(\ref{eqn:bot_b_bc}), includes terms like $\partial_x b \, \partial_x H$, which are proportional to the aspect ratio $\delta$ squared. They couple the vertical buoyancy variations to the horizontal buoyancy variations. As $\delta \approx 10^{-3} \ll 1$ these effects are small, as assumed in Section \ref{sect:equations}\ref{sect:non-dimensionalization}. Still, if necessary (for example in the presence of steep topography), they can be handled in what follows using a Steklov-Poincar\'{e} operator \citep{quarteroni&valli23} or a perturbative approach.
@@ -493,7 +493,7 @@ The boundary and internal buoyancy sources allow non-trivial time-independent so
 This problem (\ref{eqn:steady_vertical_b})--(\ref{eqn:simple_bot_b_bc}) is solved exactly by
 % See BuoyancyEquationSolution.ipynb #1.4
 \begin{align}
-b(z) = - \frac{\Gamma}{\mathrm{Ek}}  \int_{-H}^{0} G_b(z; \xi) B(\xi) \; d \xi  + {\color{blue}\kappa(0) \,} \partial_\xi G_b(z;\xi)|_{\xi = 0} \, b_s ,
+b(z) = - \frac{\Gamma}{\mathrm{Ek}}  \int_{-H}^{0} G_b(z; \xi) B(\xi) \; d \xi  + {\kappa(0) \,} \partial_\xi G_b(z;\xi)|_{\xi = 0} \, b_s ,
 \label{eqn:b_solution}
 \end{align}
 The factor $\kappa(0)$, the diffusivity at the surface, follows from Green's identity, whose boundary term at the surface is $\kappa(0) \, \partial_\xi G_b(z;\xi)|_{\xi=0} \, b_s$; it equals one for the uniform $\kappa = 1$ used throughout, and Appendix~B sets $\kappa(0) = 1$.
@@ -760,7 +760,6 @@ Topographic steering is negligible: the ratio of steering to friction, $\mathfra
 Where the ocean is shallower than one to two Ekman depths, therefore, $f/H$ contours no longer guide the depth-integrated flow, and classical layer models need the exact coefficients wherever $s \lesssim 3$.
 
 
-\color{blue}
 
 \subsection{Verification}
 \label{sect:verification}
@@ -836,7 +835,6 @@ In a flat-bottomed elliptical basin with $\mathrm{Ek} = 0.02$, the two models so
 (b) Relative residuals of the mapped barotropic (BV, (\ref{eqn:BVE})) and geostrophic-contour (GCVB, (\ref{eqn:GCVB})) vorticity balances on a fixed $19 \times 15$ diagnostic grid. Solid lines: cell averages via Stokes' theorem. Dashed lines: centered differences of the sampled fields.}
 \end{figure}
 
-\color{black}
 
 %Useful for comparison: \citet{willmott&luneva15}
 
@@ -1130,16 +1128,16 @@ We need these two terms:
 2 \mathrm{e}^{ - \xi' \psi} +  
 \mathrm{e}^{  \psi \left(  \xi' - \xi \right)} - 
 \mathrm{e}^{ - \psi \left( \xi + \xi' \right)} - \nonumber \\
-& \mathrm{e}^{ \psi \left( \xi' + 2  H  -  {\color{blue}\max}\left( \xi, \xi' \right)\right)} - 
-\mathrm{e}^{ - \psi \left( \xi' - 2  H  -  {\color{blue}\max}\left( \xi, \xi' \right) \right)} -
-\mathrm{e}^{ \psi \left( \xi'  -  {\color{blue}\max}\left( \xi, \xi' \right) \right)} - 
-\mathrm{e}^{ - \psi \left( \xi' - {\color{blue}\max}\left( \xi, \xi' \right) \right)} 
+& \mathrm{e}^{ \psi \left( \xi' + 2  H  -  {\max}\left( \xi, \xi' \right)\right)} - 
+\mathrm{e}^{ - \psi \left( \xi' - 2  H  -  {\max}\left( \xi, \xi' \right) \right)} -
+\mathrm{e}^{ \psi \left( \xi'  -  {\max}\left( \xi, \xi' \right) \right)} - 
+\mathrm{e}^{ - \psi \left( \xi' - {\max}\left( \xi, \xi' \right) \right)} 
 \bigg] \equiv G_{b,1}(\xi,\xi')
 \label{eqn:term1}
 \end{align}
 and, with $\sigma$ the source coordinate of $G_b$ (renamed from $\xi$, which is here the lower limit),
 \begin{align}
-\int_{\xi}^{0} {\color{blue}\partial_\sigma G_b(z';\sigma) |_{\sigma = 0}} \; dz' & = 
+\int_{\xi}^{0} {\partial_\sigma G_b(z';\sigma) |_{\sigma = 0}} \; dz' & = 
 \frac{ \mathrm{e}^{2 \psi H} + \mathrm{e}^{ - \xi \psi} - \mathrm{e}^{\psi \left( \xi + 2 H \right)} - 1 }{\kappa \psi \left( 1 + \mathrm{e}^{2 \psi H}\right)} \equiv G_{b,2}(\xi)
 \label{eqn:term2}
 \end{align}
@@ -1188,9 +1186,9 @@ Substitute using (\ref{eqn:b_solution}), with $\kappa(0) = 1$,
 \Pi(\xi) 
 & \equiv \int_{\xi}^{0} b(z') \; dz' , \nonumber \\
 & =
-\int_{\xi}^{0} \left[ - \frac{\Gamma}{\mathrm{Ek}}  \int_{-H}^{0} G_b(z'; \xi') B(\xi') \; d \xi'  + {\color{blue}\partial_\sigma G_b(z';\sigma) |_{\sigma = 0}} \, b_s  \right] \; dz' ,  \nonumber \\
-& = - \frac{\Gamma}{\mathrm{Ek}} \int_{-H}^{0} \int_{\xi}^{0} G_b(z'; \xi') \; d z'\; B(\xi') \; d \xi'  + \int_{\xi}^{0} {\color{blue}\partial_\sigma G_b(z';\sigma) |_{\sigma = 0}} \;  \; dz'  \, b_s , \label{eqn:Pi_expanded} \\
-& = {\color{blue}- \frac{\Gamma}{\mathrm{Ek}}} \int_{-H}^{0} G_{b,1}(\xi,\xi') B(\xi') \; d \xi'  + G_{b,2} (\xi)  \, b_s ,
+\int_{\xi}^{0} \left[ - \frac{\Gamma}{\mathrm{Ek}}  \int_{-H}^{0} G_b(z'; \xi') B(\xi') \; d \xi'  + {\partial_\sigma G_b(z';\sigma) |_{\sigma = 0}} \, b_s  \right] \; dz' ,  \nonumber \\
+& = - \frac{\Gamma}{\mathrm{Ek}} \int_{-H}^{0} \int_{\xi}^{0} G_b(z'; \xi') \; d z'\; B(\xi') \; d \xi'  + \int_{\xi}^{0} {\partial_\sigma G_b(z';\sigma) |_{\sigma = 0}} \;  \; dz'  \, b_s , \label{eqn:Pi_expanded} \\
+& = {- \frac{\Gamma}{\mathrm{Ek}}} \int_{-H}^{0} G_{b,1}(\xi,\xi') B(\xi') \; d \xi'  + G_{b,2} (\xi)  \, b_s ,
 \label{eqn:Pi_def}
 \end{align}
 where $G_{b,1}$ and $G_{b,2}$ are given by (\ref{eqn:term1}) and (\ref{eqn:term2}). Here and below, the horizontal arguments of $\Pi$ and $B$ are written only where they matter, as in $\Pi(y, \xi)$ when it is differentiated in $y$.
@@ -1198,7 +1196,7 @@ Hence, (\ref{eqn:expanded_form_of_u}) becomes:
 \begin{align}
 \mathrm{Ek} \, \mathfrak{u}
 & = G_{\mathfrak{u},1}(z) \left(\partial_x  + i \partial_y \right) p_s  - \mathrm{Ek} \, G_{\mathfrak{u},2} (z)  \left( \tau^x + i \tau^y \right) \nonumber \\
-& - \int_{-H}^{0} G_{ \mathfrak{u}} (z; \xi) \left[ \left(\partial_x  + i \partial_y \right)  \left[ {\color{blue}- \frac{\Gamma}{\mathrm{Ek}}} \int_{-H}^{0} G_{b,1}(\xi,\xi') B(\xi') \; d \xi'  + G_{b,2} (\xi)  \, b_s \right] \right] \; d \xi  .
+& - \int_{-H}^{0} G_{ \mathfrak{u}} (z; \xi) \left[ \left(\partial_x  + i \partial_y \right)  \left[ {- \frac{\Gamma}{\mathrm{Ek}}} \int_{-H}^{0} G_{b,1}(\xi,\xi') B(\xi') \; d \xi'  + G_{b,2} (\xi)  \, b_s \right] \right] \; d \xi  .
 \label{eqn:final_velocity_formula1}
 \end{align}
 This formula can be used to compute $\mathfrak{u}$, but it involves a double integral in the vertical direction (over $\xi$ and $\xi'$) for every $(x,y,z)$ point.
@@ -1222,7 +1220,7 @@ The first term on the right hand side of (\ref{eqn:Pi_y_derivative}) is a sum of
 \begin{align}
 & \int_{-H}^{0} G_{ \mathfrak{u}} ( z; \xi) \, \Pi (x,y, \xi) \; d \xi 
 = \nonumber \\
-& \int_{-H}^{0} G_{ \mathfrak{u}} ( z; \xi) \, \int_{\xi}^{0} \left[ - \frac{\Gamma}{\mathrm{Ek}}  \int_{-H}^{0} G_b(z'; \xi') B(\xi') \; d \xi'  + {\color{blue}\partial_\sigma G_b(z';\sigma) |_{\sigma = 0}} \, b_s \right] \; dz'  \; d \xi . 
+& \int_{-H}^{0} G_{ \mathfrak{u}} ( z; \xi) \, \int_{\xi}^{0} \left[ - \frac{\Gamma}{\mathrm{Ek}}  \int_{-H}^{0} G_b(z'; \xi') B(\xi') \; d \xi'  + {\partial_\sigma G_b(z';\sigma) |_{\sigma = 0}} \, b_s \right] \; dz'  \; d \xi . 
 \label{eqn:Gu_Pi_integral}
 \end{align}
 The order of integration can be switched so that the triple integral involving relaxation to $B$ becomes
@@ -1244,13 +1242,13 @@ It is converted to a \texttt{Symbolics.jl} function in \texttt{ComputeQuadrature
 The \texttt{Symbolics.jl} $G_{ \mathfrak{u}, b}$ function is around $10^3$ times faster than the numerical approximation, and they agree to many significant figures over a wide range of Ek and $\xi'$ values.
 The double integral $b_s$ term in (\ref{eqn:Gu_Pi_integral}) is
 \begin{align}
-\int_{-H}^{0} G_{ \mathfrak{u}} ( z; \xi) \, \int_{\xi}^{0} {\color{blue}\partial_\sigma G_b(z';\sigma) |_{\sigma = 0}} \, b_s \; dz'  \; d \xi & \equiv
+\int_{-H}^{0} G_{ \mathfrak{u}} ( z; \xi) \, \int_{\xi}^{0} {\partial_\sigma G_b(z';\sigma) |_{\sigma = 0}} \, b_s \; dz'  \; d \xi & \equiv
 G_{ \mathfrak{u}, {b_\xi}} ( z) \; b_s  ,
 \label{eqn:Gu_bs_term}
 \end{align}
 where
 \begin{align}
-G_{ \mathfrak{u}, {b_\xi}} ( z)  & = \int_{-H}^{0} G_{ \mathfrak{u}} ( z; \xi) \, \int_{\xi}^{0} {\color{blue}\partial_\sigma G_b(z';\sigma) |_{\sigma = 0}} \; dz'  \; d \xi .
+G_{ \mathfrak{u}, {b_\xi}} ( z)  & = \int_{-H}^{0} G_{ \mathfrak{u}} ( z; \xi) \, \int_{\xi}^{0} {\partial_\sigma G_b(z';\sigma) |_{\sigma = 0}} \; dz'  \; d \xi .
 \label{eqn:Guv_b_xi_def}
 \end{align}
 As for $G_{ \mathfrak{u}, b}$, the expression for $G_{ \mathfrak{u}, {b_\xi}}$ is computed using \texttt{SymPy.jl} (see \texttt{ComputeQuadratures.ipynb}) and tested in \texttt{SymbolicsTesting.jl}.
@@ -1276,7 +1274,7 @@ where
 G_{ \mathfrak{u}_y, b} ( z; \xi') & = 
  - \frac{\Gamma}{\mathrm{Ek}} \int_{-H}^{0} \partial_y  G_{ \mathfrak{u}} ( z; \xi) \, \int_{\xi}^{0}  G_b(z'; \xi') \; dz'  \; d \xi , 
  \label{eqn:Guv_y_b_def} \\
-G_{ \mathfrak{u}_y, {b_\xi}} ( z)  & = \int_{-H}^{0}  \partial_y G_{ \mathfrak{u}} ( z; \xi) \, \int_{\xi}^{0} {\color{blue}\partial_\sigma G_b(z';\sigma) |_{\sigma = 0}} \; dz'  \; d \xi .
+G_{ \mathfrak{u}_y, {b_\xi}} ( z)  & = \int_{-H}^{0}  \partial_y G_{ \mathfrak{u}} ( z; \xi) \, \int_{\xi}^{0} {\partial_\sigma G_b(z';\sigma) |_{\sigma = 0}} \; dz'  \; d \xi .
 \label{eqn:Guv_y_b_xi_def}
 \end{align}
 These terms are also computed using \texttt{SymPy.jl} (see \texttt{ComputeQuadratures.ipynb}) and tested in \texttt{SymbolicsTesting.jl}.
