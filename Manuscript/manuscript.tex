@@ -1061,7 +1061,7 @@ This study was supported with funding from the National Science Foundation grant
 % 
 %
 \datastatement
-All code to reproduce the analytical and numerical results in this paper is available at \texttt{github.com/ThomasHaine/PlanetaryGeostrophyAnalyticalModel}.
+All code to reproduce the analytical and numerical results in this paper is archived at Zenodo, \texttt{doi:10.5281/zenodo.23771756} \citep{haine26}, and developed at \texttt{github.com/ThomasHaine/PlanetaryGeostrophyAnalyticalModel}.
 The repository contains the \texttt{PlanetaryGeostrophy} Julia package, which implements the solution, the diagnostics, and the adjoint, with its test suite.
 The Jupyter notebooks in \texttt{TheoryNotes/} derive the column solutions with \texttt{SymPy.jl}: \texttt{BuoyancyEquationSolution.ipynb} derives the buoyancy Green's function and its integrals (Section~\ref{sect:b_solution} and Appendix~A; cells 1.1--1.5), and \texttt{FrictionalGeostrophicEquationSolution.ipynb} derives the velocity Green's function, its integrals, the bottom stress, and the coefficients $\mathfrak{A}$, $\mathfrak{B}$, $S$, and $T$ (Section~\ref{sect:PG_soln} and Appendix~B; cells 1.1--1.5, 2.1--2.8, and 3.0).
 \texttt{ComputeQuadratures.ipynb} and \texttt{SymbolicsTesting.jl} build and test the symbolic kernels of Appendix~B.

@@ -1,6 +1,7 @@
 # Planetary Geostrophy Analytical Model
 
 [![CI](https://github.com/ThomasHaine/PlanetaryGeostrophyAnalyticalModel/actions/workflows/CI.yml/badge.svg)](https://github.com/ThomasHaine/PlanetaryGeostrophyAnalyticalModel/actions/workflows/CI.yml)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.23771755.svg)](https://doi.org/10.5281/zenodo.23771755)
 
 * LaTeX notes on planetary geostrophy with analytic solutions for certain cases.
 * Julia code to support the theory derivation using `Symbolics.jl`
