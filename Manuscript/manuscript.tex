@@ -43,8 +43,6 @@
   \fi
 }
 
-\newcommand{\Claude}[1]{{\color{blue}{#1}}}
-
 % Tracked changes. Edits made in the repository Manuscript/ folder are marked
 % with \added, \deleted, and \replaced (author CL): insertions in blue,
 % deletions struck through. Add \listofchanges[style=summary] after
@@ -652,8 +650,7 @@ Note also that the streamfunction for the depth-integrated flow (\ref{eqn:stream
 \label{eqn:streamfunction_pde}
 \end{align}
 % with $\Psi $ a constant on domain boundaries where $H=0$.
-\Claude{
-with $\Psi$ constant on the coast, where $\mathbf{U} \cdot \hat{\mathbf{n}} = 0$ (see (\ref{eqn:ps_bc})); for a basin without islands we take $\Psi = 0$ there.}
+with $\Psi$ constant on the coast, where $\mathbf{U} \cdot \hat{\mathbf{n}} = 0$ (see (\ref{eqn:ps_bc})); for a basin without islands we take $\Psi = 0$ there.
 
 \subsection{Surface Pressure}
 \label{sect:PG_closure}
@@ -687,7 +684,7 @@ Once $p_s$ is known, the equation (\ref{eqn:streamfunction_pde}) for the streamf
 This extends the GCVB (Eq.~(\ref{eqn:GCVB})) because it has explicitly included the bottom stress by solving the frictional geostrophic equation.
 
 
-\Claude{ The surface pressure equation (\ref{eqn:ps}) requires a boundary condition at the coast.
+The surface pressure equation (\ref{eqn:ps}) requires a boundary condition at the coast.
 Mass conservation requires that the depth-integrated flow does not cross the coast, $\mathbf{U} \cdot \hat{\mathbf{n}} = 0$, where $\hat{\mathbf{n}}$ is the outward unit normal with Cartesian components $(n_x, n_y)$.
 Using $\Re \{ (n_x - i n_y) \mathfrak{U} \} = \mathbf{U} \cdot \hat{\mathbf{n}}$ and $(n_x - i n_y)(\partial_x + i \partial_y) = \partial_n + i \partial_t$, with $t$ the anticlockwise arc length along the coast, (\ref{eqn:UV_AB_def}) implies that
 \begin{align}
@@ -700,7 +697,7 @@ It determines $p_s$ up to an additive constant, which we fix by requiring $\int_
 The constant does not affect the flow.
 Where the coast is a sloping beach ($H \rightarrow 0$), $\mathfrak{A}$ and $\mathfrak{B}$ vanish, (\ref{eqn:ps}) degenerates, and (\ref{eqn:ps_bc}) is satisfied automatically by any $p_s$ with a bounded gradient.
 Where the coast is a vertical wall ($H > 0$), (\ref{eqn:ps_bc}) is essential.
-A simpler Dirichlet condition such as $p_s = 0$ removes only the geostrophic part of the normal transport, and lets frictional and buoyancy-forced transport cross the wall.}
+A simpler Dirichlet condition such as $p_s = 0$ removes only the geostrophic part of the normal transport, and lets frictional and buoyancy-forced transport cross the wall.
 
 
 \section{Results}
@@ -743,7 +740,7 @@ Dashed and dash-dotted lines are the deep ($s \gg 1$) and shallow ($s \ll 1$) as
 Dotted vertical lines mark $s = 1$ and $s = 3$; the dotted line in (a) is the inviscid value $H/f$ and that in (c) marks a ratio of one.}
 \end{figure}
 
-\Claude{
+
 With uniform viscosity the column coefficients depend on depth only through $s = H/\delta_E$, the depth measured in Ekman depths (Fig.~\ref{fig:coefficient_regimes}, $\delta_E = \sqrt{2 \nu \mathrm{Ek}/|f|}$).
 For deep water ($s \gg 1$), $\mathfrak{A} \rightarrow [-\delta_E/2 + i(H - \delta_E/2)]/f$.
 % Added by Claude (CL): TheoryNotes/PlotCoefficientRegimes.jl evaluates the exact
@@ -761,7 +758,7 @@ For shallow water ($s \ll 1$), the Ekman layers overlap and $\mathfrak{A} \appro
 The transport is then a lubrication flow down the surface-pressure gradient, proportional to $H^3$, and the bottom stress is aligned with that gradient.
 Topographic steering is negligible: the ratio of steering to friction, $\mathfrak{A}^i/(-\mathfrak{A}^r)$, falls through one near $s \approx 1$ (panel c).
 Where the ocean is shallower than one to two Ekman depths, therefore, $f/H$ contours no longer guide the depth-integrated flow, and classical layer models need the exact coefficients wherever $s \lesssim 3$.
-}
+
 
 \color{blue}
 
@@ -1338,12 +1335,11 @@ Take the divergence form of the equation, multiply by a real test function $v$, 
  \; dy\; dx \Big\}
  \label{eqn:ps_weak_form}
 \end{align}
-\Claude{ 
 The boundary term from the integration by parts, $\oint v \, \mathbf{U} \cdot \hat{\mathbf{n}} \, dt$, vanishes by the no-normal-flow condition (\ref{eqn:ps_bc}).
 That condition is therefore natural in (\ref{eqn:ps_weak_form}), and no condition is imposed on $p_s$ or $v$ at the coast.
 The additive constant in $p_s$ is fixed with a Lagrange multiplier $\lambda$: the term $\lambda \int_\Omega v \, dA$ is added to the left-hand side of (\ref{eqn:ps_weak_form}), together with the constraint $\int_\Omega p_s \, dA = 0$.
 The solvability condition, obtained by setting $v = 1$ in (\ref{eqn:ps_weak_form}), holds identically, so $\lambda = 0$ to round-off.
-}
+
 
 Similarly, the weak form to find the streamfunction for the depth-integrated flow $\Psi$ is the real part of (\ref{eqn:streamfunction_pde}), multiplied by $v$ and integrated:
 \begin{align}
@@ -1356,14 +1352,14 @@ These weak form equations are used to construct solutions using the \texttt{Grid
 
 
 \subsection{Vertical quadrature and evaluation of the coefficients}
-\Claude{The transport forcing $\mathfrak{B}$ (\ref{eqn:B_fn}), the bottom-stress forcing $T$ (\ref{eqn:T_fn}), and the velocity (\ref{eqn:expanded_form_of_u}) are evaluated as single vertical integrals.
+The transport forcing $\mathfrak{B}$ (\ref{eqn:B_fn}), the bottom-stress forcing $T$ (\ref{eqn:T_fn}), and the velocity (\ref{eqn:expanded_form_of_u}) are evaluated as single vertical integrals.
 Each integrand is a closed-form kernel times $(\partial_x + i \partial_y) \Pi(\xi)$.
 Here $\Pi(\xi) = \int_\xi^0 b \, dz$ comes from the kernels (\ref{eqn:term1})--(\ref{eqn:term2}) with one further quadrature over $\xi'$, and its horizontal gradient is taken with centered differences at fixed $\xi$.
 All vertical integrals use a fixed composite Gauss--Legendre rule, with eight nodes per panel and panels no thicker than four times the smaller of the Ekman depth and the buoyancy diffusion depth $\sqrt{\kappa \mathrm{Ek}/\Gamma}$.
 The rule is split wherever a kernel has a kink, at $\xi = z$ and, in the integral for $\Pi$, at $\xi' = \xi$.
 The same panel counts are used in the neighboring columns of each finite difference, so the differences carry no quadrature noise beyond the smooth dependence of the panel endpoints on $H$.
 For sampled velocity profiles, $(\partial_x + i \partial_y) \Pi$ is tabulated once per column at Chebyshev--Lobatto levels and interpolated.
-$\mathfrak{B}$ is evaluated at every quadrature point of the finite-element mesh before assembly, and these evaluations, like the sampling of the solution, are independent and run in parallel.}
+$\mathfrak{B}$ is evaluated at every quadrature point of the finite-element mesh before assembly, and these evaluations, like the sampling of the solution, are independent and run in parallel.
 
 \subsection{Solution validation}
 
@@ -1376,7 +1372,7 @@ There is no horizontal viscosity or diffusivity, as in PG.
 The model is integrated from rest for $200/f_0$, which is 40 restoring times; over the last $5/f_0$ the velocity changes by less than $10^{-5}$ of its maximum.
 The PG solution is sampled at the \texttt{Oceananigans.jl} cell centers and compared over cells more than one cell from the bottom, with wet horizontal neighbors, inside 95\% of the coastal radius (the script \texttt{AnalyticalModel/OceananigansComparison.jl}).
 
-\Claude{
+
 Two bottoms are used.
 With a flat bottom of depth 0.65, the differences in horizontal velocity and depth-integrated transport converge at order 1.2--1.6 as the \texttt{Oceananigans.jl} grid is refined, to 1.1\% and 1.5\% at $160 \times 120 \times 40$, and the buoyancy difference falls to $3.5 \times 10^{-4}$, where it is limited by the vertical resolution (26 levels in the 0.65-deep water column) (Section~\ref{sect:results}\ref{sect:verification} and Fig.~\ref{fig:oceananigans_comparison}a--d).
 With the Gaussian bowl $H = 0.3 + 0.7\, e^{-2\rho^2}$ (with $\rho$ the elliptical radius) and a 0.40-deep coastal wall, the comparison is limited by the representation of the sloping bottom in the $z$-level model (Fig.~\ref{fig:oceananigans_comparison}e).
@@ -1388,7 +1384,7 @@ The PG solve, including meshing the coastline at $h = 0.02$ and solving for $p_s
 The \texttt{Oceananigans.jl} spin-up takes 20~s to 210~s on the CPU with the same threads, so computing the PG solution is 30 to 170 times faster, and the ratio grows with resolution.
 The spin-up is long because the time step is limited by the explicit boundary fluxes to about $\Delta z^2/\mathrm{Ek}$, and partial bottom cells, which are thinner, need a time step four times smaller (460~s at $80 \times 60 \times 40$).
 The PG solution needs no spin-up, and its cost is set by the two-dimensional surface-pressure mesh, independent of the vertical resolution at which it is sampled.
-}
+
 
 % Added by Claude (CL): Oceananigans comparison table and figure.
 \begin{table}

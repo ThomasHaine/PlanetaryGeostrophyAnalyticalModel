@@ -16,10 +16,6 @@ kept in step with the Overleaf project.
 
 ## How changes are marked
 
-Two conventions are in use:
-
-- `\Claude{...}` (red) marks earlier text drafted by Claude and pasted in on
-  Overleaf.
 - Edits made in this folder use the
   [`changes`](https://ctan.org/pkg/changes) package with author `CL` (Claude):
   insertions in blue, deletions struck through, each tagged CL. All changes
