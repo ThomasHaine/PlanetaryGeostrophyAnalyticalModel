@@ -1,4 +1,4 @@
-# Generate portable Julia implementations of the B23 velocity kernels.
+# Generate portable Julia implementations of the symbolic velocity kernels of (B19).
 #
 # Run this after `ComputeQuadratures.ipynb` updates `symexpr.jld2`. The
 # generated source is used at runtime so production calculations do not depend

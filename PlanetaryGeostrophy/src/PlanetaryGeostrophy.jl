@@ -244,8 +244,8 @@ bottom-stress forcing (54), velocity (51), and buoyancy (41) as single
 vertical integrals with the fixed rule `quadrature`. Node and column work is
 threaded, so start Julia with `-t auto`. `forcing_assembly=:quadrature`
 evaluates `𝔅` at every finite-element quadrature point; `:nodal` interpolates
-it from the nodes (see `solve_surface_pressure`). `method=:b23` keeps the
-original B23 symbolic-kernel quadratures for comparison.
+it from the nodes (see `solve_surface_pressure`). `method=:symbolic` keeps the
+original symbolic-kernel quadratures of (B19) for comparison.
 
 `coastal_condition=:no_normal_flow` (the default) enforces zero normal
 depth-integrated transport through the coast, which matters where the coast
@@ -293,7 +293,7 @@ function solve_pg(
         forcing_assembly,
         coastal_condition,
     )
-    b = if method === :b23
+    b = if method === :symbolic
         (x, y, z) -> buoyancy_from_forcing(
             p, problem.depth, problem.restoring_buoyancy,
             problem.surface_buoyancy, x, y, z,
@@ -309,8 +309,8 @@ function solve_pg(
             )
         end
     end
-    uv = if method === :b23
-        (x, y, z) -> velocity_b23_from_gradps(
+    uv = if method === :symbolic
+        (x, y, z) -> velocity_symbolic_from_gradps(
             kernels, p, problem.depth, problem.coriolis,
             problem.coriolis_x, problem.coriolis_y, pressure.gradps,
             problem.wind_stress, problem.restoring_buoyancy,
@@ -353,7 +353,7 @@ finite-element pressure-gradient lookup from the column work.
 function horizontal_velocity_column(solution::PGSolution, x, y, gradps_value)
     problem = solution.problem
     p = internal_parameters(problem.parameters)
-    solution.pressure.method === :fast || return VelocityFieldPrototype.velocity_b23_column_from_gradps(
+    solution.pressure.method === :fast || return VelocityFieldPrototype.velocity_symbolic_column_from_gradps(
         solution.kernels, p, problem.depth, problem.coriolis,
         problem.coriolis_x, problem.coriolis_y, (_, _) -> gradps_value,
         problem.wind_stress, problem.restoring_buoyancy,

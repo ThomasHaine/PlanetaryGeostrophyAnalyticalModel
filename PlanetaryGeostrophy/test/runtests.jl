@@ -107,11 +107,11 @@ end
     H_x(x, y) = 0.05
     H_y(x, y) = 0.0
     x, y = 0.1, -0.2
-    column_velocity = prototype.velocity_b23_column_from_gradps(
+    column_velocity = prototype.velocity_symbolic_column_from_gradps(
         kernels, p, H, f, f_x, f_y, gradps, τ, B, bs, H_x, H_y, x, y,
     )
     for z in (-H(x, y), -0.5H(x, y), 0.0)
-        @test column_velocity(z) ≈ prototype.velocity_b23_from_gradps(
+        @test column_velocity(z) ≈ prototype.velocity_symbolic_from_gradps(
             kernels, p, H, f, f_x, f_y, gradps, τ, B, bs,
             H_x, H_y, x, y, z,
         )
@@ -144,7 +144,7 @@ end
         test_B(x, y, -H(x, y))
     ) + coefficients.surface.value * test_bs(x, y) +
         coefficients.surface.gradient * (0.01 + 0.02im)
-    direct_transport = prototype.buoyancy_transport_b23(
+    direct_transport = prototype.buoyancy_transport_symbolic(
         kernels, p, H, f, f_x, f_y, test_B, test_bs, H_x, H_y, x, y,
     )
     @test coefficient_transport ≈ direct_transport rtol=2e-7
@@ -165,8 +165,8 @@ end
     fκ(xx, yy) = prototype.fcor(pκ, yy)
     ps(xx, yy) = sin(0.7xx) * cos(0.4yy)
     Hκ_x(xx, yy) = 0.05
-    @test prototype.velocity_b10(pκ, H, fκ, ps, τ, test_B, test_bs, x, y, -0.4) ≈
-        prototype.velocity_b23(kernels, pκ, H, fκ, ps, τ, test_B, test_bs,
+    @test prototype.velocity_direct(pκ, H, fκ, ps, τ, test_B, test_bs, x, y, -0.4) ≈
+        prototype.velocity_symbolic(kernels, pκ, H, fκ, ps, τ, test_B, test_bs,
             Hκ_x, H_y, x, y, -0.4) rtol=2e-5
 end
 
@@ -638,8 +638,8 @@ end
             x,
             y,
         )
-        b23_buoyancy_transport =
-            PlanetaryGeostrophy.VelocityFieldPrototype.buoyancy_transport_b23(
+        symbolic_buoyancy_transport =
+            PlanetaryGeostrophy.VelocityFieldPrototype.buoyancy_transport_symbolic(
                 solution.kernels,
                 p,
                 problem.depth,
@@ -653,7 +653,7 @@ end
                 x,
                 y,
             )
-        @test direct_buoyancy_transport ≈ b23_buoyancy_transport rtol=2e-5
+        @test direct_buoyancy_transport ≈ symbolic_buoyancy_transport rtol=2e-5
 
         direct_buoyancy_stress = PlanetaryGeostrophy.bottom_stress_forcing(
             p,
@@ -665,8 +665,8 @@ end
             x,
             y,
         )
-        b23_buoyancy_stress =
-            PlanetaryGeostrophy.VelocityFieldPrototype.buoyancy_bottom_stress_b23(
+        symbolic_buoyancy_stress =
+            PlanetaryGeostrophy.VelocityFieldPrototype.buoyancy_bottom_stress_symbolic(
                 solution.kernels,
                 p,
                 problem.depth,
@@ -680,7 +680,7 @@ end
                 x,
                 y,
             )
-        @test direct_buoyancy_stress ≈ b23_buoyancy_stress rtol=2e-4
+        @test direct_buoyancy_stress ≈ symbolic_buoyancy_stress rtol=2e-4
 
         coordinates = [-0.3, -0.05, 0.2]
         shape = (3, 3)
@@ -1340,7 +1340,7 @@ end
     end
 end
 
-@testset "Fast single-integral path agrees with B23" begin
+@testset "Fast single-integral path agrees with the symbolic-kernel path" begin
     # Sloping bottom, a seamount, beta, and depth-dependent horizontal
     # buoyancy forcing exercise every term in (51), (54), and (57).
     problem = PGProblem(
@@ -1360,52 +1360,52 @@ end
         fast = solve_pg(
             problem; mesh_file, mesh_resolution=0.2, overwrite_mesh=true,
         )
-        b23 = solve_pg(problem; mesh_file, mesh_resolution=0.2, method=:b23)
+        symbolic = solve_pg(problem; mesh_file, mesh_resolution=0.2, method=:symbolic)
         nodal = solve_pg(
             problem; mesh_file, mesh_resolution=0.2, forcing_assembly=:nodal,
         )
         @test fast.pressure.method === :fast
-        @test b23.pressure.method === :b23
+        @test symbolic.pressure.method === :symbolic
         @test_throws ArgumentError solve_pg(
             problem; mesh_file, mesh_resolution=0.2, method=:other,
         )
 
         relative(a, b) = abs(a - b) / abs(b)
         for (x, y) in ((0.3, 0.2), (-0.5, -0.1), (0.0, 0.4))
-            @test relative(fast.pressure.B_fn((x, y)), b23.pressure.B_fn((x, y))) < 1e-7
-            @test relative(fast.pressure.T_fn((x, y)), b23.pressure.T_fn((x, y))) < 1e-7
+            @test relative(fast.pressure.B_fn((x, y)), symbolic.pressure.B_fn((x, y))) < 1e-7
+            @test relative(fast.pressure.T_fn((x, y)), symbolic.pressure.T_fn((x, y))) < 1e-7
             @test relative(
-                surface_pressure(fast, x, y), surface_pressure(b23, x, y),
+                surface_pressure(fast, x, y), surface_pressure(symbolic, x, y),
             ) < 1e-7
             fast_current = depth_integrated_current(fast, x, y)
-            b23_current = depth_integrated_current(b23, x, y)
+            symbolic_current = depth_integrated_current(symbolic, x, y)
             @test relative(
                 complex(fast_current.U, fast_current.V),
-                complex(b23_current.U, b23_current.V),
+                complex(symbolic_current.U, symbolic_current.V),
             ) < 1e-6
             # Nodal assembly adds an O(h^3) interpolation error in 𝔅; on this
             # coarse h=0.2 mesh it is about 1-2%, so this is a sanity bound.
             nodal_current = depth_integrated_current(nodal, x, y)
             @test relative(
                 complex(nodal_current.U, nodal_current.V),
-                complex(b23_current.U, b23_current.V),
+                complex(symbolic_current.U, symbolic_current.V),
             ) < 5e-2
 
             H = problem.depth(x, y)
             levels = range(-H, 0.0; length=9)
             velocity(solution, z) =
                 complex(values(horizontal_velocity(solution, x, y, z))...)
-            scale = maximum(abs(velocity(b23, z)) for z in levels)
+            scale = maximum(abs(velocity(symbolic, z)) for z in levels)
             @test maximum(
-                abs(velocity(fast, z) - velocity(b23, z)) for z in levels
+                abs(velocity(fast, z) - velocity(symbolic, z)) for z in levels
             ) < 1e-6scale
             @test maximum(
-                abs(buoyancy(fast, x, y, z) - buoyancy(b23, x, y, z))
+                abs(buoyancy(fast, x, y, z) - buoyancy(symbolic, x, y, z))
                 for z in levels
             ) < 1e-10
-            @test bottom_pressure(fast, x, y) ≈ bottom_pressure(b23, x, y) rtol=1e-8
+            @test bottom_pressure(fast, x, y) ≈ bottom_pressure(symbolic, x, y) rtol=1e-8
             @test baroclinic_potential_energy(fast, x, y) ≈
-                  baroclinic_potential_energy(b23, x, y) rtol=1e-8
+                  baroclinic_potential_energy(symbolic, x, y) rtol=1e-8
 
             # τ_b = S (∂x + i∂y)p_b + T*, with T* = T + S (∂x + i∂y)∫b dz
             # from the buoyancy alone, (45) and (52).
@@ -1413,7 +1413,7 @@ end
             S = PlanetaryGeostrophy.bottom_stress_coefficient(
                 p_internal, H, problem.coriolis(x, y),
             )
-            for solution in (fast, b23)
+            for solution in (fast, symbolic)
                 column_gradient =
                     PlanetaryGeostrophy.VelocityFieldPrototype.finite_complex_gradient(
                         (xx, yy) -> surface_pressure(solution, xx, yy) -
@@ -1426,19 +1426,19 @@ end
                       complex(stress.x, stress.y) rtol=1e-6
             end
             @test bottom_pressure_stress_forcing(fast, x, y) ≈
-                  bottom_pressure_stress_forcing(b23, x, y) rtol=1e-6
+                  bottom_pressure_stress_forcing(symbolic, x, y) rtol=1e-6
         end
 
         xs, ys = range(-0.8, 0.8; length=9), range(-0.6, 0.6; length=7)
         zs = range(-1.2, 0.0; length=7)
         fast_fields = sample_solution(fast, xs, ys, zs)
-        b23_fields = sample_solution(b23, xs, ys, zs)
-        @test fast_fields.wet == b23_fields.wet
+        symbolic_fields = sample_solution(symbolic, xs, ys, zs)
+        @test fast_fields.wet == symbolic_fields.wet
         wet = fast_fields.wet
-        @test maximum(abs, (fast_fields.u .- b23_fields.u)[wet]) <
-              1e-6maximum(abs, b23_fields.u[wet])
-        @test maximum(abs, (fast_fields.w .- b23_fields.w)[wet]) <
-              1e-6maximum(abs, b23_fields.w[wet])
+        @test maximum(abs, (fast_fields.u .- symbolic_fields.u)[wet]) <
+              1e-6maximum(abs, symbolic_fields.u[wet])
+        @test maximum(abs, (fast_fields.w .- symbolic_fields.w)[wet]) <
+              1e-6maximum(abs, symbolic_fields.w[wet])
     end
 end
 

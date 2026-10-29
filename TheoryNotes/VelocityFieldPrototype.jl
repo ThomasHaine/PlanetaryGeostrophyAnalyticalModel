@@ -2,8 +2,8 @@
 Prototype implementation and comparison of the complex horizontal velocity
 field in equations (B8) and (B19).
 
-`velocity_b10` is a direct, nested-quadrature reference implementation.
-`velocity_b23` uses the symbolic vertical kernels produced by
+`velocity_direct` is a direct, nested-quadrature reference implementation.
+`velocity_symbolic` uses the symbolic vertical kernels produced by
 `ComputeQuadratures.ipynb` and is the production-oriented implementation.
 """
 module VelocityFieldPrototype
@@ -14,15 +14,15 @@ using Statistics
 
 export VelocityParameters,
        buoyancy_from_forcing,
-       buoyancy_bottom_stress_b23,
-       buoyancy_transport_b23,
+       buoyancy_bottom_stress_symbolic,
+       buoyancy_transport_symbolic,
        buoyancy_transport_sensitivity_coefficients,
        buoyancy_column_integral,
        load_symbolic_kernels,
-       velocity_b10,
-       velocity_b23,
-       velocity_b23_column_from_gradps,
-       velocity_b23_from_gradps,
+       velocity_direct,
+       velocity_symbolic,
+       velocity_symbolic_column_from_gradps,
+       velocity_symbolic_from_gradps,
        run_manufactured_test
 
 const HERE = @__DIR__
@@ -34,11 +34,10 @@ include("VelocitySymbolicKernels.jl")
 """
     VelocityParameters(Ek, Γ, ν, κ, f0, β)
 
-Parameters for the nondimensional, uniform-viscosity/diffusivity kernels.
-The `f0` and `β` fields retain the beta-plane parameters used by the B10
-Reference implementation. B23 accepts an arbitrary sign-definite, nonzero
-`f(x,y)` and its
-horizontal derivatives directly.
+Parameters for the nondimensional, uniform-viscosity/diffusivity kernels. The
+`f0` and `β` fields retain the beta-plane parameters used by the direct (B8)
+reference implementation. The symbolic-kernel form (B19) accepts an arbitrary
+sign-definite, nonzero `f(x,y)` and its horizontal derivatives directly.
 """
 struct VelocityParameters{T<:Real}
     Ek::T
@@ -160,13 +159,13 @@ function Pi_direct(p, Hfun, b, bs, x, y, ξ)
 end
 
 """
-    velocity_b10(p, H, f, ps, τ, B, bs, x, y, z; gradient_step=1e-5)
+    velocity_direct(p, H, f, ps, τ, B, bs, x, y, z; gradient_step=1e-5)
 
 Direct reference evaluation of (B8). `ps`, `τ`, and `bs` are horizontal
 fields; `B(x, y, z)` is the interior buoyancy-restoring field. Its nested
 quadratures intentionally make it unsuitable for production use.
 """
-function velocity_b10(p, Hfun, ffun, ps, τ, B, bs, x, y, z; gradient_step=1e-5)
+function velocity_direct(p, Hfun, ffun, ps, τ, B, bs, x, y, z; gradient_step=1e-5)
     H = Hfun(x, y)
     checked_depth(H, z)
     fvalue = ffun(x, y)
@@ -214,7 +213,7 @@ function load_symbolic_kernels()
     )
 end
 
-function integrated_pressure_b23(kernels, p, Hfun, ffun, B, bs, x, y, z)
+function integrated_pressure_symbolic(kernels, p, Hfun, ffun, B, bs, x, y, z)
     H = Hfun(x, y)
     φvalue, ψvalue = φ_from_f(p, ffun(x, y)), ψ(p)
     return -p.Γ / p.Ek * split_quadgk(
@@ -242,17 +241,18 @@ end
 zero_complex(_, _) = 0.0 + 0.0im
 
 """
-    buoyancy_transport_b23(kernels, p, H, f, f_x, f_y, B, bs, H_x, H_y, x, y)
+    buoyancy_transport_symbolic(kernels, p, H, f, f_x, f_y, B, bs, H_x, H_y, x, y)
 
-Evaluate the buoyancy-driven depth-integrated transport in equation (57).
-This is a general numerical B23 implementation that is suitable for checking
-new forcing fields before specialized vertically integrated kernels are added.
+Evaluate the buoyancy-driven depth-integrated transport in equation (57). This
+is a general numerical symbolic-kernel (B19) implementation that is suitable for
+checking new forcing fields before specialized vertically integrated kernels are
+added.
 """
-function buoyancy_transport_b23(kernels, p, Hfun, ffun, f_x, f_y, B, bs, H_x, H_y, x, y)
+function buoyancy_transport_symbolic(kernels, p, Hfun, ffun, f_x, f_y, B, bs, H_x, H_y, x, y)
     H = Hfun(x, y)
     checked_depth(H, -H)
     return split_quadgk(
-        z -> velocity_b23_from_gradps(
+        z -> velocity_symbolic_from_gradps(
             kernels, p, Hfun, ffun, f_x, f_y, zero_complex, zero_complex,
             B, bs, H_x, H_y, x, y, z,
         ),
@@ -399,15 +399,15 @@ function buoyancy_transport_sensitivity_coefficients(
 end
 
 """
-    buoyancy_bottom_stress_b23(kernels, p, H, f, f_x, f_y, B, bs, H_x, H_y, x, y;
+    buoyancy_bottom_stress_symbolic(kernels, p, H, f, f_x, f_y, B, bs, H_x, H_y, x, y;
                                 vertical_step=1e-4)
 
-Evaluate the buoyancy-driven bottom stress in equation (54), using the
-one-sided second-order approximation `-ν ∂u/∂z` at `z = -H`. It intentionally
-uses B23 velocity evaluations so variable bathymetry and general `f(x,y)` are
-treated consistently with the production velocity calculation.
+Evaluate the buoyancy-driven bottom stress in equation (54), using the one-sided
+second-order approximation `-ν ∂u/∂z` at `z = -H`. It intentionally uses
+symbolic-kernel (B19) velocity evaluations so variable bathymetry and general
+`f(x,y)` are treated consistently with the production velocity calculation.
 """
-function buoyancy_bottom_stress_b23(
+function buoyancy_bottom_stress_symbolic(
     kernels, p, Hfun, ffun, f_x, f_y, B, bs, H_x, H_y, x, y;
     vertical_step=1e-4,
 )
@@ -415,7 +415,7 @@ function buoyancy_bottom_stress_b23(
     checked_depth(H, -H)
     h = min(vertical_step, H / 4)
     h > 0 || throw(ArgumentError("vertical_step must be positive; got $vertical_step"))
-    velocity(z) = velocity_b23_from_gradps(
+    velocity(z) = velocity_symbolic_from_gradps(
         kernels, p, Hfun, ffun, f_x, f_y, zero_complex, zero_complex,
         B, bs, H_x, H_y, x, y, z,
     )
@@ -424,7 +424,7 @@ function buoyancy_bottom_stress_b23(
 end
 
 """
-    velocity_b23(kernels, p, H, f, ps, τ, B, bs, H_x, H_y, x, y, z;
+    velocity_symbolic(kernels, p, H, f, ps, τ, B, bs, H_x, H_y, x, y, z;
                  gradient_step=1e-5)
 
 Production-oriented evaluation of (B19): three single vertical quadratures
@@ -432,19 +432,19 @@ plus closed-form symbolic kernels. `H_x` and `H_y` are analytic bathymetric
 slopes. The x-derivative kernel is obtained from the H_y component of the
 generated G_u,y kernel by setting beta=0 and H_y=1.
 """
-function velocity_b23(kernels, p, Hfun, ffun, ps, τ, B, bs, H_x, H_y, x, y, z;
+function velocity_symbolic(kernels, p, Hfun, ffun, ps, τ, B, bs, H_x, H_y, x, y, z;
                       gradient_step=1e-5)
     ps_gradient(xx, yy) = finite_complex_gradient(ps, xx, yy; step=gradient_step)
     f_x(xx, yy) = (ffun(xx + gradient_step, yy) - ffun(xx - gradient_step, yy)) /
                   (2 * gradient_step)
     f_y(xx, yy) = (ffun(xx, yy + gradient_step) - ffun(xx, yy - gradient_step)) /
                   (2 * gradient_step)
-    return velocity_b23_from_gradps(kernels, p, Hfun, ffun, f_x, f_y, ps_gradient,
+    return velocity_symbolic_from_gradps(kernels, p, Hfun, ffun, f_x, f_y, ps_gradient,
                                     τ, B, bs, H_x, H_y, x, y, z; gradient_step)
 end
 
 """
-    velocity_b23_from_gradps(kernels, p, H, f, f_x, f_y, gradps, τ, B, bs,
+    velocity_symbolic_from_gradps(kernels, p, H, f, f_x, f_y, gradps, τ, B, bs,
                              H_x, H_y, x, y, z; gradient_step=1e-5)
 
 Evaluate (B19) when `gradps(x,y)` already provides `(d/dx + i*d/dy) p_s`.
@@ -452,9 +452,9 @@ Use this form with a finite-element pressure solve to avoid finite
 differences of the pressure interpolant. `f_x` and `f_y` are derivatives of
 the generalized Coriolis parameter.
 """
-function velocity_b23_from_gradps(kernels, p, Hfun, ffun, f_x, f_y, gradps, τ, B,
+function velocity_symbolic_from_gradps(kernels, p, Hfun, ffun, f_x, f_y, gradps, τ, B,
                                   bs, H_x, H_y, x, y, z; gradient_step=1e-5)
-    velocity = velocity_b23_column_from_gradps(
+    velocity = velocity_symbolic_column_from_gradps(
         kernels, p, Hfun, ffun, f_x, f_y, gradps, τ, B, bs,
         H_x, H_y, x, y; gradient_step,
     )
@@ -462,16 +462,17 @@ function velocity_b23_from_gradps(kernels, p, Hfun, ffun, f_x, f_y, gradps, τ, 
 end
 
 """
-    velocity_b23_column_from_gradps(
+    velocity_symbolic_column_from_gradps(
         kernels, p, H, f, f_x, f_y, gradps, τ, B, bs, H_x, H_y, x, y;
         gradient_step=1e-5,
     )
 
-Prepare an analytical B23 velocity evaluator for one water column. Quantities
-that depend only on `(x, y)`, including the pressure gradient and vertically
-integrated buoyancy, are evaluated once and reused for every requested depth.
+Prepare an analytical symbolic-kernel (B19) velocity evaluator for one water
+column. Quantities that depend only on `(x, y)`, including the pressure gradient
+and vertically integrated buoyancy, are evaluated once and reused for every
+requested depth.
 """
-function velocity_b23_column_from_gradps(
+function velocity_symbolic_column_from_gradps(
     kernels, p, Hfun, ffun, f_x, f_y, gradps, τ, B,
     bs, H_x, H_y, x, y; gradient_step=1e-5,
 )
@@ -495,7 +496,7 @@ function velocity_b23_column_from_gradps(
         stress =
             -p.Ek * Gu(z, 0.0, H, p.ν, φvalue) * surface_stress
         integrated = finite_complex_gradient(
-            (xx, yy) -> integrated_pressure_b23(
+            (xx, yy) -> integrated_pressure_symbolic(
                 kernels, p, Hfun, ffun, B, bs, xx, yy, z,
             ),
             x, y; step=gradient_step,
@@ -552,24 +553,24 @@ function run_manufactured_test(; samples=5, rtol=2e-5)
     x, y, z = 0.25, 0.3, -0.45
 
     kernels = load_symbolic_kernels()
-    b10() = velocity_b10(p, H, f, ps, τ, B, bs, x, y, z)
-    b23() = velocity_b23(kernels, p, H, f, ps, τ, B, bs, H_x, H_y, x, y, z)
-    u_b10, u_b23 = b10(), b23()
-    relative_error = abs(u_b10 - u_b23) / max(abs(u_b10), eps())
+    direct() = velocity_direct(p, H, f, ps, τ, B, bs, x, y, z)
+    symbolic() = velocity_symbolic(kernels, p, H, f, ps, τ, B, bs, H_x, H_y, x, y, z)
+    u_direct, u_symbolic = direct(), symbolic()
+    relative_error = abs(u_direct - u_symbolic) / max(abs(u_direct), eps())
     relative_error <= rtol || throw(ErrorException(
         "(B8) and (B19) differ by $(relative_error), exceeding rtol=$rtol. " *
         "Check the manufactured state and kernel export."
     ))
 
-    b10_time = benchmark(b10; samples)
-    b23_time = benchmark(b23; samples)
-    @printf("B10 velocity: % .10e %+.10ei\n", real(u_b10), imag(u_b10))
-    @printf("B23 velocity: % .10e %+.10ei\n", real(u_b23), imag(u_b23))
+    direct_time = benchmark(direct; samples)
+    symbolic_time = benchmark(symbolic; samples)
+    @printf("(B8) direct velocity: % .10e %+.10ei\n", real(u_direct), imag(u_direct))
+    @printf("(B19) symbolic velocity: % .10e %+.10ei\n", real(u_symbolic), imag(u_symbolic))
     @printf("relative error: %.3e\n", relative_error)
-    @printf("median time B10: %.3e s; B23: %.3e s; speedup: %.2fx\n",
-            b10_time, b23_time, b10_time / b23_time)
-    return (; u_b10, u_b23, relative_error, b10_time, b23_time,
-            speedup=b10_time / b23_time)
+    @printf("median time direct (B8): %.3e s; symbolic (B19): %.3e s; speedup: %.2fx\n",
+            direct_time, symbolic_time, direct_time / symbolic_time)
+    return (; u_direct, u_symbolic, relative_error, direct_time, symbolic_time,
+            speedup=direct_time / symbolic_time)
 end
 
 end # module

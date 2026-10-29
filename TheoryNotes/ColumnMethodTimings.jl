@@ -1,7 +1,7 @@
 # Cost of the three implementations of the column solution (manuscript
 # Section 6b, "Column solution"):
 #   (1) the direct double-quadrature form (B8 in VelocityFieldPrototype),
-#   (2) the symbolic-kernel form (B19; solve_pg method=:b23),
+#   (2) the symbolic-kernel form (B19; solve_pg method=:symbolic),
 #   (3) the single-integral production form (solve_pg method=:fast).
 # (1) and (2) are timed per velocity sample at the manufactured state of
 # VelocityFieldPrototype.run_manufactured_test. (2) and (3) are timed for the
@@ -44,15 +44,15 @@ function timed_solve(method)
 end
 
 fast = timed_solve(:fast)
-b23 = timed_solve(:b23)
-difference = sqrt(sum(abs2, fast.velocity .- b23.velocity) / sum(abs2, b23.velocity))
+symbolic = timed_solve(:symbolic)
+difference = sqrt(sum(abs2, fast.velocity .- symbolic.velocity) / sum(abs2, symbolic.velocity))
 
 @printf("\n(2) against (3), verification basin, mesh %.2f, %d threads:\n", mesh_resolution, Threads.nthreads())
-@printf("  %-28s %12s %12s\n", "", "(2) :b23", "(3) :fast")
-@printf("  %-28s %10.1f s %10.2f s   (%.0f×)\n", "solve_pg", b23.seconds, fast.seconds, b23.seconds / fast.seconds)
+@printf("  %-28s %12s %12s\n", "", "(2) :symbolic", "(3) :fast")
+@printf("  %-28s %10.1f s %10.2f s   (%.0f×)\n", "solve_pg", symbolic.seconds, fast.seconds, symbolic.seconds / fast.seconds)
 @printf("  %-28s %10.1f s %10.2f s   (%.0f×)\n", "sample_solution, $(fast.columns) columns × $(length(sample_z)) levels",
-    b23.sampling, fast.sampling, b23.sampling / fast.sampling)
-@printf("  %-28s %10.2f ms %10.3f ms\n", "  per column", 1e3b23.sampling / b23.columns, 1e3fast.sampling / fast.columns)
+    symbolic.sampling, fast.sampling, symbolic.sampling / fast.sampling)
+@printf("  %-28s %10.2f ms %10.3f ms\n", "  per column", 1e3symbolic.sampling / symbolic.columns, 1e3fast.sampling / fast.columns)
 @printf("  relative difference in u, v over all wet samples: %.1e\n", difference)
 @printf("\n(1) %.2f ms and (2) %.2f ms per sample on one thread (%.0f×).\n",
-    1e3manufactured.b10_time, 1e3manufactured.b23_time, manufactured.speedup)
+    1e3manufactured.direct_time, 1e3manufactured.symbolic_time, manufactured.speedup)
