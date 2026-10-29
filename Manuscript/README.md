@@ -22,8 +22,9 @@ Two conventions are in use:
   Overleaf.
 - Edits made in this folder use the
   [`changes`](https://ctan.org/pkg/changes) package with author `CL` (Claude):
-  insertions in blue, deletions struck through, each tagged CL. A summary of
-  their counts is printed after the title (`\listofchanges[style=summary]`).
+  insertions in blue, deletions struck through, each tagged CL. All changes
+  to date have been accepted. For a summary of their counts after the title,
+  add `\listofchanges[style=summary]` after `\maketitle`.
   - To review: compile and read the blue text.
   - To accept every change: change `\usepackage{changes}` to
     `\usepackage[final]{changes}`. That keeps the insertions, drops the
