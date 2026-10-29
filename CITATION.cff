@@ -1,8 +1,7 @@
-# This CITATION.cff file was generated with cffinit.
-# Visit https://bit.ly/cffinit to generate yours today!
+# Citation metadata, read by GitHub and by Zenodo when it archives a release.
 
 cff-version: 1.2.0
-title: PlanetaryGeostrophyModel
+title: PlanetaryGeostrophyAnalyticalModel
 message: >-
   If you use this software, please cite it using the
   metadata from this file.
@@ -11,15 +10,20 @@ authors:
   - given-names: Thomas
     family-names: Haine
     email: Thomas.Haine@jhu.edu
-    name-particle: Thomas
     affiliation: Johns Hopkins University
     orcid: 'https://orcid.org/0000-0001-8231-2419'
-repository-code: 'https://github.com/ThomasHaine/PlanetaryGeostrophyModel'
-url: 'https://github.com/ThomasHaine'
+repository-code: 'https://github.com/ThomasHaine/PlanetaryGeostrophyAnalyticalModel'
 abstract: >-
-  Theory notes and Julia code to compute planetary
-  geostrophic ocean circulation solutions
+  Theory notes and the PlanetaryGeostrophy Julia package for
+  solving the linear, steady, robust-diagnostic planetary
+  geostrophic equations with resolved Ekman layers over arbitrary
+  bathymetry, with depth-integrated momentum and vorticity
+  diagnostics and adjoint sensitivities.
 keywords:
   - ocean circulation
   - planetary geostrophy
+  - Ekman layers
+  - topographic steering
+  - Julia
 license: MIT
+version: 0.4.0

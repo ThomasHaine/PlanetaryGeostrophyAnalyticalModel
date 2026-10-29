@@ -1,6 +1,6 @@
 name = "PlanetaryGeostrophy"
 uuid = "4d772d21-e32a-4f5b-8b31-6af30e65e99d"
-version = "0.1.1"
+version = "0.4.0"
 
 [deps]
 Contour = "d38c429a-6771-53c6-b99e-75d170b6e991"
