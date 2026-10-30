@@ -74,28 +74,23 @@ Velocity Green's function `G_u` from the uniform-viscosity solution. This
 matches the expression checked in `SymbolicsTesting.jl`.
 """
 function Gu(z, ξ, H, ν, φ)
-    prefactor = exp(-φ * (z + ξ)) / (2 * ν * φ * (1 + exp(2 * φ * H)))
-    if z <= ξ
-        return prefactor * (
-            exp(2 * φ * ξ) - exp(2 * φ * (z + H)) -
-            exp(2 * φ * (z + ξ + H)) + 1
-        )
-    end
-    return prefactor * (
-        exp(2 * φ * z) - exp(2 * φ * (ξ + H)) -
-        exp(2 * φ * (z + ξ + H)) + 1
-    )
+    # Numerator and denominator are divided by exp(2φH), so every exponent
+    # has a nonpositive real part (Re φ > 0, -H ≤ z, ξ ≤ 0) and nothing
+    # overflows when the Ekman layer is thin (|φ|H large).
+    lo, hi = minmax(z, ξ)
+    return (
+        exp(φ * (hi - lo - 2H)) - exp(φ * (lo - hi)) -
+        exp(φ * (z + ξ)) + exp(-φ * (z + ξ + 2H))
+    ) / (2 * ν * φ * (1 + exp(-2 * φ * H)))
 end
 
 function Gb(z, ξ, H, κ, ψ)
-    denominator = 2 * κ * ψ * (1 + exp(2 * ψ * H))
-    prefactor = exp(ψ * (z + ξ)) / denominator
-    if z <= ξ
-        return prefactor * (1 - exp(-2 * ψ * ξ)) *
-               (exp(2 * ψ * H) + exp(-2 * ψ * z))
-    end
-    return prefactor * (1 - exp(-2 * ψ * z)) *
-           (exp(2 * ψ * H) + exp(-2 * ψ * ξ))
+    # Divided through by exp(2ψH), as in `Gu`, so that no exponent is positive.
+    lo, hi = minmax(z, ξ)
+    return (
+        exp(ψ * (z + ξ)) - exp(ψ * (lo - hi)) +
+        exp(ψ * (hi - lo - 2H)) - exp(-ψ * (z + ξ + 2H))
+    ) / (2 * κ * ψ * (1 + exp(-2 * ψ * H)))
 end
 
 function dGb_dξ_at_surface(z, H, κ, ψ)
@@ -127,9 +122,27 @@ end
 
 function Gu_integral(z, H, ν, φ)
     return (
-        -1 - exp(2 * φ * H) + exp(φ * (z + H)) + exp(φ * (H - z))
-    ) / (ν * φ^2 * (1 + exp(2 * φ * H)))
+        -exp(-2 * φ * H) - 1 + exp(φ * (z - H)) + exp(-φ * (z + H))
+    ) / (ν * φ^2 * (1 + exp(-2 * φ * H)))
 end
+
+# Closed forms of ∫_ξ^0 G_b(z'; ξ') dz' and of ∫_ξ^0 κ ∂_ξ' G_b(z'; ξ')|_{ξ'=0} dz',
+# the kernels (A5)--(A6), written with nonpositive exponents. The generated
+# symbolic forms contain exp(4ψH) and overflow for thin buoyancy layers.
+function stable_inner_Gb(ξ, ξp, H, ψ, κ)
+    # Antiderivatives in z' of the numerator of `Gb` below and above ξ'.
+    below(z) = exp(ψ * (z + ξp)) - exp(ψ * (z - ξp)) -
+               exp(ψ * (ξp - z - 2H)) + exp(-ψ * (z + ξp + 2H))
+    above(z) = exp(ψ * (z + ξp)) + exp(ψ * (ξp - z)) +
+               exp(ψ * (z - ξp - 2H)) + exp(-ψ * (z + ξp + 2H))
+    integral = ξ >= ξp ? above(0.0) - above(ξ) :
+               below(ξp) - below(ξ) + above(0.0) - above(ξp)
+    return integral / (2 * κ * ψ^2 * (1 + exp(-2 * ψ * H)))
+end
+
+stable_inner_Gb_xi(ξ, H, ψ) =
+    (1 - exp(ψ * ξ) + exp(-ψ * (ξ + 2H)) - exp(-2 * ψ * H)) /
+    (ψ * (1 + exp(-2 * ψ * H)))
 
 function inner_Gb(z, ξ, H, κ, ψ)
     return split_quadgk(zp -> Gb(zp, ξ, H, κ, ψ), z, 0.0, (ξ,))
@@ -208,8 +221,8 @@ function load_symbolic_kernels()
             generated_guv_y_b(H, z, ξp, φ, ψ, κ, ν, β, f, H_y),
         (H, z, φ, ψ, κ, ν, β, f, H_y) ->
             κ * generated_guv_y_b_xi(H, z, φ, ψ, κ, ν, β, f, H_y),
-        (ξ, ξp, H, ψ, κ) -> generated_inner_gb(H, ξ, ξp, ψ, κ),
-        (ξ, H, ψ, κ) -> κ * generated_inner_gb_xi(H, ξ, ψ, κ),
+        stable_inner_Gb,
+        (ξ, H, ψ, κ) -> stable_inner_Gb_xi(ξ, H, ψ),
     )
 end
 

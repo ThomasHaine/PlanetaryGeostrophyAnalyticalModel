@@ -112,14 +112,14 @@ ellipse_boundary(ax, ay; points=96) = [
 
 function pressure_coefficient(p, H, f)
     q = sqrt(im * f / (p.ν * p.Ek))
-    return ((exp(2 * q * H) - 1) / (q * (1 + exp(2 * q * H))) - H) /
+    return (tanh(q * H) / q - H) /
            (p.ν * q^2 * p.Ek)
 end
 
 function wind_transport_coefficient(p, H, f, τ)
     q = sqrt(im * f / (p.ν * p.Ek))
-    return (exp(q * H) - 1)^2 * τ /
-           (p.ν * q^2 * (1 + exp(2 * q * H)))
+    return (1 - exp(-q * H))^2 * τ /
+           (p.ν * q^2 * (1 + exp(-2 * q * H)))
 end
 
 function baroclinic_pressure_gradient(
@@ -158,14 +158,14 @@ function bottom_stress_forcing(
     H = Hfun(x, y)
     q = sqrt(im * ffun(x, y) / (p.ν * p.Ek))
     baroclinic = VelocityFieldPrototype.split_quadgk(
-        ξ -> exp(q * (H - ξ)) * (1 + exp(2 * q * ξ)) /
-             (1 + exp(2 * q * H)) *
+        ξ -> (exp(-q * (H + ξ)) + exp(q * (ξ - H))) /
+             (1 + exp(-2 * q * H)) *
              baroclinic_pressure_gradient(
                  p, Hfun, B, bs, x, y, ξ; gradient_step,
              ),
         -H, 0.0,
     ) / p.Ek
-    wind = -2 * exp(q * H) / (1 + exp(2 * q * H)) * τ(x, y)
+    wind = -2 * exp(-q * H) / (1 + exp(-2 * q * H)) * τ(x, y)
     return -baroclinic + wind
 end
 
@@ -182,17 +182,15 @@ function transport_forcing(
     H = Hfun(x, y)
     q = sqrt(im * ffun(x, y) / (p.ν * p.Ek))
     baroclinic = VelocityFieldPrototype.split_quadgk(
-        ξ -> exp(-q * ξ) *
-             (exp(q * ξ) - exp(q * H)) *
-             (exp(q * (ξ + H)) - 1) *
+        ξ -> (exp(q * (ξ - H)) - exp(-2 * q * H) - 1 + exp(-q * (ξ + H))) *
              baroclinic_pressure_gradient(
                  p, Hfun, B, bs, x, y, ξ; gradient_step,
              ),
         -H, 0.0,
     ) / p.Ek
-    wind = (exp(q * H) - 1)^2 * τ(x, y)
+    wind = (1 - exp(-q * H))^2 * τ(x, y)
     return (-baroclinic + wind) /
-           (p.ν * q^2 * (1 + exp(2 * q * H)))
+           (p.ν * q^2 * (1 + exp(-2 * q * H)))
 end
 
 check_coastal_condition(condition) =
