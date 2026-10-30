@@ -161,14 +161,14 @@ function fast_baroclinic_transport(
     f = ffun(x, y)
     qv = VFP.φ_from_f(p, f)
     panels = panel_count(q, p, f, H)
-    eH = exp(qv * H)
+    # Kernel and denominator divided by exp(2qH): no exponent is positive.
     integrand(ξ) =
-        exp(-qv * ξ) * (exp(qv * ξ) - eH) * (exp(qv * (ξ + H)) - 1) *
+        (exp(qv * (ξ - H)) - exp(-2 * qv * H) - 1 + exp(-qv * (ξ + H))) *
         column_buoyancy_integral_gradient(
             kernels, p, Hfun, B, bs, x, y, ξ, q, panels, step,
         )
     baroclinic = panel_integral(integrand, -H, 0.0, q, panels) / p.Ek
-    return -baroclinic / (p.ν * qv^2 * (1 + exp(2 * qv * H)))
+    return -baroclinic / (p.ν * qv^2 * (1 + exp(-2 * qv * H)))
 end
 
 """
@@ -184,14 +184,14 @@ function fast_bottom_stress_forcing(
     f = ffun(x, y)
     qv = VFP.φ_from_f(p, f)
     panels = panel_count(q, p, f, H)
-    denominator = 1 + exp(2 * qv * H)
+    denominator = 1 + exp(-2 * qv * H)   # divided by exp(2qH), as above
     integrand(ξ) =
-        exp(qv * (H - ξ)) * (1 + exp(2 * qv * ξ)) / denominator *
+        (exp(-qv * (H + ξ)) + exp(qv * (ξ - H))) / denominator *
         column_buoyancy_integral_gradient(
             kernels, p, Hfun, B, bs, x, y, ξ, q, panels, step,
         )
     baroclinic = panel_integral(integrand, -H, 0.0, q, panels) / p.Ek
-    wind = -2 * exp(qv * H) / denominator * τ(x, y)
+    wind = -2 * exp(-qv * H) / denominator * τ(x, y)
     return -baroclinic + wind
 end
 

@@ -87,6 +87,43 @@ end
     @test all(isfinite, large_s_components)
 end
 
+@testset "Thin boundary layers do not overflow" begin
+    # H/δ_E and H/δ of several hundred, where the products of exp(±φz) in the
+    # unscaled kernels overflowed to NaN.
+    VFP = PlanetaryGeostrophy.VelocityFieldPrototype
+    H, ν, κ, Ek, Γ = 1.2, 1.0, 1.0, 1e-6, 0.2
+    p = VFP.VelocityParameters(Ek, Γ, ν, κ, 1.0, 0.0)
+    ψ = VFP.ψ(p)
+    for f in (-1.0, 1.0)
+        φ = VFP.φ_from_f(p, f)
+        for z in (-H, -1.19, -0.6, -1e-3, 0.0), ξ in (-H, -1.195, -0.6, 0.0)
+            @test isfinite(VFP.Gu(z, ξ, H, ν, φ))
+            @test VFP.Gu(z, ξ, H, ν, φ) == VFP.Gu(ξ, z, H, ν, φ)
+        end
+        @test all(isfinite, VFP.Gu_integral.((-H, -0.6, 0.0), H, ν, φ))
+        @test isfinite(PlanetaryGeostrophy.pressure_coefficient(p, H, f))
+        τ(x, y) = 0.03 - 0.01im
+        zero_field(x, y, z...) = 0.0
+        T = PlanetaryGeostrophy.bottom_stress_forcing(
+            p, (x, y) -> H, (x, y) -> f, τ, zero_field, zero_field, 0.0, 0.0,
+        )
+        @test isfinite(T) && abs(T) < 1e-100       # the wind does not reach the bottom
+        transport = PlanetaryGeostrophy.wind_transport_coefficient(p, H, f, τ(0.0, 0.0))
+        @test transport ≈ τ(0.0, 0.0) / (ν * φ^2)  # the Ekman transport, -i Ek τ / f
+    end
+    # The closed-form inner buoyancy kernels against quadrature of G_b.
+    for (ξ, ξp) in ((-1.0, -1.1), (-1.15, -1.1), (-1e-3, -5e-4), (-1.19, -1.195))
+        quadrature = sum(
+            VFP.quadgk(zp -> VFP.Gb(zp, ξp, H, κ, ψ), a, b; rtol=1e-12)[1]
+            for (a, b) in ((ξ, max(ξ, ξp)), (max(ξ, ξp), 0.0)) if b > a
+        )
+        @test VFP.stable_inner_Gb(ξ, ξp, H, ψ, κ) ≈ quadrature rtol = 1e-10
+        @test isfinite(VFP.Gb(ξ, ξp, H, κ, ψ))
+    end
+    @test VFP.stable_inner_Gb_xi(-0.01, H, ψ) ≈
+          VFP.quadgk(z -> VFP.surface_buoyancy_kernel(z, H, κ, ψ), -0.01, 0.0)[1] rtol = 1e-10
+end
+
 @testset "Green-function velocity formulations" begin
     comparison = PlanetaryGeostrophy.VelocityFieldPrototype.run_manufactured_test(
         samples=1,
