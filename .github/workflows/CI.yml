@@ -2,7 +2,7 @@
 #
 # The package lives in PlanetaryGeostrophy/ and includes source files from
 # TheoryNotes/ and AnalyticalModel/, so changes there also trigger CI.
-# Notebook-, figure-, and documentation-only changes do not.
+# Notebook-, figure-, documentation-, and manuscript-only changes do not.
 name: CI
 
 on:
@@ -14,6 +14,8 @@ on:
       - "**.pdf"
       - "**.png"
       - "**.tex"
+      - "Manuscript/**"
+      - "**/.DS_Store"
   pull_request:
     paths-ignore:
       - "**.ipynb"
@@ -21,6 +23,8 @@ on:
       - "**.pdf"
       - "**.png"
       - "**.tex"
+      - "Manuscript/**"
+      - "**/.DS_Store"
   workflow_dispatch:
 
 # A newer push to the same branch or PR cancels the run in progress.
@@ -36,8 +40,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # The committed Manifest.toml was resolved with Julia 1.13.
-        version: ["1.13"]
+        # The committed Manifest.toml was resolved with Julia 1.13. Pinned to
+        # 1.13.3: under 1.13.4 the test suite runs 3-13x slower (about 80-100
+        # min, close to the 120-min timeout). Unpin once a later 1.13.x fixes it.
+        version: ["1.13.3"]
     env:
       # Headless GR plotting; the tests write figure files.
       GKSwstype: "100"
